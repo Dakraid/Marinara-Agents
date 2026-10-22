@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 10.2.0 — 2026-10-22
+
+- Includes upstream 1.4.85: keyboard and focus fixes. Sources rows are reachable with Tab and open with Enter or Space. Accepting a Review Queue change keeps the list and your place while memories reload. Memory Vault dialogs show on a narrow panel. Place picker arrow keys keep the highlight in view. Backup controls have a cleaner Tab order and screen-reader name.
+
 ## 10.1.0 — 2026-10-22
 
 - Includes upstream 1.4.58 to 1.4.84. Other Agents can ask for memories about the characters they write as, and packages can no longer reach the memory vault itself, only memories a character has everywhere.
@@ -9,6 +13,10 @@
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 1.4.85 — 2026-10-22
+
+- Five keyboard and focus fixes. In Sources, Tab now reaches the name of each chat or character source in the list, and Enter or Space opens it, so Re-extract, Manage, Review and Open memory work without a mouse. Accepting a change in the Review Queue no longer hides the queue while the memories it shows reload: the list, your place in it and the keyboard position stay, a small spinner shows beside "Review Queue", and Accept waits until the memories have reloaded. On a narrow panel, the Memory Vault's "Rename details" and unsaved-changes dialogs now show instead of leaving the screen frozen. Arrow keys in the place picker keep the highlighted place in view. In Memory Settings, Tab after "Choose backup" goes straight to "Reset settings", and screen readers name "Choose backup" once.
 
 ## 1.4.84 — 2026-10-22
 

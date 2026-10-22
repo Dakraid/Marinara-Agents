@@ -851,7 +851,7 @@
         },
         "id": "gacha-forge",
         "name": "Gacha Forge",
-        "version": "10.0.1",
+        "version": "10.1.0",
         "description": "A complete gacha game mode. Describe a world and Gacha Forge builds the rest: banners to pull on, a cast the model writes and paints for you, story chapters told by a visual-novel narrator, and the battles, gear and events that grow around them. Install it, restart Marinara Engine when prompted, then open Home → Gacha Forge.",
         "engine": {
           "min": "2.4.4",
@@ -1140,8 +1140,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "9fd81235021e9ddb5d3708f8b78130b83cfe45555a63d244b85aa31578810bd6",
-            "bytes": 1440464
+            "sha256": "25a238726911cf168227aab78284ff9bde979e1d1f3b9cddfe0837516cad3e07",
+            "bytes": 1444583
           },
           {
             "path": "farm-asc.webp",
@@ -2373,9 +2373,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/gacha-forge-10.0.1.zip",
-        "sha256": "95533eefe4ed02165605bd2c5c3b627b300fc5068e9986003575f0a666cee0bf",
-        "bytes": 7843821
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/gacha-forge-10.1.0.zip",
+        "sha256": "835a08bbe439696cfbca94c9133e8877dc49bebe22c7a2a17cb12b0bd756481a",
+        "bytes": 7847940
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
     },
@@ -2644,7 +2644,7 @@
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
-        "version": "10.1.0",
+        "version": "10.2.0",
         "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
         "engine": {
           "min": "2.4.1",
@@ -2681,8 +2681,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "9cd884dd138730e0057d08bcb065415443d5fb5ded699dfa1c1885ec2e8b839c",
-            "bytes": 648862
+            "sha256": "8f8a9db1f9e152cb2243342ff3cc829aed263b314c9bf1208550d7793a4a1942",
+            "bytes": 649488
           }
         ],
         "permissions": [
@@ -2698,9 +2698,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-10.1.0.zip",
-        "sha256": "24b610c90b0e85fcc11fae8fe065eaa91858d58f32274f60484a8f51bc7bbf01",
-        "bytes": 1140293
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-10.2.0.zip",
+        "sha256": "652ec486bcf9d92cee2b8eabf573e4aaf6ce22b6726cbe87497e74bc6c6ee642",
+        "bytes": 1140919
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#long-term-memory"
     },

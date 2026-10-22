@@ -5,7 +5,7 @@ This file lists every intentional difference between the fork branch `customized
 Keep it current: a branch that adds or changes a fork deviation updates its entry in the same change.
 
 - Upstream remote: `upstream` = Pasta-Devs/Marinara-Agents; `origin` = Dakraid. The fork merges `upstream/staging`.
-- Last merged upstream commit: `64bab6768` (#1581, 2026-10-22). That merge folded conversation-calls 1.1.7, long-term-memory 1.4.84, noodle 1.5.9 and slurp2 0.3.53 into fork `10.1.0`.
+- Last merged upstream commit: `e79842733` (#1590, 2026-10-22). That merge folded gacha-forge 1.8.15 into fork `10.1.0` and long-term-memory 1.4.85 into fork `10.2.0`. The merge before it (`64bab6768`, #1581) folded conversation-calls 1.1.7, long-term-memory 1.4.84, noodle 1.5.9 and slurp2 0.3.53 into `10.1.0`.
 
 To tell who owns a failing test: equal `git hash-object tests/<f>` and `git ls-tree upstream/staging -- tests/<f>` mean upstream owns it.
 
@@ -38,7 +38,7 @@ Marked _(inferred)_: read from code or history rather than stated in a commit or
 - **Version sources (must agree):** `packages/<id>/manifest.json` (agent-only packages, gacha-forge, relationship-tracker, modern-life-sim, ruleset-5e-2014); `version:` in `scripts/build-feature-packages.mjs` (noodle, slurp2, long-term-memory, memory-nag, card-editor, pokedex, hierarchical-maps, conversation-calls, the 6 turn games); `VERSION` in `scripts/build-{beholder,pixelforge,quartermaster}-package.mjs`; `SLURP2_VERSION` plus the top `SLURP2_RELEASES` entry in `packages/slurp2/.../onboarding/slp-release.ts`; the top `## <version>` of `packages/<id>/CHANGELOG.md` (builder-enforced, max 20 entries, 1,000 chars each).
 - **Keep on conflict:** always the 10.x value. Never take upstream `1.x`/`0.x` lines in manifests, builder maps, `VERSION`, `SLURP2_VERSION` or the CHANGELOG top.
 - **Fork-created CHANGELOGs** (add/add conflicts if upstream adds its own; union with the fork entry on top): background, card-evolution-auditor, chess, combat, continuity, cyoa, director, echo-chamber, eightball, expression, haptic, html, illustrator, knowledge-retrieval, knowledge-router, lorebook-keeper, persona-stats, poker, prose-guardian, quest, rock-paper-scissors, spotify, storyboard, tic-tac-toe, uno.
-- **Current versions:** card-editor `10.0.8`; modern-life-sim `10.0.3`; conversation-calls, long-term-memory, noodle and slurp2 `10.1.0`; all 41 other packages `10.0.1`.
+- **Current versions:** card-editor `10.0.8`; modern-life-sim `10.0.3`; long-term-memory `10.2.0`; conversation-calls, gacha-forge, noodle and slurp2 `10.1.0`; all 40 other packages `10.0.1`.
 
 ### Packages with fork changes beyond the version
 
@@ -51,7 +51,7 @@ Marked _(inferred)_: read from code or history rather than stated in a commit or
 | hierarchical-maps | 10.0.1       | Movement Assessment, ko locale, parallel artwork   |
 | character-tracker | 10.0.1       | prompt: scene scan                                 |
 | lorebook-keeper   | 10.0.1       | prompt: description backfill                       |
-| long-term-memory  | 10.1.0       | compact control sizing                             |
+| long-term-memory  | 10.2.0       | compact control sizing                             |
 | noodle            | 10.1.0       | connection sampling in image-prompt rewrite        |
 | slurp2            | 10.1.0       | connection sampling in image rewrite and schedules |
 | memory-nag        | 10.0.1       | comment only                                       |
@@ -152,7 +152,7 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 - **Pinned by:** `tests/lorebook-keeper-routing.regression.mjs`.
 - **Commit:** 45c276dba.
 
-## 8. long-term-memory (10.1.0)
+## 8. long-term-memory (10.2.0)
 
 - **What/why:** compact select uses fixed `h-9`; non-compact buttons get `minWidth: 2.75rem` (tap target).
 - **Files:** `.../features/long-term-memory/shared-controls.tsx`.
@@ -183,11 +183,18 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 
 - No source delta. `tests/conversation-calls-summary.regression.mjs` pins `10.1.0` and raises `unzip` `maxBuffer` to 64 MiB. Commit 339662d36.
 
+## 13. gacha-forge (10.1.0)
+
+- **What/why:** upstream ships pre-built bundles plus `bundle-patches.json` (hand edits since the last drop). The bundle's own version readout (`ds="1.8.15"`) and the newest client.js patch stay on the upstream release; only the manifest and CHANGELOG top move to 10.x.
+- **Files:** `packages/gacha-forge/{manifest.json,CHANGELOG.md}`; bundles and `bundle-patches.json` are upstream's, take theirs.
+- **Keep on conflict:** the 10.x manifest version and fork CHANGELOG entry on top, upstream entries below.
+- **Pinned by:** `tests/gacha-forge-location-ids.regression.mjs` (fork-adapted: the readout and newest patch must equal the newest non-10.x CHANGELOG entry; the manifest must be 10.x and lead the CHANGELOG).
+
 ---
 
 ## Fork-owned tests
 
 - **New:** `card-editor-{bulk,dialog-ui,panel-ui,prompt-presets,routing,runner,transform}.regression.mjs`, `lorebook-editor-routing.regression.mjs`, `modern-life-sim-{adult,cast-reading,family-romance,jobs-money,repeat-social,sampling,sex,world-lore}.regression.mjs`.
-- **Changed (keep ours, union upstream additions):** `conversation-calls-summary`, `hierarchical-maps-lifecycle`, `inventory-tracker-contract`, `long-term-memory-lifecycle`, `lorebook-keeper-routing`, `map-canvas-geometry`, `map-location-limit`, `noodle-image-prompt-instructions`, `noodle-public-only`, `noodler-disclosure-contract`, `noodler-fictional-prices`, `noodler-generation-guidance-default`, `shared-world-refresh`, `world-maps-ui-contract`.
+- **Changed (keep ours, union upstream additions):** `conversation-calls-summary`, `gacha-forge-location-ids`, `hierarchical-maps-lifecycle`, `inventory-tracker-contract`, `long-term-memory-lifecycle`, `lorebook-keeper-routing`, `map-canvas-geometry`, `map-location-limit`, `noodle-image-prompt-instructions`, `noodle-public-only`, `noodler-disclosure-contract`, `noodler-fictional-prices`, `noodler-generation-guidance-default`, `shared-world-refresh`, `world-maps-ui-contract`.
 - **Deleted:** `noodler-content-formats.regression.ts`.
 - **Version pins to bump with manifests:** `card-editor-routing`; `lorebook-editor-routing`, `lorebook-keeper-routing` (10.0.1); `conversation-calls-summary` (10.1.0).
