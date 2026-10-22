@@ -533,6 +533,16 @@ items (PR 8). Version: one patch bump.
 - **Not yet (PR 4b):** occasions, built-in content as v2 packs, one Packs screen; story outcomes
   (conditions) from drama stages.
 
+## PR 4b as built (2026-10-22, on slurpothon): v2 Story Packs and drama story state
+
+- **v2 import:** a `schemaVersion: 2` Story Pack parses with `parseSlpStoryPackV2`; its storylines go to
+  `library.storylines` (stored with their pack id, switched off until picked). A storyline with one stage, no days
+  and no endings stands as a situation; every other one runs as a drama. Export stays v1.
+- **Story state from dramas:** every stage move (enter, leave, ending, left, time) writes the stage outcomes to the
+  lead with `sourceKind: "drama"`, the same way arcs do. A Stir end removes the current stage's condition.
+- **Not yet (PR 5):** occasions and built-in content packs as v2 with JSON `fit`, and one Packs list. The list waits
+  for PR 5 because the built-ins then become v2 packs, so it needs only one way to switch a pack on or off.
+
 ## Later: Basic and add-ons
 
 The player wants Slurp split into a basic part and add-ons that can be switched, so setup and

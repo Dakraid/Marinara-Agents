@@ -296,7 +296,7 @@ const expiry = (at: Date, days?: number) => (days ? new Date(at.getTime() + days
 export function applySlpStoryOutcomes(input: {
   outcomes: readonly SlpStoryOutcome[];
   participants: readonly string[];
-  sourceKind: "arc" | "event";
+  sourceKind: "arc" | "event" | "drama";
   sourceId: string;
   at: Date;
   facts: readonly SlpStoryFact[];

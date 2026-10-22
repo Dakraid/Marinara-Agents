@@ -23,8 +23,10 @@ export const SLP_DRAMA_LIBRARY_KEY = "slurp2.drama.library";
 export type SlpDramaLibrary = {
   situations: (SlpSituation & { packId: string })[];
   dramas: (SlpDrama & { packId: string })[];
+  /** v2 entries, run as they are (docs/STORYLINES.md, PR 4b). */
+  storylines: (SlpStoryline & { packId: string })[];
 };
-export const SLP_EMPTY_DRAMA_LIBRARY: SlpDramaLibrary = { situations: [], dramas: [] };
+export const SLP_EMPTY_DRAMA_LIBRARY: SlpDramaLibrary = { situations: [], dramas: [], storylines: [] };
 
 const record = (value: unknown) =>
   value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -49,10 +51,15 @@ export function readSlpDramaLibrary(raw: unknown): SlpDramaLibrary {
       const parsed = slpDramaSchema.safeParse(rest);
       return parsed.success ? parsed.data : null;
     }),
+    storylines: read(value?.storylines, (entry) => {
+      const { packId: _packId, ...rest } = record(entry)!;
+      const parsed = slpStorylineSchema.safeParse(rest);
+      return parsed.success ? parsed.data : null;
+    }),
   };
 }
 
-export type SlpDramaCatalog = { situations: SlpSituation[]; dramas: SlpDrama[] };
+export type SlpDramaCatalog = { situations: SlpSituation[]; dramas: SlpDrama[]; storylines: SlpStoryline[] };
 
 /** Everything that could run: the built-ins, then imported entries (an imported id never hides a built-in). */
 export function slpDramaCatalog(library: SlpDramaLibrary): SlpDramaCatalog {
@@ -69,6 +76,7 @@ export function slpDramaCatalog(library: SlpDramaLibrary): SlpDramaCatalog {
       ...SLURP_BUILTIN_DRAMAS,
       ...library.dramas.filter((entry) => !builtinDramas.has(entry.id)).map(({ packId: _packId, ...entry }) => entry),
     ],
+    storylines: library.storylines.map(({ packId: _packId, ...entry }) => entry),
   };
 }
 
@@ -82,21 +90,34 @@ export function slpEnabledDrama(catalog: SlpDramaCatalog, enabled: readonly stri
     dramas: catalog.dramas.filter(
       (entry) => on.has(entry.id) && (!entry.requires || standing.has(entry.requires.situation)),
     ),
+    storylines: catalog.storylines.filter((entry) => on.has(entry.id)),
   };
 }
 
 /** What the runtime runs: every entry as a storyline (docs/STORYLINES.md, PR 4); one that does not convert stays out. */
-export function slpDramaStorylines(catalog: { situations: readonly SlpSituation[]; dramas: readonly SlpDrama[] }): {
-  situations: SlpStoryline[];
-  dramas: SlpStoryline[];
-} {
+/** A v2 storyline that is one stage with no days and no ending stands, like a situation. */
+export const slpStorylineStands = (entry: SlpStoryline) =>
+  entry.stages.length === 1 && !entry.stages[0]!.days && !entry.endings.length;
+
+export function slpDramaStorylines(catalog: {
+  situations: readonly SlpSituation[];
+  dramas: readonly SlpDrama[];
+  storylines?: readonly SlpStoryline[];
+}): { situations: SlpStoryline[]; dramas: SlpStoryline[] } {
   const parse = (draft: unknown): SlpStoryline[] => {
     const parsed = slpStorylineSchema.safeParse(draft);
     return parsed.success ? [parsed.data] : [];
   };
+  const v2 = catalog.storylines ?? [];
   return {
-    situations: catalog.situations.flatMap((entry) => parse(slpStorylineDraftFromSituation(entry))),
-    dramas: catalog.dramas.flatMap((entry) => parse(slpStorylineDraftFromDrama(entry))),
+    situations: [
+      ...catalog.situations.flatMap((entry) => parse(slpStorylineDraftFromSituation(entry))),
+      ...v2.filter(slpStorylineStands),
+    ],
+    dramas: [
+      ...catalog.dramas.flatMap((entry) => parse(slpStorylineDraftFromDrama(entry))),
+      ...v2.filter((entry) => !slpStorylineStands(entry)),
+    ],
   };
 }
 
@@ -106,11 +127,12 @@ export type SlpDramaPreviewStatus = "new" | "update" | "conflict";
 export function slpDramaPreviewStatus(
   library: SlpDramaLibrary,
   packId: string,
-  kind: "situation" | "drama",
+  kind: SlpDramaEntry["kind"],
   id: string,
 ): SlpDramaPreviewStatus {
-  const list = kind === "situation" ? library.situations : library.dramas;
-  const builtin = (kind === "situation" ? SLURP_BUILTIN_SITUATIONS : SLURP_BUILTIN_DRAMAS).some(
+  const list: readonly { id: string; packId: string }[] =
+    kind === "situation" ? library.situations : kind === "drama" ? library.dramas : library.storylines;
+  const builtin = (kind === "situation" ? SLURP_BUILTIN_SITUATIONS : kind === "drama" ? SLURP_BUILTIN_DRAMAS : []).some(
     (entry) => entry.id === id,
   );
   const installed = list.find((entry) => entry.id === id);
@@ -118,13 +140,22 @@ export function slpDramaPreviewStatus(
   return installed ? "update" : "new";
 }
 
+export type SlpDramaEntry =
+  | { kind: "situation"; value: SlpSituation }
+  | { kind: "drama"; value: SlpDrama }
+  | { kind: "storyline"; value: SlpStoryline };
+
 /** Writes chosen entries into the library: new ones are added, the same pack's entries replaced; conflicts skipped. */
 export function applySlpDramaEntries(
   library: SlpDramaLibrary,
   packId: string,
-  entries: readonly ({ kind: "situation"; value: SlpSituation } | { kind: "drama"; value: SlpDrama })[],
+  entries: readonly SlpDramaEntry[],
 ): SlpDramaLibrary {
-  const next: SlpDramaLibrary = { situations: [...library.situations], dramas: [...library.dramas] };
+  const next: SlpDramaLibrary = {
+    situations: [...library.situations],
+    dramas: [...library.dramas],
+    storylines: [...library.storylines],
+  };
   for (const entry of entries) {
     if (slpDramaPreviewStatus(next, packId, entry.kind, entry.value.id) === "conflict") continue;
     // Imported entries arrive switched off in the catalog; `enabled` is the player's setting, not the pack's.
@@ -134,10 +165,15 @@ export function applySlpDramaEntries(
         ...next.situations.filter((item) => item.id !== entry.value.id),
         stored as SlpDramaLibrary["situations"][number],
       ];
-    else
+    else if (entry.kind === "drama")
       next.dramas = [
         ...next.dramas.filter((item) => item.id !== entry.value.id),
         stored as SlpDramaLibrary["dramas"][number],
+      ];
+    else
+      next.storylines = [
+        ...next.storylines.filter((item) => item.id !== entry.value.id),
+        stored as SlpDramaLibrary["storylines"][number],
       ];
   }
   return next;

@@ -17,18 +17,19 @@ import type { SlurpPlatformEvent } from "../../../../../../shared/src/slp/slp-pl
 import { SLURP_ARC_LIBRARY_SEED } from "../../projects/slp-arc-library.js";
 import { slurpPlatformEventsDefault } from "../../../../../../shared/src/slp/slp-platform-events.js";
 import type { SlpDrama, SlpSituation } from "../../../../../../shared/src/slp/slp-drama.js";
-import { slpStorylinesFromV1 } from "../../../../../../shared/src/slp/slp-storyline-v1.js";
+import { parseSlpStoryPackV2, slpStorylinesFromV1 } from "../../../../../../shared/src/slp/slp-storyline-v1.js";
+import { slpStorylineSchema, type SlpStoryline } from "../../../../../../shared/src/slp/slp-storyline.js";
 import { slpDramaPreviewStatus, SLP_EMPTY_DRAMA_LIBRARY, type SlpDramaLibrary } from "./slp-drama-library.js";
 
 export type SlpStoryPackPreviewEntry = {
-  kind: "arc" | "event" | "situation" | "drama";
+  kind: "arc" | "event" | "situation" | "drama" | "storyline";
   contentId: string;
   name: string;
   status: "new" | "update" | "local-edit" | "conflict" | "invalid";
   selected: boolean;
   warnings: string[];
   error?: string;
-  value?: SlpArcBlueprint | SlpEventBlueprint | SlpSituation | SlpDrama;
+  value?: SlpArcBlueprint | SlpEventBlueprint | SlpSituation | SlpDrama | SlpStoryline;
 };
 
 export type SlpStoryPackPreview = {
@@ -373,12 +374,32 @@ function legacyArcPack(value: unknown): SlpStoryPack | null {
   );
 }
 
-export function parseSlpStoryPack(value: unknown): { pack: SlpStoryPack | null; errors: string[] } {
+/** A pack as imported: v1 entries, and a v2 file's storylines, which run as they are. */
+export type SlpStoryPackInput = SlpStoryPack & { storylines?: SlpStoryline[] };
+
+export function parseSlpStoryPack(value: unknown): { pack: SlpStoryPackInput | null; errors: string[] } {
   const bytes = Buffer.byteLength(JSON.stringify(value));
   if (bytes > SLP_STORY_PACK_MAX_BYTES) return { pack: null, errors: ["This story pack is larger than 1 MiB."] };
+  // A v2 file: its storylines land in the drama library, nothing in the arc and event lists.
+  if ((value as { schemaVersion?: unknown } | null)?.schemaVersion === 2) {
+    const v2 = parseSlpStoryPackV2(value);
+    if (!v2.pack) return { pack: null, errors: v2.errors };
+    const { format, id, version, name, description, author, storylines } = v2.pack;
+    const shell = { format, schemaVersion: 1, id, version, name, description, ...(author ? { author } : {}) };
+    return {
+      pack: { ...shell, arcs: [], events: [], situations: [], dramas: [], storylines } as SlpStoryPackInput,
+      errors: [],
+    };
+  }
   const legacy = legacyArcPack(value);
   if (legacy) return { pack: legacy, errors: [] };
-  const parsed = slpStoryPackSchema.safeParse(value);
+  // The routes preview a parsed pack again, so a v2 file comes back as its v1 shell with storylines.
+  const { storylines: shelled, ...rest } = (value && typeof value === "object" ? value : {}) as {
+    storylines?: unknown;
+  };
+  const storylines = shelled === undefined ? null : slpStorylineSchema.array().safeParse(shelled);
+  if (storylines && !storylines.success) return { pack: null, errors: ["storylines: not valid storylines"] };
+  const parsed = slpStoryPackSchema.safeParse(shelled === undefined ? value : rest);
   if (!parsed.success)
     return {
       pack: null,
@@ -391,7 +412,8 @@ export function parseSlpStoryPack(value: unknown): { pack: SlpStoryPack | null; 
     situations: parsed.data.situations ?? [],
     dramas: parsed.data.dramas ?? [],
   });
-  return !errors.length ? { pack: parsed.data, errors: [] } : { pack: null, errors };
+  if (errors.length) return { pack: null, errors };
+  return { pack: storylines ? { ...parsed.data, storylines: storylines.data } : parsed.data, errors: [] };
 }
 
 export function previewSlpStoryPack(
@@ -437,6 +459,7 @@ export function previewSlpStoryPack(
   for (const [kind, list] of [
     ["situation", pack.situations],
     ["drama", pack.dramas],
+    ["storyline", pack.storylines ?? []],
   ] as const)
     for (const entry of list) {
       const status = slpDramaPreviewStatus(library, pack.id, kind, entry.id);
@@ -458,7 +481,7 @@ export function previewSlpStoryPack(
 }
 
 export type SlpStoryPackApplyChoice = {
-  kind: "arc" | "event" | "situation" | "drama";
+  kind: "arc" | "event" | "situation" | "drama" | "storyline";
   contentId: string;
   action: "copy" | "replace" | "skip";
   enabled?: boolean;
@@ -475,7 +498,13 @@ export function applySlpStoryPack(
   const events = [...current.events];
   for (const choice of choices) {
     // Drama entries go to their own library (`applySlpDramaEntries`), not the arc and event lists.
-    if (choice.action === "skip" || choice.kind === "situation" || choice.kind === "drama") continue;
+    if (
+      choice.action === "skip" ||
+      choice.kind === "situation" ||
+      choice.kind === "drama" ||
+      choice.kind === "storyline"
+    )
+      continue;
     const item = preview.entries.find((entry) => entry.kind === choice.kind && entry.contentId === choice.contentId);
     if (!item?.value) continue;
     const source = stripLocal(choice.value ?? item.value);

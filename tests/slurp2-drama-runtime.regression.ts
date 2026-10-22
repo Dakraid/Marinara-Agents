@@ -547,10 +547,23 @@ async function main() {
     cast: [{ key: "her" }],
     requires: { tags: ["partner"], lacks: ["pregnant"] },
     stages: [
-      { key: "wait", label: "Waiting", days: [1, 1], next: [{ to: "twins", when: { tag: "twins" } }, { to: "born" }] },
+      {
+        key: "wait",
+        label: "Waiting",
+        days: [1, 1],
+        condition: { tag: "expecting", line: "Expecting." },
+        next: [{ to: "twins", when: { tag: "twins" } }, { to: "born" }],
+      },
       { key: "twins", label: "Two of them", days: [1, 1], next: "born" },
     ],
-    endings: [{ key: "born", label: "Born", beat: { role: "her", channel: "comment", on: "her", lines: ["here!"] } }],
+    endings: [
+      {
+        key: "born",
+        label: "Born",
+        beat: { role: "her", channel: "comment", on: "her", lines: ["here!"] },
+        outcomes: [{ kind: "add-creator-fact", tag: "parent", label: "Parent" }],
+      },
+    ],
   });
   const lone = (storyTags: string[]) => world([creator("mia", [], { storyTags })]);
   const tick = (state: SlpDramaState, at: number, storyTags: string[]) =>
@@ -567,6 +580,28 @@ async function main() {
   assert.ok(
     born.jobs.some((job) => job.channel === "comment" && job.lines?.[0] === "here!"),
     "the ending's beat",
+  );
+
+  // Stage moves write story state for the lead: the condition on entering, then off on the ending.
+  const move = (state: SlpDramaState, at: number) =>
+    slpAdvanceDrama(state, { ...input(at, { situations: [], dramas: [] }), dramas: [family], world: lone(["partner"]) })
+      .story;
+  const entered = move(wanted, T0);
+  assert.equal(entered[0]?.creatorId, "mia");
+  assert.deepEqual(
+    entered.flatMap((effect) =>
+      effect.outcomes.map((outcome) => [outcome.kind, "tag" in outcome ? outcome.tag : null]),
+    ),
+    [["add-creator-fact", "expecting"]],
+  );
+  assert.deepEqual(
+    move(begun, T0 + 25 * HOUR).flatMap((effect) =>
+      effect.outcomes.map((outcome) => [outcome.kind, "tag" in outcome ? outcome.tag : null]),
+    ),
+    [
+      ["remove-creator-fact", "expecting"],
+      ["add-creator-fact", "parent"],
+    ],
   );
 
   console.log("slurp2 drama runtime regression passed");

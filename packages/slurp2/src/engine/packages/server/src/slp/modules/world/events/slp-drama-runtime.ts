@@ -31,6 +31,8 @@ import {
   type SlpStorylineOutcome,
 } from "../../../../../../shared/src/slp/slp-storyline.js";
 import { couplePairs, meets, slpDramaCast, stageRoles, tieOutcomes } from "./slp-drama-cast.js";
+import { slurpStageOutcomes } from "../../projects/slp-project-storyline.js";
+import type { SlpStoryOutcome } from "../../../../../../shared/src/slp/slp-story-engine.js";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -174,6 +176,9 @@ export function readSlpDramaState(raw: unknown): SlpDramaState {
   };
 }
 
+/** Story state for the lead: a stage's condition and outcomes, an ending's outcomes (Storylines). */
+export type SlpDramaStoryEffect = { creatorId: string; sourceId: string; outcomes: SlpStoryOutcome[] };
+
 export type SlpDramaTieEffect = { runId: string; outcome: SlpDramaOutcome; ids: [string, string] };
 
 export type SlpDramaInput = {
@@ -245,7 +250,7 @@ function job(
 export function slpAdvanceDrama(
   state: SlpDramaState,
   input: SlpDramaInput,
-): { state: SlpDramaState; ties: SlpDramaTieEffect[] } {
+): { state: SlpDramaState; ties: SlpDramaTieEffect[]; story: SlpDramaStoryEffect[] } {
   const now = input.at.getTime();
   const stamp = iso(now);
   const live = new Map(input.world.creators.map((creator) => [creator.id, creator]));
@@ -271,6 +276,22 @@ export function slpAdvanceDrama(
     return (edges.find((edge) => !edge.when || tags.has(edge.when.tag) === edge.when.set) ?? edges.at(-1)!).to;
   };
   const ties: SlpDramaTieEffect[] = [];
+  const story: SlpDramaStoryEffect[] = [];
+  /** The stage left, and the stage entered or the ending reached, write the lead's story state. */
+  const write = (
+    run: SlpDramaRun,
+    drama: SlpStoryline,
+    move: { leave?: string | null; enter?: string | null; ending?: string | null },
+  ) => {
+    const creatorId = run.cast[drama.cast[0]!.key];
+    const outcomes = slurpStageOutcomes(drama, {
+      leave: move.leave || null,
+      enter: move.enter ?? null,
+      ending: move.ending ?? null,
+    });
+    if (creatorId && outcomes.length)
+      story.push({ creatorId, sourceId: `${run.id}:${move.enter ?? move.ending ?? move.leave}`, outcomes });
+  };
   let jobs = [...state.jobs];
   const ended = { ...state.ended };
   const names = (cast: Readonly<Record<string, string>>) => ({
@@ -400,7 +421,10 @@ export function slpAdvanceDrama(
     const ending = drama.endings.find((entry) => entry.key === key);
     const index = drama.stages.findIndex((stage) => stage.key === key);
     if (ending) settle(run, ending.outcomes);
-    if (ending || index < 0 || depth > drama.stages.length) return end(run, "done", ending ?? drama.endings[0]);
+    if (ending || index < 0 || depth > drama.stages.length) {
+      write(run, drama, { leave: run.stage, ending: ending?.key });
+      return end(run, "done", ending ?? drama.endings[0]);
+    }
     const stage = drama.stages[index]!;
     const needed = stageRoles(stage, drama.cast);
     const playerKey = drama.cast.find((role) => role.player)?.key;
@@ -427,6 +451,7 @@ export function slpAdvanceDrama(
       key,
     );
     queue(stage.beats, entered, now + Math.max(days, 1) * DAY, key);
+    write(entered, drama, { leave: run.stage, enter: key });
     if (stage.choice) {
       const dueAt =
         stage.choice.asks === "role" ? now + ROLE_CHOICE_HOURS * HOUR : now + stage.choice.timeoutDays * DAY;
@@ -470,8 +495,11 @@ export function slpAdvanceDrama(
     const drama = dramas.get(run.dramaId);
     if (!drama) return end(run, "off", undefined);
     const lead = drama.cast[0]!.key;
-    if (run.cast[lead] && !live.has(run.cast[lead]!)) return end(run, "left", drama.endings[0]);
-    if (now - Date.parse(run.startedAt) >= drama.maxDays * DAY) return end(run, "time", drama.endings[0]);
+    const gone = run.cast[lead] && !live.has(run.cast[lead]!);
+    if (gone || now - Date.parse(run.startedAt) >= drama.maxDays * DAY) {
+      write(run, drama, { leave: run.stage });
+      return end(run, gone ? "left" : "time", drama.endings[0]);
+    }
     const index = drama.stages.findIndex((stage) => stage.key === run.stage);
     const stage = drama.stages[index];
     if (!stage) return end(run, "done", drama.endings[0]);
@@ -591,6 +619,7 @@ export function slpAdvanceDrama(
       requestedLead: null,
     },
     ties,
+    story,
   };
 }
 
