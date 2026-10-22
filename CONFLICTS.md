@@ -5,7 +5,7 @@ This file lists every intentional difference between the fork branch `customized
 Keep it current: a branch that adds or changes a fork deviation updates its entry in the same change.
 
 - Upstream remote: `upstream` = Pasta-Devs/Marinara-Agents; `origin` = Dakraid. The fork merges `upstream/staging`.
-- Last merged upstream commit at writing: `afb312606` (#1494, 2026-10-20). Seven unmerged upstream commits touch conversation-calls 1.1.6/1.1.7, long-term-memory 1.4.57, noodle 1.5.8, slurp2 0.3.52, `.github/workflows/{noodle-browser,pull-request-checks}.yml`, `package.json`, `tests/dedup-review-fixes.regression.mjs` and `tests/package-noodle-picker-scope.e2e.ts`. Expect conflicts there next.
+- Last merged upstream commit: `64bab6768` (#1581, 2026-10-22). That merge folded conversation-calls 1.1.7, long-term-memory 1.4.84, noodle 1.5.9 and slurp2 0.3.53 into fork `10.1.0`.
 
 To tell who owns a failing test: equal `git hash-object tests/<f>` and `git ls-tree upstream/staging -- tests/<f>` mean upstream owns it.
 
@@ -38,22 +38,22 @@ Marked _(inferred)_: read from code or history rather than stated in a commit or
 - **Version sources (must agree):** `packages/<id>/manifest.json` (agent-only packages, gacha-forge, relationship-tracker, modern-life-sim, ruleset-5e-2014); `version:` in `scripts/build-feature-packages.mjs` (noodle, slurp2, long-term-memory, memory-nag, card-editor, pokedex, hierarchical-maps, conversation-calls, the 6 turn games); `VERSION` in `scripts/build-{beholder,pixelforge,quartermaster}-package.mjs`; `SLURP2_VERSION` plus the top `SLURP2_RELEASES` entry in `packages/slurp2/.../onboarding/slp-release.ts`; the top `## <version>` of `packages/<id>/CHANGELOG.md` (builder-enforced, max 20 entries, 1,000 chars each).
 - **Keep on conflict:** always the 10.x value. Never take upstream `1.x`/`0.x` lines in manifests, builder maps, `VERSION`, `SLURP2_VERSION` or the CHANGELOG top.
 - **Fork-created CHANGELOGs** (add/add conflicts if upstream adds its own; union with the fork entry on top): background, card-evolution-auditor, chess, combat, continuity, cyoa, director, echo-chamber, eightball, expression, haptic, html, illustrator, knowledge-retrieval, knowledge-router, lorebook-keeper, persona-stats, poker, prose-guardian, quest, rock-paper-scissors, spotify, storyboard, tic-tac-toe, uno.
-- **Current versions:** card-editor `10.0.7`; modern-life-sim `10.0.3`; all 45 other packages `10.0.1`.
+- **Current versions:** card-editor `10.0.8`; modern-life-sim `10.0.3`; conversation-calls, long-term-memory, noodle and slurp2 `10.1.0`; all 41 other packages `10.0.1`.
 
 ### Packages with fork changes beyond the version
 
 | Package           | Fork version | Kind                                               |
 | ----------------- | ------------ | -------------------------------------------------- |
-| card-editor       | 10.0.7       | fork-only feature package                          |
+| card-editor       | 10.0.8       | fork-only feature package                          |
 | lorebook-editor   | 10.0.1       | fork-only agent-only package                       |
 | pokedex           | 10.0.1       | fork-only feature package                          |
 | modern-life-sim   | 10.0.3       | source recovered into `src/`; features 0.4.0–0.8.0 |
 | hierarchical-maps | 10.0.1       | Movement Assessment, ko locale, parallel artwork   |
 | character-tracker | 10.0.1       | prompt: scene scan                                 |
 | lorebook-keeper   | 10.0.1       | prompt: description backfill                       |
-| long-term-memory  | 10.0.1       | compact control sizing                             |
-| noodle            | 10.0.1       | connection sampling in image-prompt rewrite        |
-| slurp2            | 10.0.1       | connection sampling in image rewrite and schedules |
+| long-term-memory  | 10.1.0       | compact control sizing                             |
+| noodle            | 10.1.0       | connection sampling in image-prompt rewrite        |
+| slurp2            | 10.1.0       | connection sampling in image rewrite and schedules |
 | memory-nag        | 10.0.1       | comment only                                       |
 
 All other packages differ only by version, CHANGELOG and Dakraid links in builders.
@@ -152,25 +152,26 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 - **Pinned by:** `tests/lorebook-keeper-routing.regression.mjs`.
 - **Commit:** 45c276dba.
 
-## 8. long-term-memory (10.0.1)
+## 8. long-term-memory (10.1.0)
 
 - **What/why:** compact select uses fixed `h-9`; non-compact buttons get `minWidth: 2.75rem` (tap target).
 - **Files:** `.../features/long-term-memory/shared-controls.tsx`.
 - **Pinned by:** `tests/long-term-memory-lifecycle.regression.ts` (fork runner: browser and installation lanes in separate tsx processes; keep it).
 - **Commit:** b1773ef3e (also deleted `tests/noodler-content-formats.regression.ts`; keep it deleted unless upstream revives it with new expectations).
 
-## 9. noodle (10.0.1)
+## 9. noodle (10.1.0)
 
 - **What/why:** the image-prompt rewrite honors stored connection sampling (`noodleSamplingOptions(resolveStoredChatOptions(...))`, `resolveStoredMaxTokens(…, 2048)`) instead of temperature 0.3; Dakraid issue links in comments.
 - **Files:** `.../services/noodle/noodle-image-prompt-rewrite.ts`; comment-only: `noodle-image-prompt.ts`, `noodle-public-images.service.ts`, `prompt-overrides/registry/noodle.ts`.
 - **Pinned by:** `tests/noodle-image-prompt-instructions.regression.ts`, `tests/noodle-public-only.regression.ts`.
 - **Commits:** 7b167f6fa, c698ff2e2, efcd75ee7, 49da93f0c.
 
-## 10. slurp2 (10.0.1)
+## 10. slurp2 (10.1.0)
 
-- **What/why:** image-prompt rewrite and conversation-schedule generation honor stored connection sampling (`slpSamplingOptions(resolveStoredChatOptions(...))`); Dakraid bug-report URL; `SLURP2_VERSION` 10.0.1.
+- **What/why:** image-prompt rewrite and conversation-schedule generation honor stored connection sampling (`slpSamplingOptions(resolveStoredChatOptions(...))`); Dakraid bug-report URL; `SLURP2_VERSION` 10.1.0.
 - **Files:** `.../slp/base/media/slp-image-prompt-rewrite.ts`, `.../slp/features/messages/slp-conversation-schedule-generation.ts`, `.../slp/modules/chrome/SlpStateKit.tsx`, `.../onboarding/slp-release.ts`.
-- **Keep on conflict:** the sampling hunks; fold upstream release notes (pending 0.3.52) into a new fork top entry (`10.1.0`), never `0.3.x` at the top. The pending upstream commits touch `slp-conversation-schedule-generation.ts` and `slp-images-service.ts`.
+- **Keep on conflict:** the sampling hunks; fold upstream release notes into a new fork top entry (next: `10.2.0`), never `0.3.x` at the top. In `SLURP2_RELEASES` the fork entry replaces upstream's entries (at most 3 bullets).
+- **Known failure (pre-existing):** `slurp-phase1-durability`, `slurp2-reset-activity`, `slurp2-anchor-edits` and `slurp2-message-deep-details` copy Slurp source into the Engine fork, whose zod 4 does not apply nested `.default({})` values (`slp-tuning.ts` throws reading `curve`). They failed before the 2026-10-22 merge too.
 - **Pinned by:** `tests/noodler-disclosure-contract.regression.ts`, `tests/noodler-fictional-prices.regression.ts`, `tests/noodler-generation-guidance-default.regression.ts` (fork-adapted copies; re-check against upstream's).
 - **Commits:** 7b167f6fa, c698ff2e2, 7e59d1666, a3dc8fcdf.
 
@@ -178,9 +179,9 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 
 - Comment only in `.../services/memory-nag/scanner.ts`. Either side is fine. Commit 7b167f6fa.
 
-## 12. conversation-calls (10.0.1)
+## 12. conversation-calls (10.1.0)
 
-- No source delta. `tests/conversation-calls-summary.regression.mjs` pins `10.0.1` and raises `unzip` `maxBuffer` to 64 MiB. Pending upstream 1.1.6/1.1.7 means fork `10.1.0`; update the pin. Commit 339662d36.
+- No source delta. `tests/conversation-calls-summary.regression.mjs` pins `10.1.0` and raises `unzip` `maxBuffer` to 64 MiB. Commit 339662d36.
 
 ---
 
@@ -189,4 +190,4 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 - **New:** `card-editor-{bulk,dialog-ui,panel-ui,prompt-presets,routing,runner,transform}.regression.mjs`, `lorebook-editor-routing.regression.mjs`, `modern-life-sim-{adult,cast-reading,family-romance,jobs-money,repeat-social,sampling,sex,world-lore}.regression.mjs`.
 - **Changed (keep ours, union upstream additions):** `conversation-calls-summary`, `hierarchical-maps-lifecycle`, `inventory-tracker-contract`, `long-term-memory-lifecycle`, `lorebook-keeper-routing`, `map-canvas-geometry`, `map-location-limit`, `noodle-image-prompt-instructions`, `noodle-public-only`, `noodler-disclosure-contract`, `noodler-fictional-prices`, `noodler-generation-guidance-default`, `shared-world-refresh`, `world-maps-ui-contract`.
 - **Deleted:** `noodler-content-formats.regression.ts`.
-- **Version pins to bump with manifests:** `card-editor-routing` (10.0.4); `lorebook-editor-routing`, `lorebook-keeper-routing`, `conversation-calls-summary` (10.0.1).
+- **Version pins to bump with manifests:** `card-editor-routing`; `lorebook-editor-routing`, `lorebook-keeper-routing` (10.0.1); `conversation-calls-summary` (10.1.0).
