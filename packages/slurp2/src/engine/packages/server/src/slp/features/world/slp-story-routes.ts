@@ -228,7 +228,10 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
       )
         await noodle.setStoryOccurrenceStatus(occurrence.id, "cancelled");
     const settings = await noodle.getSettings();
-    const { [id]: _switch, ...contentPacks } = settings.contentPacks;
+    // The pack's switch and its topic switches (`<pack>:<topic>`) go with it.
+    const contentPacks = Object.fromEntries(
+      Object.entries(settings.contentPacks).filter(([key]) => key !== id && !key.startsWith(`${id}:`)),
+    );
     await noodle.updateSettings({
       arcLibrary: settings.arcLibrary.filter((entry) => entry.provenance?.packId !== id),
       platformEvents: settings.platformEvents.filter((entry) => entry.provenance?.packId !== id),

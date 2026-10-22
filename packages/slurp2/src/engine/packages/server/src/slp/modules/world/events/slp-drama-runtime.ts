@@ -16,6 +16,7 @@
  * - **Nothing piles up.** A job that could not go out in its stage expires and drops.
  */
 import { hash } from "../../projects/slp-project.js";
+import { slurpTasteWeight } from "../../creators/slp-spice.js";
 import { slpDramaPlayerWords, slpDramaRoleWords, slpDramaText } from "./slp-drama-words.js";
 import {
   type SlpDramaBeat,
@@ -33,6 +34,7 @@ import {
 import { couplePairs, meets, slpDramaCast, slpFitsCreator, stageRoles, tieOutcomes } from "./slp-drama-cast.js";
 import { slurpStageOutcomes } from "../../projects/slp-project-storyline.js";
 import type { SlpStoryOutcome } from "../../../../../../shared/src/slp/slp-story-engine.js";
+import type { SlpTaste } from "../../../../../../shared/src/slp/slp-spice.js";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -184,7 +186,7 @@ export function readSlpDramaState(raw: unknown): SlpDramaState {
 }
 
 /** Story state for the lead: a stage's condition and outcomes, an ending's outcomes (Storylines). */
-export type SlpDramaStoryEffect = { creatorId: string; sourceId: string; outcomes: SlpStoryOutcome[] };
+export type SlpDramaStoryEffect = { creatorId: string; sourceId: string; outcomes: SlpStoryOutcome[]; label?: string };
 
 export type SlpDramaTieEffect = { runId: string; outcome: SlpDramaOutcome; ids: [string, string] };
 
@@ -200,6 +202,8 @@ export type SlpDramaInput = {
   world: SlpDramaWorld;
   /** World activity; 0 starts nothing new (running dramas still move and end). */
   activity: number;
+  /** The player's tastes: a drama whose fit shares their words starts more often. */
+  tastes?: readonly SlpTaste[];
   newId: () => string;
 };
 
@@ -306,7 +310,12 @@ export function slpAdvanceDrama(
       ending: move.ending ?? null,
     });
     if (creatorId && outcomes.length)
-      story.push({ creatorId, sourceId: `${run.id}:${move.enter ?? move.ending ?? `${move.leave}:leave`}`, outcomes });
+      story.push({
+        creatorId,
+        sourceId: `${run.id}:${move.enter ?? move.ending ?? `${move.leave}:leave`}`,
+        outcomes,
+        label: drama.name,
+      });
   };
   let jobs = [...state.jobs];
   const ended = { ...state.ended };
@@ -631,9 +640,10 @@ export function slpAdvanceDrama(
           (!within || standing.has(within))
         );
       });
-      const total = options.reduce((sum, drama) => sum + drama.start.weight, 0);
+      const weight = (drama: SlpStoryline) => drama.start.weight * slurpTasteWeight(drama.fit, input.tastes);
+      const total = options.reduce((sum, drama) => sum + weight(drama), 0);
       let point = ((hash(`${window}:drama-pick`) % 10_000) / 10_000) * total;
-      const pick = options.find((drama) => (point -= drama.start.weight) < 0) ?? options.at(-1);
+      const pick = options.find((drama) => (point -= weight(drama)) < 0) ?? options.at(-1);
       if (pick) start(pick);
     }
   }

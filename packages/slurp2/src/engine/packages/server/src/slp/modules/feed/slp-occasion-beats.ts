@@ -19,7 +19,11 @@
  *   usual tease → drop; the rest go on ordinary slots. No extra AI call: the post call writes it.
  */
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
-import { SLP_EXPLICIT_LEVELS, type SlpExplicitLevelName } from "../../../../../shared/src/slp/slp-spice.js";
+import {
+  SLP_EXPLICIT_LEVELS,
+  type SlpExplicitLevelName,
+  type SlpTaste,
+} from "../../../../../shared/src/slp/slp-spice.js";
 import {
   SLURP_BIRTHDAY_BEATS,
   SLURP_FIRST_THOUSAND_SUBS_BEAT,
@@ -37,6 +41,7 @@ import { SLURP_BEAT_TYPES, slurpBeatIntents, type SlurpBeat, type SlurpBeatHisto
 import { slurpLifeFits, slurpNeverSentences } from "./slp-life-moments.js";
 import { SLURP_SHARED_IDEA_DAILY_CAP } from "./slp-shared-preseed.js";
 import { slurpWeightedPick } from "./slp-weighted.js";
+import { slurpTasteWeight } from "../creators/slp-spice.js";
 
 /** An imported occasion's beats and fit, by its content id; a beat type the planner does not know is dropped. */
 function slurpImportedMoments(contentId: string, imported: readonly SlpOccasion[]) {
@@ -114,6 +119,25 @@ export function slurpPackFits(
 }
 
 /**
+ * Whether a pack topic the player switched off (`contentPacks["<pack>:<topic>"] === false`) rules out
+ * this entry of that pack: the same as the topic on the "never" list, but for this pack only.
+ * ponytail: checks the entry's own fit (an occasion, a storyline); stage and beat fits inside a pack
+ * storyline still run, add the topic to `creator.avoid` per pack in the drama runtime if that matters.
+ */
+export function slurpPackTopicOff(
+  packId: string,
+  fit: Pick<SlurpPackFit, "topic" | "needs"> | undefined,
+  toggles: Readonly<Record<string, boolean>>,
+): boolean {
+  const pattern = slurpFitPattern([...(fit?.topic ?? []), ...(fit?.needs ?? [])]);
+  if (!pattern) return false;
+  const prefix = `${packId}:`;
+  return Object.entries(toggles).some(
+    ([key, on]) => on === false && key.startsWith(prefix) && pattern.test(key.slice(prefix.length)),
+  );
+}
+
+/**
  * The moment's words for this Creator: the couple or collab line when they have that person. The
  * moment is always their own post (U: a collab is announced work with a tag and a split, a couple is
  * life), so a named person is in it without a collab tag.
@@ -161,6 +185,8 @@ export function slurpOccasionBeat(input: {
   used: readonly string[];
   history: Pick<SlurpBeatHistory, "sharedToday">;
   intents: readonly SlurpContentIntent[];
+  /** The player's tastes: a moment whose fit shares their words comes up more often. */
+  tastes?: readonly SlpTaste[];
 }): SlurpBeat | null {
   const used = new Set(input.used);
   const now = input.at.getTime();
@@ -185,7 +211,7 @@ export function slurpOccasionBeat(input: {
     "occasionPick",
     input.creatorAccountId,
     input.sequence,
-    candidates.map((entry) => ({ value: entry, weight: 1 })),
+    candidates.map((entry) => ({ value: entry, weight: slurpTasteWeight(entry.occasion.fit, input.tastes) })),
   );
   const { line, cast } = lineFor(picked.beat, input.creator);
   return {

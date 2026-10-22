@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 
 import type { SlurpStorageContext } from "../host/slp-storage-context.js";
+import { createWardrobeStorage } from "../creators/slp-wardrobe-storage.js";
+import { slurpStoryLookChange } from "../../modules/storylines/slp-story-state.js";
 import type {
   SlpEventOccurrence,
   SlpInfluenceTarget,
@@ -28,7 +30,9 @@ import { slurpSupportDeskKey } from "../creators/slp-support-desk-storage.js";
 import { slpExtensionOn, slpLiveEvents } from "../../../../../shared/src/slp/slp-extensions.js";
 import { slurpPackGate } from "../../modules/world/events/slp-content-packs.js";
 
-export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext) {
+export function createStoryEngineStorage(context: SlurpStorageContext) {
+  const { settingsStore } = context;
+  const wardrobe = createWardrobeStorage(context);
   const write = async (key: string, value: unknown) => settingsStore.set(key, JSON.stringify(value));
   const readDesk = async (creatorAccountId: string) => {
     try {
@@ -86,7 +90,12 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
       return readSlpArcOpportunities(await settingsStore.get(SLP_STORY_OPPORTUNITIES_KEY));
     },
     /** Apply outcomes outside an event: an arc chapter that just started (docs/STORYLINES.md, PR 1). */
-    async applyStoryOutcomes(input: Omit<Parameters<typeof applySlpStoryOutcomes>[0], "facts" | "opportunities">) {
+    async applyStoryOutcomes(
+      input: Omit<Parameters<typeof applySlpStoryOutcomes>[0], "facts" | "opportunities"> & {
+        /** The storyline's name, shown as the source of a look it gives. */
+        label?: string;
+      },
+    ) {
       const result = applySlpStoryOutcomes({
         ...input,
         facts: await this.listStoryFacts(),
@@ -96,6 +105,17 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
         write(SLP_STORY_FACTS_KEY, result.facts),
         write(SLP_STORY_OPPORTUNITIES_KEY, result.opportunities),
       ]);
+      for (const outcome of input.outcomes) {
+        for (const creatorId of input.participants) {
+          const change = slurpStoryLookChange(outcome, await wardrobe.listWardrobeLooks(creatorId));
+          if (change && "remove" in change) await wardrobe.deleteWardrobeLook(creatorId, change.remove);
+          // A full closet keeps what it has: the storyline goes on without the look.
+          else if (change)
+            await wardrobe
+              .createWardrobeLooks(creatorId, [change.add], { kind: "storyline", label: input.label })
+              .catch(() => undefined);
+        }
+      }
     },
     async reconcileStoryEvents(at = new Date()) {
       const [settings, accounts, existing] = await Promise.all([

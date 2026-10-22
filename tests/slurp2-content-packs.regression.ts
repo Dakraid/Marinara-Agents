@@ -13,6 +13,8 @@ import {
   slurpPackGate,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-content-packs.ts";
 import { parseSlpStoryPack } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-story-packs.ts";
+import { slurpStoryLookChange } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/storylines/slp-story-state.ts";
+import { slurpTasteWeight } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-spice.ts";
 import {
   readSlpDramaLibrary,
   slpDramaEnabledIds,
@@ -31,6 +33,7 @@ import {
   slurpOccasionBeat,
   slurpFitPattern,
   slurpPackFits,
+  slurpPackTopicOff,
   slurpPackOccasions,
   type SlurpOccasion,
   type SlurpOccasionCreator,
@@ -734,5 +737,64 @@ assert.deepEqual(
   ["x"],
   "a drama of a pack switched off does not run; its own switch stays",
 );
+
+// PR 5c: a pack topic switched off is a "never" for that pack only; tastes weigh picks; storylines give looks.
+assert.equal(slurpPackTopicOff("bakery-pack", { topic: ["food"] }, { "bakery-pack:food": false }), true);
+assert.equal(
+  slurpPackTopicOff("bakery-pack", { needs: ["bak*"] }, { "bakery-pack:baking": false }),
+  true,
+  "needs count too",
+);
+assert.equal(
+  slurpPackTopicOff("other-pack", { topic: ["food"] }, { "bakery-pack:food": false }),
+  false,
+  "only that pack",
+);
+assert.equal(slurpPackTopicOff("bakery-pack", { topic: ["food"] }, { "bakery-pack:food": true }), false);
+assert.equal(slurpPackTopicOff("bakery-pack", undefined, { "bakery-pack:food": false }), false, "no fit, no topic");
+assert.deepEqual(
+  slpDramaEnabledIds(
+    { ...imported, storylines: [{ id: "s1", packId: "bakery-pack", fit: { topic: ["food"] } } as never] },
+    ["s1", "x"],
+    { "bakery-pack:food": false },
+  ),
+  ["x"],
+  "a pack storyline on a switched-off topic does not run",
+);
+assert.equal(slurpTasteWeight({ topic: ["baking"] }, []), 1);
+assert.equal(slurpTasteWeight(undefined, [{ text: "baking", strength: "often" }]), 1);
+assert.equal(slurpTasteWeight({ topic: ["baking"] }, [{ text: "baking bread", strength: "often" }]), 3);
+assert.equal(
+  slurpTasteWeight({ needs: ["bread*"], topic: ["food"] }, [
+    { text: "bread", strength: "hint" },
+    { text: "food", strength: "obsessed" },
+  ]),
+  5,
+);
+{
+  const look = {
+    name: "Apron",
+    summary: "Flour-dusted apron",
+    description: "A bakery apron, flour on the pocket.",
+    tags: ["work"],
+    suitability: "both" as const,
+    enabled: true,
+  };
+  const own = { id: "l1", name: "Apron", source: { kind: "manual" as const } };
+  const given = { id: "l2", name: "apron", source: { kind: "storyline" as const, label: "Bread day" } };
+  assert.deepEqual(
+    slurpStoryLookChange({ kind: "add-look", look }, [own]),
+    { add: look },
+    "the player's look is not the storyline's",
+  );
+  assert.equal(slurpStoryLookChange({ kind: "add-look", look }, [own, given]), null, "a look is given once");
+  assert.deepEqual(slurpStoryLookChange({ kind: "remove-look", name: "APRON" }, [own, given]), { remove: "l2" });
+  assert.equal(
+    slurpStoryLookChange({ kind: "remove-look", name: "Apron" }, [own]),
+    null,
+    "the player's own look stays",
+  );
+  assert.equal(slurpStoryLookChange({ kind: "remove-creator-fact", tag: "x" }, [given]), null);
+}
 
 console.log("slurp2 content packs: ok");

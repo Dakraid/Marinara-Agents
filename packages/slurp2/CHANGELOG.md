@@ -1,5 +1,13 @@
 # Slurp release notes
 
+## 0.3.59 — 2026-10-22
+
+- Pack topics switch: a topic chip off on an imported pack is a "never" for that pack's occasions and
+  storylines (`contentPacks["<pack>:<topic>"]`).
+- The player's tastes weigh the drama start pick and the occasion moment pick (`slurpTasteWeight`).
+- Story outcomes `add-look` and `remove-look`: a storyline gives a Creator a look (source `storyline`) or takes
+  back the one it gave.
+
 ## 0.3.58 — 2026-10-22
 
 - One Packs list: imported packs get a record (name, version, topics, occasions) and a card next to the built-in
