@@ -1,5 +1,16 @@
 # Gacha Forge
 
+## In-app fullscreen and fluid screens (1.9.0)
+
+The fullscreen button beside Settings expands Gacha Forge inside the Engine. Outward arrows enter;
+inward arrows return to the Home browser. Home's tabs, address bar and bookmarks hide while the Engine
+topbar stays available. Screens without the shared Settings bar keep a floating toggle. This also works
+on mobile browsers without native element fullscreen. The game stage fills the available width and
+height in both modes rather than fitting a fixed 16:9 frame. The existing portrait rotation prompt
+remains; landscape phones gain the width previously left in the gutters.
+
+Requires Engine capability API 1.376. Earlier releases described below retain their historical behavior.
+
 Gacha Forge is a standalone gacha game mode: describe a world and it builds the rest — banners to pull on, a cast the model writes and paints for you, and the story, battles and events that grow around them. Lorebooks feed the forge when you have them; a hand-written scenario is enough.
 
 Find the package in **Agents → Download Agents**. Installation requires a restart: once installed and Marinara Engine restarts, **Gacha Forge** appears as a second tab in Home's browser shell. Uninstalling the package removes that tab and stops its routes after restart.
