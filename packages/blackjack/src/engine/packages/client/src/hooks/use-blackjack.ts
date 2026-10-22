@@ -129,6 +129,14 @@ export function useResignBlackjack(chatId: string) {
       useBlackjackGameStore.getState().clearBlackjack(chatId);
       qc.invalidateQueries({ queryKey: turnGameKeys.state(chatId) });
     },
-    onError: (err: unknown) => toast.error(err instanceof Error ? err.message : "Failed to end the game"),
+    onError: (err: unknown) => {
+      // 404 = no game left to end (as in useBlackjackState): drop the stale table instead of reporting a failure.
+      if (err instanceof ApiError && err.status === 404) {
+        useBlackjackGameStore.getState().clearBlackjack(chatId);
+        qc.invalidateQueries({ queryKey: turnGameKeys.state(chatId) });
+        return;
+      }
+      toast.error(err instanceof Error ? err.message : "Failed to end the game");
+    },
   });
 }

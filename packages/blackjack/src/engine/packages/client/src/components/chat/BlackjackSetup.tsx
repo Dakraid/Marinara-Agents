@@ -188,7 +188,11 @@ export function BlackjackSetup({ chatId, open, onClose }: Props) {
                 max={1_000_000}
                 value={bankrollInput}
                 onChange={(e) => setBankrollInput(e.target.value)}
-                onBlur={() => setBankrollInput(String(startingBankroll))}
+                onBlur={() => {
+                  // The bet cap follows the chips, so settle the bet against the new cap too.
+                  setBankrollInput(String(startingBankroll));
+                  setMinBetInput(String(minBet));
+                }}
                 className={inputClass}
               />
             </label>

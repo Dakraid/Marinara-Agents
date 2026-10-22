@@ -124,8 +124,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "f8361662e10754b9ec6ccc1e8903084490430eada051fadbbf7d56e43271a70c",
-            "bytes": 162242
+            "sha256": "86f49d7296e634c7cb9954fe59b1bf262c29ead4da948620ecb109b982ee12b5",
+            "bytes": 162378
           }
         ],
         "permissions": [
@@ -141,8 +141,8 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/blackjack.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/blackjack-1.0.0.zip",
-        "sha256": "49870479aebafc786b1c8a277a491a605995003189593de23e264f2fef6b9850",
-        "bytes": 182371
+        "sha256": "43f9607bf5327ccf3444d058a837229b5dcdaf1dc4d51c0ac15d6ab8a4b94dda",
+        "bytes": 182507
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#blackjack"
     },
