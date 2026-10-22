@@ -1,5 +1,12 @@
 # Slurp release notes
 
+## 0.3.60 — 2026-10-22
+
+- Family pack (`slurp-pack-family`, off by default): four pregnancy storylines (couple partner, collab partner, the player, a father she won't name), listed in Drama and switched by the pack.
+- New tie kind `collab` (from `creatorCollabs`), stage influences on the lead (`slpDramaStageMultiplier`), turn-ons lean the lead pick, choice options with `when` dials, and the `brand-offer` outcome.
+- The child never appears in a picture or a spicy post; the loss ending sits behind the `hard` dial.
+- The Basic setup demo post's teaser pictures (locked/unlocked) ship as package assets; the Engine never had them. Its Mari avatar is the Professor Mari the player picked in the Engine (appearance packs).
+
 ## 0.3.59 — 2026-10-22
 
 - Pack topics switch: a topic chip off on an imported pack is a "never" for that pack's occasions and

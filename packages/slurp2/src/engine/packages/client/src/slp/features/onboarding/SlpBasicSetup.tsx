@@ -14,7 +14,7 @@ import { LockedSlurpPostCard } from "../../modules/post/SlpLockedPostCard";
 import type { SlpChoice, SlpChoiceLayout } from "../../modules/stage/SlpChoiceCards";
 import { SlpStage, type SlpStageLine } from "../../modules/stage/SlpStage";
 import { SlurpConfetti } from "./SlpAgeGate";
-import { DEMO_PROFILE } from "./SlpOnboardingPanel";
+import { DEMO_PROFILE, useSlpMariPortrait } from "./SlpOnboardingPanel";
 import { markSlpSwitchedOnNoteSeen } from "../../base/state/slp-switched-on-note";
 import { useSlpBasicContext, useSlpBasicWrite } from "./slp-basic-setup-hooks";
 import {
@@ -417,6 +417,7 @@ function BasicPreview({
   onReveal: () => void;
 }) {
   const { t } = useUiTranslation();
+  const mari = useSlpMariPortrait();
   const stage = answers.names === "hinted";
   const noText = context.textConnections.length === 0 || answers.connection === SLP_BASIC_LATER;
   const pictures = answers.pictures === "yes" && context.imageConnections.length > 0;
@@ -460,12 +461,13 @@ function BasicPreview({
             access: "locked",
             createdAt: new Date().toISOString(),
             title: caption,
-            imageUrl: "/sprites/mari/Mari_noodler_teaser_locked.webp",
+            imageUrl: "/api/capability-packages/slurp2/assets/assets/mari/Mari_noodler_teaser_locked.webp",
             likeCount: Math.round(FANS[answers.crowd] / 9),
             replyCount: Math.round(FANS[answers.crowd] / 40),
           }}
           profile={{
             ...DEMO_PROFILE,
+            avatarUrl: mari,
             displayName: t(`${O}preview.creator.mari.${stage ? "stage" : "own"}`),
             handle: stage ? "prof_m" : "professor_mari",
             disclosureMode: answers.names,
@@ -479,7 +481,7 @@ function BasicPreview({
             body: t("ui.noodle.noodlerwizard.demoPost.walkthrough.body"),
             lockedTitle: caption,
             unlockedLabel: t("ui.noodle.postaccess.unlocked"),
-            unlockedImageUrl: "/sprites/mari/Mari_noodler_teaser_unlocked.webp",
+            unlockedImageUrl: "/api/capability-packages/slurp2/assets/assets/mari/Mari_noodler_teaser_unlocked.webp",
             onReveal,
           }}
         />

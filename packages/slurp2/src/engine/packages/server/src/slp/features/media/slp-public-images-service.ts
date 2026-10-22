@@ -86,6 +86,8 @@ const CLIENT_PUBLIC_DIR = resolve(SLP_SERVICE_DIR, "../../../../client/public");
 const PROFESSOR_MARI_REFERENCE_ASSETS = [
   "sprites/mari/Mari_profile.png",
   "sprites/mari/chibi-professor-mari.png",
+  // Newer Engines ship the chibi as WebP only.
+  "sprites/mari/chibi-professor-mari.webp",
 ] as const;
 const REVIEWED_IMAGE_CLAIM_LEASE_MS = 2 * 60 * 1000;
 const REVIEWED_IMAGE_CLAIM_RENEW_MS = 30 * 1000;

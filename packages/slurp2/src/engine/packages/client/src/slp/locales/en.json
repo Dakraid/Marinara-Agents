@@ -6130,6 +6130,7 @@
   "ui.slurp.drama.settings.situationDetail": "A standing situation: small moments now and then, no end.",
   "ui.slurp.drama.settings.dramas": "Dramas",
   "ui.slurp.drama.settings.needs": "Needs the situation “{{name}}” on.",
+  "ui.slurp.drama.settings.fromPack": "On while the {{name}} pack is on. Switch it in Packs.",
   "ui.slurp.drama.title": "Drama",
   "ui.slurp.drama.detail": "Situations and dramas running now",
   "ui.slurp.drama.intro": "Dramas run on their own once they are on (Settings › Stir › Drama). Here you see who is in them and where they are, and you can start or end one.",

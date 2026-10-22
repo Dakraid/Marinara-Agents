@@ -133,6 +133,10 @@ export const slpStoryOutcomeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("add-look"), look: slpWardrobeLookInputSchema }).strict(),
   /** Takes away a look a storyline gave, by name; the player's own looks stay. */
   z.object({ kind: z.literal("remove-look"), name: z.string().trim().min(1).max(80) }).strict(),
+  /** A brand whose name, category or product shares these words offers the Creator a deal (PR 6). */
+  z
+    .object({ kind: z.literal("brand-offer"), words: z.array(z.string().trim().min(1).max(40)).min(1).max(12) })
+    .strict(),
 ]);
 export type SlpStoryOutcome = z.infer<typeof slpStoryOutcomeSchema>;
 

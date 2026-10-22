@@ -7,6 +7,7 @@ import { hash } from "../../projects/slp-project.js";
 import type { SlpDramaOutcome, SlpDramaRole, SlpFit } from "../../../../../../shared/src/slp/slp-drama.js";
 import { SLP_EXPLICIT_LEVELS } from "../../../../../../shared/src/slp/slp-spice.js";
 import { slurpPackFits } from "../../feed/slp-occasion-beats.js";
+import { slurpTasteWeight } from "../../creators/slp-spice.js";
 import type {
   SlpStoryRequires,
   SlpStoryline,
@@ -150,6 +151,19 @@ export function slpDramaCast(
           return newcomer(right.creator) - newcomer(left.creator);
         if (role.prefer === "popular" && left.creator.followers !== right.creator.followers)
           return right.creator.followers - left.creator.followers;
+        // A lead whose turn-ons match the storyline's fit words is likelier, not certain, to take it.
+        const lean = (creator: SlpDramaCreator) =>
+          key === roles[0]?.key
+            ? slurpTasteWeight(
+                input.leadFit,
+                (creator.turnOns ?? []).map((text) => ({ text, strength: "often" as const })),
+              )
+            : 1;
+        if (lean(left.creator) !== 1 || lean(right.creator) !== 1) {
+          const rank = (creator: SlpDramaCreator) =>
+            (((hash(`${input.seed}:${key}:${creator.id}`) % 10_000) + 1) / 10_001) ** (1 / lean(creator));
+          return rank(right.creator) - rank(left.creator);
+        }
         return hash(`${input.seed}:${key}:${left.creator.id}`) - hash(`${input.seed}:${key}:${right.creator.id}`);
       });
     for (const pick of options) {

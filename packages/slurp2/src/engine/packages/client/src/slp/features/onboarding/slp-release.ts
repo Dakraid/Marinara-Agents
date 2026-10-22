@@ -1,7 +1,7 @@
 import { SLURP2_LEGACY_RELEASES } from "./slp-release-archive";
 
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.59";
+export const SLURP2_VERSION = "0.3.60";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -14,6 +14,15 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.60",
+    date: "2026-10-22",
+    notes: [
+      "New Family pack (off until you switch it on): a Creator can get pregnant by her partner, after a collab, by you, or by a father she won't name.",
+      "Announcing it brings new subscribers, better earnings and baby brand deals; keeping it secret costs a few fans for a while.",
+      "The baby stays off camera: never in a picture, never in a spicy post.",
+    ],
+  },
   {
     version: "0.3.59",
     date: "2026-10-22",

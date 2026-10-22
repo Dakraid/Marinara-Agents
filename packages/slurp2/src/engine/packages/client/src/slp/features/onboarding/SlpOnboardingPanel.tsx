@@ -5,6 +5,7 @@ import type { SlpCreatorOnboardingCompletion } from "../../../../../shared/src/s
 import type { SlpCreatorStageProfile, SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
+import { useUIStore } from "../../../stores/ui.store";
 import { Modal } from "../../../components/ui/Modal";
 import { getSlpAccentStyle, SLP_PINK, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { SLURP_DEFAULT_ACTIVITY_PRESET, slurpActivityPresetPatch } from "../../modules/creator/slp-activity-presets";
@@ -28,6 +29,21 @@ export const DISCLOSURES: SlpIdentityDisclosure[] = ["open", "hinted"];
 export const DEFAULT_ACTIVITY_PATCH = slurpActivityPresetPatch(SLURP_DEFAULT_ACTIVITY_PRESET);
 export const DEFAULT_POSTS_PER_DAY = DEFAULT_ACTIVITY_PATCH.postsPerDay!;
 
+type SlpMariPicks = { mariAppearancePackId?: unknown; mariUnlockedPackIds?: readonly string[] };
+// ponytail: copies the Engine's pick rule (lib/mari-work-animations, resolveMariAppearancePack) because the
+// vendored Engine snapshot predates it; import it from the Engine once sources/engine is refreshed.
+const SLP_MARI_LOCKED_PACKS = new Set(["golden"]);
+/** The Professor Mari the player picked in the Engine (home screen, omnibar): her idle portrait. */
+export function useSlpMariPortrait(): string {
+  const id = useUIStore((state) => (state as SlpMariPicks).mariAppearancePackId);
+  const unlocked = useUIStore((state) => (state as SlpMariPicks).mariUnlockedPackIds);
+  const usable =
+    typeof id === "string" &&
+    /^[a-z0-9-]+$/u.test(id) &&
+    (!SLP_MARI_LOCKED_PACKS.has(id) || (unlocked ?? []).includes(id));
+  return `/sprites/mari/${usable ? id : "basic"}/portrait-idle.webp`;
+}
+
 // Mari as the sample Creator of the Basic screen's real locked post card.
 export const DEMO_PROFILE: SlpCreatorStageProfile = {
   id: "onboarding-demo",
@@ -35,7 +51,7 @@ export const DEMO_PROFILE: SlpCreatorStageProfile = {
   handle: "professor_mari",
   displayName: "Professor Mari",
   bio: "",
-  avatarUrl: "/sprites/mari/chibi-professor-mari.png",
+  avatarUrl: null,
   avatarCrop: null,
   disclosureMode: "open",
   stagePersonality: "",

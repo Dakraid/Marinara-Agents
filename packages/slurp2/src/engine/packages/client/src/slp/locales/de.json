@@ -2704,6 +2704,7 @@
   "ui.slurp.drama.settings.situationDetail": "Eine dauerhafte Situation: ab und zu kleine Momente, ohne Ende.",
   "ui.slurp.drama.settings.dramas": "Dramen",
   "ui.slurp.drama.settings.needs": "Braucht die Situation „{{name}}“.",
+  "ui.slurp.drama.settings.fromPack": "An, solange das Pack „{{name}}“ an ist. Schalte es unter Packs.",
   "ui.slurp.drama.title": "Drama",
   "ui.slurp.drama.detail": "Situationen und Dramen, die gerade laufen",
   "ui.slurp.drama.intro": "Dramen laufen von selbst, sobald sie an sind (Einstellungen › Stir › Drama). Hier siehst du, wer mitspielt und wo sie stehen, und du kannst eins starten oder beenden.",

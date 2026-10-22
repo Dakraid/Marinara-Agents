@@ -45,7 +45,7 @@ export const SLP_DRAMA_CHANNELS = ["post", "dm", "comment", "notification", "mon
 export type SlpDramaChannel = (typeof SLP_DRAMA_CHANNELS)[number];
 export const SLP_RELATIONS_TO_PLAYER = ["partner", "ex", "roommate", "friend", "crush"] as const;
 export type SlpRelationToPlayer = (typeof SLP_RELATIONS_TO_PLAYER)[number];
-export const SLP_DRAMA_TIE_KINDS = ["friend", "roommate", "coworker", "ex", "rival", "couple"] as const;
+export const SLP_DRAMA_TIE_KINDS = ["friend", "roommate", "coworker", "ex", "rival", "couple", "collab"] as const;
 
 /** Who may fill a role. The player role is the player's own persona page, never cast by the world. */
 export const slpDramaRoleSchema = z

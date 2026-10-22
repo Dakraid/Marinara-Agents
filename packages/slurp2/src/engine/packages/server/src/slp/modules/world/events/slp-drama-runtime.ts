@@ -33,7 +33,7 @@ import {
 } from "../../../../../../shared/src/slp/slp-storyline.js";
 import { couplePairs, meets, slpDramaCast, slpFitsCreator, stageRoles, tieOutcomes } from "./slp-drama-cast.js";
 import { slurpStageOutcomes } from "../../projects/slp-project-storyline.js";
-import type { SlpStoryOutcome } from "../../../../../../shared/src/slp/slp-story-engine.js";
+import type { SlpInfluenceTarget, SlpStoryOutcome } from "../../../../../../shared/src/slp/slp-story-engine.js";
 import type { SlpTaste } from "../../../../../../shared/src/slp/slp-spice.js";
 
 const HOUR = 3_600_000;
@@ -69,6 +69,8 @@ export type SlpDramaCreator = {
   hardNoes?: readonly string[];
   /** Topics the player asked this Creator to leave out (Steering). */
   avoid?: readonly string[];
+  /** The Creator's turn-ons: a lead whose turn-ons match a storyline's fit is likelier to take it. */
+  turnOns?: readonly string[];
 };
 
 /** What the ties say, as the runtime needs it. */
@@ -213,6 +215,27 @@ const iso = (ms: number) => new Date(ms).toISOString();
 /** The id runs, cooldowns and settings use: a converted v1 entry keeps its own id. */
 export const slpDramaId = (storyline: Pick<SlpStoryline, "id" | "source">): string =>
   storyline.source?.id ?? storyline.id;
+
+/**
+ * The running storylines' stage influences on one target for their lead: the product of the "multiply"
+ * ones (docs/STORYLINES.md, PR 6) — a pregnancy announced brings subscribers, a secret one costs some.
+ */
+export function slpDramaStageMultiplier(
+  state: Pick<SlpDramaState, "runs">,
+  storylines: readonly SlpStoryline[],
+  creatorId: string,
+  target: SlpInfluenceTarget,
+): number {
+  const byId = new Map(storylines.map((storyline) => [slpDramaId(storyline), storyline]));
+  return state.runs.filter(active).reduce((product, run) => {
+    const storyline = byId.get(run.dramaId);
+    if (!storyline || run.cast[storyline.cast[0]!.key] !== creatorId) return product;
+    const stage = storyline.stages.find((entry) => entry.key === run.stage);
+    return (stage?.influences ?? [])
+      .filter((effect) => effect.target === target && effect.operation === "multiply")
+      .reduce((value, effect) => value * effect.value, product);
+  }, 1);
+}
 
 /** A run stopped from outside (switched off, Stir) only takes its stage's condition away; the stage's own outcomes never ran. */
 export const slpDramaStopOutcomes = (storyline: SlpStoryline, stage: string): SlpStoryOutcome[] => {
@@ -469,8 +492,15 @@ export function slpAdvanceDrama(
     const tooHot =
       stage.minSpice !== undefined && actors.some((creator) => creator.automatic && creator.spice < stage.minSpice!);
     const lead = cast ? live.get(cast[drama.cast[0]!.key]!) : undefined;
+    const dials = {
+      ...Object.fromEntries(drama.dials.map((dial) => [dial.key, dial.default])),
+      ...input.dials[slpDramaId(drama)],
+    };
     const offered = (stage.choice?.options ?? []).flatMap((option, at) =>
-      slpFitsCreator(option.fit, lead) ? [at] : [],
+      slpFitsCreator(option.fit, lead) &&
+      Object.entries(option.when ?? {}).every(([key, value]) => dials[key] === value)
+        ? [at]
+        : [],
     );
     // A choice with no option that fits the lead is skipped like a stage that does not fit.
     const offFit = !slpFitsCreator(stage.fit, lead) || Boolean(stage.choice && !offered.length);

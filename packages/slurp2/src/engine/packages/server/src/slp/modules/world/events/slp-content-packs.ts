@@ -170,7 +170,7 @@ export function slurpContentPackSummaries() {
       ...pack.events.map((event) => ({ name: event.name, month: event.month, day: event.day })),
       ...Object.values(pack.dateBeats ?? {}).map((entry) => ({ name: entry.name, month: null, day: null })),
     ],
-    arcs: pack.arcs.map((arc) => arc.name),
+    arcs: [...pack.arcs.map((arc) => arc.name), ...(pack.storylines ?? []).map((storyline) => storyline.name)],
     extras: [...(pack.birthday ? ["birthday"] : []), ...(pack.firstThousandSubs ? ["first-1k-subs"] : [])],
   }));
 }

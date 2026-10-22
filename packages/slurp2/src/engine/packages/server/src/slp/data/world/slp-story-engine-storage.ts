@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { SlurpStorageContext } from "../host/slp-storage-context.js";
 import { createWardrobeStorage } from "../creators/slp-wardrobe-storage.js";
+import { slurpDramaStageFactor } from "./slp-drama-storage.js";
 import { slurpStoryLookChange } from "../../modules/storylines/slp-story-state.js";
 import type {
   SlpEventOccurrence,
@@ -61,6 +62,11 @@ export function createStoryEngineStorage(context: SlurpStorageContext) {
     /** The running events' multiplier on one target, for one Creator or (no id) for everybody. */
     async platformInfluenceMultiplier(target: SlpInfluenceTarget, creatorAccountId?: string, at = new Date()) {
       const settings = await this.getSettings();
+      // A running storyline's stage influences on its lead count with the events (PR 6).
+      const stages =
+        creatorAccountId && slpExtensionOn(settings, "storylines")
+          ? await slurpDramaStageFactor(settingsStore, creatorAccountId, target)
+          : 1;
       const events = slurpInfluenceMultiplier(
         slpLiveEvents(settings),
         at,
@@ -68,9 +74,12 @@ export function createStoryEngineStorage(context: SlurpStorageContext) {
         await this.platformInfluenceStory(creatorAccountId),
       );
       // The Support desk's throttle, Discover feature and Partner badge reach the same place.
-      return target === "feed.reach" && creatorAccountId && slpExtensionOn(settings, "supportDesk")
-        ? events * slpDeskReachFactor(await readDesk(creatorAccountId), at)
-        : events;
+      return (
+        stages *
+        (target === "feed.reach" && creatorAccountId && slpExtensionOn(settings, "supportDesk")
+          ? events * slpDeskReachFactor(await readDesk(creatorAccountId), at)
+          : events)
+      );
     },
     /**
      * Settings as the post reserve reads them: "feed.posting-rate" events scale posts per day for

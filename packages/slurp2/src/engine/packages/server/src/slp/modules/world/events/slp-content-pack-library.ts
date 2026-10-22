@@ -12,6 +12,8 @@
 import type { SlpFit } from "../../../../../../shared/src/slp/slp-drama.js";
 import type { SlpExplicitLevelName } from "../../../../../../shared/src/slp/slp-spice.js";
 import type { SlurpBeatType } from "../../feed/slp-post-beat.js";
+import type { SlpStoryline } from "../../../../../../shared/src/slp/slp-storyline.js";
+import { SLURP_FAMILY_PACK } from "./slp-family-pack.js";
 
 export type SlurpPackLevel = Exclude<SlpExplicitLevelName, "none">;
 
@@ -72,6 +74,8 @@ export type SlurpContentPack = {
   defaultOn: boolean;
   events: SlurpPackEvent[];
   arcs: SlurpPackArc[];
+  /** Storylines run by the drama runtime while the pack is on (docs/STORYLINES.md, PR 6). */
+  storylines?: SlpStoryline[];
   dateBeats?: Record<string, SlurpPackDateBeats>;
   /** Each Creator's own birthday (from their card, else a steady day of their own). */
   birthday?: true;
@@ -477,6 +481,7 @@ export const SLURP_CONTENT_PACK_LIBRARY: readonly SlurpContentPack[] = [
       },
     ],
   },
+  SLURP_FAMILY_PACK,
 ];
 
 /** The birthday moments: two days before, the day, and the day after. */

@@ -2738,6 +2738,7 @@
   "ui.slurp.drama.settings.situationDetail": "Stała sytuacja: od czasu do czasu małe chwile, bez końca.",
   "ui.slurp.drama.settings.dramas": "Dramy",
   "ui.slurp.drama.settings.needs": "Wymaga włączonej sytuacji „{{name}}”.",
+  "ui.slurp.drama.settings.fromPack": "Włączone, gdy pakiet „{{name}}” jest włączony. Przełącz go w Pakietach.",
   "ui.slurp.drama.title": "Drama",
   "ui.slurp.drama.detail": "Sytuacje i dramy, które trwają teraz",
   "ui.slurp.drama.intro": "Dramy toczą się same, gdy są włączone (Ustawienia › Stir › Drama). Tu widzisz, kto w nich gra i na jakim są etapie, i możesz jedną zacząć lub zakończyć.",
