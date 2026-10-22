@@ -14,7 +14,7 @@ import { resolveSlurpCreatorSpice } from "../../data/creators/slp-spice-storage.
 import { slurpCollabPartners } from "../../modules/projects/slp-project.js";
 import { slurpContentPacksOn } from "../../modules/world/events/slp-content-packs.js";
 import { readSlurpDramaLibrary } from "../../data/world/slp-drama-storage.js";
-import { slurpOccasionBeat, slurpPackOccasions } from "../../modules/feed/slp-occasion-beats.js";
+import { slurpOccasionBeat, slurpPackOccasions, slurpPackTopicOff } from "../../modules/feed/slp-occasion-beats.js";
 import type { SlurpBeat, SlurpBeatHistory } from "../../modules/feed/slp-post-beat.js";
 import { readSlurpCouplePartner } from "../projects/slp-projects-contract.js";
 import { slpExtensionOn, slpLiveEvents } from "../../../../../shared/src/slp/slp-extensions.js";
@@ -38,7 +38,9 @@ export async function planSlurpOccasionBeat(
     const settings = await noodle.getSettings();
     const imported = (await readSlurpDramaLibrary(db)).packs
       .filter((pack) => settings.contentPacks[pack.id] !== false)
-      .flatMap((pack) => pack.occasions);
+      .flatMap((pack) =>
+        pack.occasions.filter((occasion) => !slurpPackTopicOff(pack.id, occasion.fit, settings.contentPacks ?? {})),
+      );
     if (!slurpContentPacksOn(settings.contentPacks).length && !imported.length) return null;
     const account = await noodle.getNoodlerAccountById(input.accountId, { includeHidden: true });
     if (!account) return null;
@@ -90,6 +92,7 @@ export async function planSlurpOccasionBeat(
       used: plans.flatMap((plan) => (plan.beat?.sharedId?.startsWith("occasion:") ? [plan.beat.sharedId] : [])),
       history: input.history,
       intents: input.intents,
+      tastes: spice.spice.tastes,
     });
   } catch (error) {
     logger.warn(error, "[slurp] Could not read occasions; this post is planned without one");

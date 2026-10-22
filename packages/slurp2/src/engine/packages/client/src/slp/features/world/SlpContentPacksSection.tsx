@@ -117,17 +117,27 @@ export function SlpContentPacksSection({
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-1.5 pl-8">
-                {[
-                  ...pack.topics,
-                  ...(pack.occasionCount ? [t("ui.slurp.packs.content.occasions", { count: pack.occasionCount })] : []),
-                ].map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full bg-[var(--slurp-canvas)] px-2.5 py-1 text-xs ring-1 ring-inset ring-[var(--slurp-outline)]"
-                  >
-                    {item}
+                {pack.topics.map((topic) => {
+                  // A topic switched off is a "never" for this pack's entries (`slurpPackTopicsOff`).
+                  const key = `${pack.id}:${topic}`;
+                  const topicOn = toggles[key] !== false;
+                  return (
+                    <button
+                      key={topic}
+                      type="button"
+                      aria-pressed={topicOn}
+                      onClick={() => void onChange({ ...toggles, [key]: !topicOn })}
+                      className={`min-h-11 rounded-full bg-[var(--slurp-canvas)] px-3 text-xs ring-1 ring-inset ring-[var(--slurp-outline)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${topicOn ? "" : "text-[var(--slurp-muted)] line-through"}`}
+                    >
+                      {topic}
+                    </button>
+                  );
+                })}
+                {pack.occasionCount ? (
+                  <span className="rounded-full bg-[var(--slurp-canvas)] px-2.5 py-1 text-xs ring-1 ring-inset ring-[var(--slurp-outline)]">
+                    {t("ui.slurp.packs.content.occasions", { count: pack.occasionCount })}
                   </span>
-                ))}
+                ) : null}
                 <button
                   type="button"
                   disabled={remove.isPending}

@@ -585,7 +585,27 @@ items (PR 8). Version: one patch bump.
 - **Known limits:** packs imported before 0.3.58 have no record, so they are not in the list and cannot be
   removed there (their entries keep their own switches). Remove, like apply, reads settings outside the update
   queue. A "copy" of an occasion without a `contentId` gets a new id and loses its beats.
-- **Not yet:** topic chips on cards beyond the list, taste weighting, looks from outcomes (5c).
+- **Not yet:** topic chips on cards beyond the list, taste weighting, looks from outcomes (done in 5c, below).
+
+## PR 5c as built (2026-10-22, on slurpothon): topic switches, taste weight, looks from outcomes
+
+- **Topic switches.** The topic chips on an imported pack card switch. Off is stored as
+  `contentPacks["<pack>:<topic>"] = false` (no new setting). `slurpPackTopicOff` (`modules/feed/slp-occasion-beats.ts`)
+  treats it as a "never" for that pack only: an entry whose own `fit` topic or needs words match it does not run.
+  The planner checks it on the pack's occasions, `slpDramaEnabledIds` on its storylines. Remove clears the keys.
+- **Taste weight.** `slurpTasteWeight` (`modules/creators/slp-spice.ts`): 1, plus 1 / 2 / 3 for each player taste
+  (hint / often / obsessed) that shares a word with the fit's topics or needs. It multiplies a drama's
+  `start.weight` in the start pick and the weight of each moment in the occasion pick. The fit gates run first, so
+  a taste never brings back an entry a hard no or "never" ruled out.
+- **Looks from outcomes.** Two story outcome kinds: `add-look` (a full wardrobe look input) and `remove-look`
+  (by name). `applyStoryOutcomes` gives each participant the look with source kind `storyline` and the storyline
+  (or arc) name as the label, once; remove takes only a look that storyline gave, never the player's own. A full
+  closet skips the look. The pure decision is `slurpStoryLookChange` (`modules/storylines/slp-story-state.ts`).
+- **Known limits:** a topic switch checks the entry's own fit; stage, option and beat fits inside a pack storyline
+  do not see it. Arcs from packs have no fit yet, so topic switches do not reach them. An occasion's event part
+  (in `platformEvents`) has no fit, so it still goes live with its own switch; only its moments stop.
+- **Review fixes.** An upload may not use ":" in its pack id (it would read another pack's topic keys); toggle
+  keys may be 170 characters long. A storyline takes back only a look it gave itself (same source label).
 
 ## Later: Basic and add-ons
 

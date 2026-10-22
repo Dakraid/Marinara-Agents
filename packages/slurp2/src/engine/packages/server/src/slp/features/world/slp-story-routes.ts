@@ -86,6 +86,9 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
     // Slurp's own pack ids (bundled and built-in) carry its core entries; an upload may not take one.
     if (RESERVED_PACK_IDS().has(parsed.pack.id))
       return reply.code(400).send({ error: ["Slurp already uses this pack id. Give the pack its own id."] });
+    // A topic switch is stored as `<pack>:<topic>`, so a pack id with ":" would read another pack's switches.
+    if (parsed.pack.id.includes(":"))
+      return reply.code(400).send({ error: ['A pack id may not contain ":". Give the pack another id.'] });
     const settings = await noodle.getSettings();
     const preview = previewSlpStoryPack(parsed.pack, {
       arcs: settings.arcLibrary,
@@ -228,7 +231,10 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
       )
         await noodle.setStoryOccurrenceStatus(occurrence.id, "cancelled");
     const settings = await noodle.getSettings();
-    const { [id]: _switch, ...contentPacks } = settings.contentPacks;
+    // The pack's switch and its topic switches (`<pack>:<topic>`) go with it.
+    const contentPacks = Object.fromEntries(
+      Object.entries(settings.contentPacks).filter(([key]) => key !== id && !key.startsWith(`${id}:`)),
+    );
     await noodle.updateSettings({
       arcLibrary: settings.arcLibrary.filter((entry) => entry.provenance?.packId !== id),
       platformEvents: settings.platformEvents.filter((entry) => entry.provenance?.packId !== id),

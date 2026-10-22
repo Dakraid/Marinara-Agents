@@ -467,6 +467,7 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
           participants: isSlurpCrossover(after) ? after.creatorIds : [creatorAccountId],
           sourceKind: "arc",
           sourceId: `${after.id}:${after.stage}`,
+          label: after.title,
           at: new Date(),
         });
       // A crossover moves every participant: mood and events reach each of them.

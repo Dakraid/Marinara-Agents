@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { slpDramaSchema, slpSituationSchema } from "./slp-drama.js";
+import { slpWardrobeLookInputSchema } from "./slp-wardrobe.js";
 
 export const SLP_STORY_PACK_FORMAT = "marinara-slurp-story-pack" as const;
 export const SLP_STORY_PACK_SCHEMA_VERSION = 1 as const;
@@ -128,6 +129,10 @@ export const slpStoryOutcomeSchema = z.discriminatedUnion("kind", [
       consume: z.enum(["on-start", "never"]).default("on-start"),
     })
     .strict(),
+  /** A look joins the Creator's closet, with the storyline as its source (docs/STORYLINES.md, PR 5c). */
+  z.object({ kind: z.literal("add-look"), look: slpWardrobeLookInputSchema }).strict(),
+  /** Takes away a look a storyline gave, by name; the player's own looks stay. */
+  z.object({ kind: z.literal("remove-look"), name: z.string().trim().min(1).max(80) }).strict(),
 ]);
 export type SlpStoryOutcome = z.infer<typeof slpStoryOutcomeSchema>;
 

@@ -18,8 +18,9 @@ import {
   SLP_STORY_DEFAULT_SHARE,
   SLP_STORY_TRACKS,
   type SlpStoryFact,
+  type SlpStoryOutcome,
 } from "../../../../../shared/src/slp/slp-story-engine.js";
-import type { SlpWardrobeLook } from "../../../../../shared/src/slp/slp-wardrobe.js";
+import type { SlpWardrobeLook, SlpWardrobeLookInput } from "../../../../../shared/src/slp/slp-wardrobe.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import type { SlurpBond } from "../projects/slp-creator-bonds.js";
 import type { SlurpCouple } from "../projects/slp-creator-couples.js";
@@ -205,4 +206,23 @@ export function slurpConditionCloset<T extends Pick<SlpWardrobeLook, "tags">>(
   const preferred = wardrobe.prefer.length ? kept.filter((look) => has(look, wardrobe.prefer)) : [];
   const result = preferred.length ? preferred : kept;
   return result.length ? result : [...looks];
+}
+
+/**
+ * What one look outcome changes in a Creator's closet (docs/STORYLINES.md, PR 5c): a look to add,
+ * never twice, or the look this storyline gave to take away. The player's own looks always stay.
+ */
+export function slurpStoryLookChange(
+  outcome: SlpStoryOutcome,
+  looks: readonly Pick<SlpWardrobeLook, "id" | "name" | "source">[],
+  /** The storyline's name: it only takes back a look it gave itself. */
+  label?: string,
+): { add: SlpWardrobeLookInput } | { remove: string } | null {
+  if (outcome.kind !== "add-look" && outcome.kind !== "remove-look") return null;
+  const name = (outcome.kind === "add-look" ? outcome.look.name : outcome.name).toLocaleLowerCase();
+  const given = looks.find(
+    (look) => look.source.kind === "storyline" && look.source.label === label && look.name.toLocaleLowerCase() === name,
+  );
+  if (outcome.kind === "remove-look") return given ? { remove: given.id } : null;
+  return given ? null : { add: outcome.look };
 }

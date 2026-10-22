@@ -294,6 +294,7 @@ export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> 
     const storylines = slpDramaStorylines(catalog);
     const gated = [...storylines.dramas, ...storylines.situations].some(slpStorylineGated);
     const world = await loadDramaWorld(db, at, gated);
+    const { tastes } = await readSlurpSpice(db);
     const effects = await mutateSlurpDramaState(db, ({ state }) => {
       const result = slpAdvanceDrama(state, {
         at,
@@ -303,6 +304,7 @@ export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> 
         dials: settings.drama.dials,
         world,
         activity: slurpWorldActivityMultiplier(settings.worldActivity),
+        tastes,
         newId,
       });
       return { stored: { state: result.state, advancedAt: at.toISOString() }, result };

@@ -9,6 +9,7 @@ import {
   slpDramaSchema,
   slpSituationSchema,
   type SlpDrama,
+  type SlpFit,
   type SlpSituation,
 } from "../../../../../../shared/src/slp/slp-drama.js";
 import {
@@ -22,6 +23,7 @@ import {
   type SlpStoryline,
 } from "../../../../../../shared/src/slp/slp-storyline.js";
 import { SLURP_BUILTIN_DRAMAS, SLURP_BUILTIN_SITUATIONS } from "./slp-drama-packs.js";
+import { slurpPackTopicOff } from "../../feed/slp-occasion-beats.js";
 
 export const SLP_DRAMA_LIBRARY_KEY = "slurp2.drama.library";
 
@@ -106,7 +108,10 @@ export function slpDramaEnabledIds(
 ): string[] {
   const off = new Set(
     [...library.situations, ...library.dramas, ...library.storylines]
-      .filter((entry) => toggles[entry.packId] === false)
+      .filter(
+        (entry) =>
+          toggles[entry.packId] === false || slurpPackTopicOff(entry.packId, (entry as { fit?: SlpFit }).fit, toggles),
+      )
       .map((entry) => entry.id),
   );
   return enabled.filter((id) => !off.has(id));
