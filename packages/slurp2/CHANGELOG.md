@@ -1,5 +1,10 @@
 # Slurp release notes
 
+## 0.3.61 — 2026-10-22
+
+- Five kink theme packs, off by default (`slp-kink-packs.ts`): Lingerie, Cosplay, Feet, Dom/sub and Exhibition, two storylines each, pure pack data on the storyline engine. Fans vote between sets, costumes and dares; endings add a locked look or a Creator fact; the lingerie brand storyline makes a `brand-offer`.
+- Each storyline has a `fit` (level, hard-no words, topic words): Exhibition needs nudity, a hard-no or a "never" line rules a Creator out, turn-ons lean the lead pick. The spiciest stages wait on `minSpice` 2–3.
+
 ## 0.3.60 — 2026-10-22
 
 - Family pack (`slurp-pack-family`, off by default): four pregnancy storylines (couple partner, collab partner, the player, a father she won't name), listed in Drama and switched by the pack.
