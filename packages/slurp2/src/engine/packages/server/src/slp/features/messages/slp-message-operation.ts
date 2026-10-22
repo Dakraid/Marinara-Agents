@@ -473,6 +473,7 @@ export async function replyToSlurpMessage(
           !partner &&
           !demanded &&
           reply.imageMode !== "hostile" &&
+          imageAllowedBySettings &&
           (await messagesStore.markSextingPicture(thread.id, thread.sexting!.startedAt));
         const offer = sextingPpv
           ? ({ visibility: "locked", price: slurpPpvPrice(messaging.ppvPrice), reason: "premium_content" } as const)
@@ -488,6 +489,10 @@ export async function replyToSlurpMessage(
         const creatorLevel = await resolveSlurpExplicitLevel(db, thread.creatorAccountId).catch(
           () => "suggestive" as const,
         );
+        // A picture that never arrives gives the session's one PPV back for a later reply.
+        const releaseSextingPicture = async () => {
+          if (sextingPpv) await messagesStore.markSextingPicture(thread.id, thread.sexting!.startedAt, false);
+        };
         const drawn = imageAllowedBySettings
           ? await generateSlurpCommissionImage(db, {
               creatorAccountId: thread.creatorAccountId,
@@ -498,8 +503,12 @@ export async function replyToSlurpMessage(
                 (offer.price > 0 || partner || gift || doors.includes("fullSpice")) && !demanded
                   ? creatorLevel
                   : slurpDmSpiceLevel(creatorLevel, false),
+            }).catch(async (error: unknown) => {
+              await releaseSextingPicture();
+              throw error;
             })
           : "unavailable";
+        if (drawn === "unavailable") await releaseSextingPicture();
         if (drawn !== "unavailable") {
           const price = demanded ? 0 : offer.price;
           const imageMessage = await messagesStore.appendMessage(thread.id, {
@@ -516,6 +525,7 @@ export async function replyToSlurpMessage(
             },
           });
           if (!imageMessage) {
+            await releaseSextingPicture();
             drawn.compensate();
           } else {
             drawn.promote();

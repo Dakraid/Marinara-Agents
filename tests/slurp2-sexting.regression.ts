@@ -66,13 +66,27 @@ assert.notEqual(pacing(false).mode, "instant");
 const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/${path}`);
 assert.match(
   server("data/messages/slp-messages-storage-base.ts"),
-  /session\.startedAt !== startedAt \|\| session\.pictureOffered\) return false;/,
+  /session\.startedAt !== startedAt \|\| session\.pictureOffered === offered\) return false;/,
   "an old reply never overwrites a newer session",
 );
 assert.match(
   server("features/messages/slp-follow-up-scheduler-service.ts"),
   /if \(slurpSextingPhase\(thread\.sexting\) \|\| \(await slurpCreatorInScene/,
   "follow-ups wait out a session",
+);
+// A picture that never arrives gives the one PPV back.
+assert.match(
+  server("features/messages/slp-message-operation.ts"),
+  /if \(drawn === "unavailable"\) await releaseSextingPicture\(\);/,
+);
+assert.match(
+  server("features/messages/slp-message-operation.ts"),
+  /\.catch\(async \(error: unknown\) => \{\n\s*await releaseSextingPicture\(\);\n\s*throw error;/,
+);
+assert.match(
+  server("features/messages/slp-messages-creator-routes.ts"),
+  /sexting: slurpSextingPhase\(thread\.sexting\) !== null,/,
+  "the prompt debug view shows the session too",
 );
 const route = server("features/messages/slp-messages-send-routes.ts");
 assert.match(
@@ -97,7 +111,7 @@ assert.match(operation, /\n\s*subscribed,\n\s*sexting: sextingPhase !== null,\n\
 assert.match(operation, /slurpSextingGuidance\(sextingPhase, sextingPicture\)/);
 assert.match(
   operation,
-  /const sextingPpv =\s*sextingPicture &&\s*!partner &&\s*!demanded &&\s*reply\.imageMode !== "hostile" &&\s*\(await messagesStore\.markSextingPicture\(thread\.id, thread\.sexting!\.startedAt\)\);/,
+  /const sextingPpv =\s*sextingPicture &&\s*!partner &&\s*!demanded &&\s*reply\.imageMode !== "hostile" &&\s*imageAllowedBySettings &&\s*\(await messagesStore\.markSextingPicture\(thread\.id, thread\.sexting!\.startedAt\)\);/,
   "claimed before the picture is drawn",
 );
 assert.match(operation, /price: slurpPpvPrice\(messaging\.ppvPrice\)/);
