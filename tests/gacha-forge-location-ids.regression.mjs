@@ -1,7 +1,7 @@
 // Gacha Forge ships pre-built bundles whose source tree lives outside this repository, so this proof
 // reads the committed bundles: it runs the shipped location-ID code (Pasta-Devs/Marinara-Agents#1460)
-// and pins the iPhone landscape layout rules (Pasta-Devs/Marinara-Agents#1461), so a later bundle
-// drop cannot lose either fix silently.
+// and pins the iPhone landscape layout rules (Pasta-Devs/Marinara-Agents#1461), the sideways-phone world
+// creator and the 16px touch field floor (1.8.14), so a later bundle drop cannot lose a fix silently.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
@@ -158,5 +158,103 @@ css(
   "fullscreen support is checked",
 );
 css(/r&&\(s\?r\.addEventListener\("click",e\):r\.remove\(\)\)/u, "unsupported fullscreen toggles are removed");
+
+// One stylesheet out of the bundle: the template literal assigned to `name`.
+function sheet(name) {
+  const match = new RegExp(`[^\\w$]${name}=\``, "u").exec(client);
+  assert.ok(match, `${name} must be a stylesheet in the bundle`);
+  const start = match.index + match[0].length;
+  return client.slice(start, client.indexOf("`", start));
+}
+// The body of every `@media <query> { ... }` in a stylesheet, balanced on braces.
+function mediaBlocks(source, query) {
+  const found = [];
+  for (let at = source.indexOf(`@media ${query} {`); at !== -1; at = source.indexOf(`@media ${query} {`, at + 1)) {
+    let depth = 0;
+    for (let index = source.indexOf("{", at); index < source.length; index += 1) {
+      if (source[index] === "{") depth += 1;
+      if (source[index] === "}" && --depth === 0) {
+        found.push(source.slice(source.indexOf("{", at) + 1, index));
+        break;
+      }
+    }
+  }
+  return found;
+}
+
+// World creation on a phone held sideways (1.8.14). The creator's sheet is inlined in the view, in the
+// same shadow root as the stage, so its :has() can widen the stage; a nested root would hide the stage.
+css(/e==="setup"\)x=`<style>\$\{Oh\}<\/style>\$\{Fh\(/u, "the creator's sheet is mounted inside the view");
+css(/this\._root\.innerHTML=`<style>\$\{mc\}[^`]*<\/style>`\+vc\(x\+/u, "the view renders inside the shell's stage");
+const setupSheet = sheet("Oh");
+const wizard = mediaBlocks(setupSheet, "(orientation: landscape) and (max-height: 500px)");
+assert.equal(wizard.length, 1, "the creator has one short-landscape block");
+for (const [pattern, label] of [
+  [/\.gf-stage:has\(\.ob-root\) \{ width: 100%; \}/u, "the stage takes the arena's whole width"],
+  [/\.ob-frame \{ display: block;[^}]*overflow-y: auto;/u, "the frame is the one scroll region"],
+  [/\.ob-intake \{ width: 100%; min-height: 100%; max-height: none;/u, "the intake grows with its fields"],
+  [/\.ob-step \.ob-grid \{ flex: none; overflow: visible;/u, "the grid no longer scrolls on its own"],
+  [/\.ob-mark \{ display: none; \}/u, "the mark gives up its height"],
+  [/\.ob-nav \{ position: sticky; bottom: 0;[^}]*background: var\(--ink\);/u, "the nav stays pinned on ink"],
+  [
+    /\.ob-intake:has\(:is\(textarea, input:not\(\[type="range"\]\)\):focus\) \.ob-nav \{ position: static; \}/u,
+    "the nav rejoins the page while a text field has the keyboard",
+  ],
+  [/textarea\.ob-control \{ min-height: 5rem; \}/u, "the textarea is shorter"],
+  [/\.ob-error\.-note \{ order: -1; \}/u, "a restored draft's notice leads the page"],
+  [
+    /\.gf-stage:has\(> \.gf-fs-exit\) \.ob-frame \{ padding-right: 2\.6rem; \}/u,
+    "the frame keeps clear of the fullscreen toggle",
+  ],
+  [
+    /\.gf-stage:has\(> \.gf-fs-exit\) \.ob-nav \{ margin-right: -2\.6rem; padding-right: 2\.6rem; \}/u,
+    "the nav still spans the frame beside the toggle",
+  ],
+]) {
+  assert.match(wizard[0], pattern, label);
+}
+// One scroll region means the frame is scrolled back to the top on a new step and to the end on an
+// error, where the error sits above the nav; neither ever runs on a frame that does not scroll.
+const obScroll = vm.runInNewContext(`${extractFunction(client, "obScroll")}\nobScroll`);
+const frame = { scrollTop: 37, scrollHeight: 410 };
+const creator = { querySelector: (selector) => (selector === ".ob-frame" ? frame : null) };
+obScroll(creator, true);
+assert.equal(frame.scrollTop, 410, "an error scrolls the frame to its end");
+obScroll(creator, false);
+assert.equal(frame.scrollTop, 0, "a new step starts at the top");
+obScroll({ querySelector: () => null }, true);
+obScroll(null, false);
+css(/M&&\(M\.hidden=H!==P\),qe\(""\),obScroll\(t,!1\),G&&C\(\)\}/u, "changing step scrolls the frame to the top");
+css(/I\.textContent=F\|\|"",I\.hidden=!F,F&&obScroll\(t,!0\)\)\)\}/u, "an error scrolls the frame to its end");
+
+// iOS zooms into a focused field under 16px; on a touch screen every typed field in the arena is 16px.
+const touch = mediaBlocks(sheet("mc"), "(pointer: coarse)");
+assert.ok(
+  touch.some((block) =>
+    block.includes(
+      '.gf-arena :is(input:not([type="range"], [type="checkbox"], [type="radio"], [type="file"], [type="color"]), textarea, select, [contenteditable="true"], [contenteditable=""]) { font-size: 16px !important; }',
+    ),
+  ),
+  "typed fields are 16px on a touch screen",
+);
+assert.equal(
+  (client.match(/attachShadow\(/gu) || []).length,
+  2,
+  "only the host and the leaving clone own a shadow root",
+);
+
+// The version the Settings readout and the in-game changelog show is the one the manifest ships and the
+// changelog describes.
+const manifest = JSON.parse(await readFile(new URL("manifest.json", packageRoot), "utf8"));
+const changelog = await readFile(new URL("CHANGELOG.md", packageRoot), "utf8");
+const bundleVersion = client.match(/,ds="(\d+\.\d+\.\d+)";function cc\(/u)?.[1];
+assert.equal(bundleVersion, manifest.version, "the bundle's version readout matches the manifest");
+assert.equal(
+  changelog.match(/^## (\d+\.\d+\.\d+) /u)?.[1],
+  manifest.version,
+  "the newest changelog entry is this version",
+);
+css(/oy=\[\{version:null,/u, "the in-game changelog's newest entry is labelled with the bundle's version");
+assert.ok(!client.includes(`{version:"${bundleVersion}"`), "no older in-game entry claims the current version");
 
 process.stdout.write("Gacha Forge location ID and landscape regression passed.\n");
