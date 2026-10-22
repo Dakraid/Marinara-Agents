@@ -3609,8 +3609,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "7f89e66392d26c4332bb29beb2785b4ac7dce11294039e24bb571097fc0b9d99",
-            "bytes": 2834629
+            "sha256": "b17f3f0ba7317dc7e9d993ddd5bc33f3360d15d3130709e35b23ddec7328880d",
+            "bytes": 2834817
           },
           {
             "path": "slurp2-logo.png",
@@ -3621,11 +3621,6 @@
             "path": "slurp2agent.png",
             "sha256": "47805313b5ec8dbc608fec82c4d51f1f82020afe4f286a04919b59cc8ef06f37",
             "bytes": 120424
-          },
-          {
-            "path": "assets/mari/chibi-professor-mari.webp",
-            "sha256": "bdbf38adb40e9e128754d2103a0b9bc9d887c33273640dc47a8c6f5cffdba0f3",
-            "bytes": 38982
           },
           {
             "path": "assets/mari/Mari_noodler_teaser_locked.webp",
@@ -3669,8 +3664,8 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.3.60.zip",
-        "sha256": "b869f2e7a46e321864f51348098d50c46676f2892e3a0e6ce6cd976273a58b56",
-        "bytes": 5882310
+        "sha256": "2fe6b1fdf08ab4059d014b37870bfdc14c299a2c59e53c75a53d19dc15b4837c",
+        "bytes": 5843193
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },
