@@ -90,6 +90,7 @@ export const queryKeys = {
   scopeTargetsRoot: ["long-term-memory", "scope-targets"] as const,
   localCharactersRoot: ["long-term-memory", "local-characters"] as const,
   lastInjectionRoot: ["long-term-memory", "last-injection"] as const,
+  packageReaders: ["long-term-memory", "package-readers"] as const,
   scopeTargets: (chatId: string | null | undefined) => ["long-term-memory", "scope-targets", chatId] as const,
   localCharacters: (chatId: string | null | undefined) => ["long-term-memory", "local-characters", chatId] as const,
   lastInjection: (chatId: string | null | undefined) => ["long-term-memory", "last-injection", chatId] as const,
@@ -160,7 +161,10 @@ export async function failedResponseError(response: Response): Promise<Error> {
   const serverMessage = typeof payload?.error === "string" ? payload.error : "";
   const error = new Error(serverMessage || response.statusText || "Long-Term Memory request failed");
   Object.assign(error, { status: response.status });
-  if (!serverMessage) withoutUserMessage(error);
+  // An unexpected failure has no message for users: LTM's route fallback, or the Engine's generic 500 for a
+  // route without routeError. The caller's own localized message shows instead.
+  if (!serverMessage || payload?.code === "ltm_unexpected_failure" || serverMessage === "Internal Server Error")
+    withoutUserMessage(error);
   if (typeof payload?.code === "string") Object.assign(error, { code: payload.code });
   return error;
 }

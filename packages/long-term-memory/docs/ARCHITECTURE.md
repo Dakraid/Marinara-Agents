@@ -10,12 +10,34 @@ server  -> persistence, extraction, retrieval, routes, runtime integration
 client  -> vault, review queue, sources, settings, and injection summary
 ```
 
-The server registers `long-term-memory:storage` and
-`long-term-memory:runtime` with the Engine and mounts privileged routes under
-`/api/long-term-memory`. Registration is in `server-entry.ts`; `routes.ts`
-composes one file per area under `routes/` (notes, drafts, imports, maintenance,
-settings), with shared limits, errors and the post-mutation rebuild in
-`routes/shared.ts`.
+The server registers `long-term-memory:recall` and `long-term-memory:storage`
+(read-only memories for other packages, from `services/`; see Services for
+Other Packages) and `long-term-memory:runtime` (chat recall, receipts and the
+vault lock for the Engine) with the Engine and mounts
+privileged routes under `/api/long-term-memory`. Registration is in
+`server-entry.ts`; `routes.ts` composes one file per area under `routes/`
+(notes, drafts, imports, maintenance, settings), with shared limits, errors and
+the post-mutation rebuild in `routes/shared.ts`.
+
+### Shared schema
+
+The shared layer is in `src/engine/packages/shared/src/features/agents/long-term-memory/`.
+`schema.ts` is a barrel that re-exports the ten area files in `schema/`, so
+importers keep one specifier. A file imports only from the files above it in
+this list, so the zod schemas are defined before use.
+
+| File (`schema/`) | Defines |
+| --- | --- |
+| `primitives` | note types, statuses, modes, vault folders, ids, subjects, scopes, links and other building blocks the rest reuse |
+| `settings` | global, extraction, retrieval, retention and per-agent settings, and the defaults |
+| `debug` | debug log statuses, phases, errors and events |
+| `recall` | usage counts, the last-injection summary and recall attempts |
+| `notes` | notes, sections, evidence units, events, bulk actions, note transfer and fork, section rename and delete |
+| `indexes` | index health, chunks, and the embedding, BM25 and graph indexes |
+| `identity` | identity-repair previews, candidates and conflicts |
+| `drafts` | drafts, extraction outcomes and diagnostics, rejected suggestions, draft review and preflight |
+| `sources` | Engine chat and lorebook previews, source details and source import |
+| `backup` | the backup file |
 
 ### Engine fields read directly
 
@@ -50,10 +72,11 @@ folder owns one area.
 | `persistence/` | vault storage, atomic writes, the vault lock, mutation journals, index state, the activity index, per-section source contributions, retention, backup and restore | `storage`, `mutation-transaction`, `atomic-json`, `paths`, `vault-lock`, `vault-snapshot`, `stored-note`, `index-state`, `index-quarantine`, `retention`, `backup-restore`, `restore-recovery`, `activity-index`, `section-contributions` |
 | `recall/` | chunking, keyword, BM25, graph and embedding indexes, ranking, budget, the recall prompt, generation injection, injection receipts and usage | `chunking`, `bm25`, `keyword-extract`, `keyword-index`, `hangul-lexical`, `graph`, `metadata-index`, `ranking`, `budget`, `prompt`, `prompt-text`, `retrieval`, `rebuild`, `embedding-adapter`, `generation-injection`, `usage` |
 | `extraction/` | evidence-unit extraction, validation and compilation, source processing and hashes, candidate reconciliation, extraction settings | `evidence-unit-extraction`, `evidence-unit-validation`, `evidence-unit-compiler`, `structured-summary-normalizer`, `source-extraction`, `source-processing`, `source-hash`, `dedup`, `candidate-reconciliation`, `scoped-targets`, `extraction-config` |
-| `identity/` | subject identity, chat scope and scope links, identity and fork repair | `subject-identity`, `subject-choice-review`, `subject-equality`, `identity-repair`, `note-fork-repair`, `chat-scope`, `scope-links` |
+| `identity/` | subject identity (`subject-names`: name text rules; `subject-matching`: the trusted catalog's types, index and matchers; `subject-catalog`: building and loading the catalog and checking stored notes against it; `subject-identity`: resolving a batch's subjects), chat scope and scope links, identity and fork repair | `subject-names`, `subject-matching`, `subject-catalog`, `subject-identity`, `subject-choice-review`, `subject-equality`, `identity-repair`, `note-fork-repair`, `chat-scope`, `scope-links` |
 | `drafts/` | the draft store, projection and review, applying drafts to notes, rejected suggestions | `draft-store`, `draft-projector`, `draft-review`, `reconciliation`, `rejected-suggestions` |
 | `maintenance/` | integrity checks and repair, note transfer, legacy adoption and quarantine, the debug log | `maintenance`, `note-transfer`, `legacy-adoption`, `legacy-source-quarantine`, `debug-log` |
 | `sources/` | Engine chats and summaries read as sources | `interop`, `source-identity` |
+| `services/` | what other packages can look up through the Engine: recalled memories about the accounts they write as (`recall`), a character's memories available everywhere (`storage-read`), the reads switch and the reader list | `recall`, `storage-read` |
 
 The folders are areas, not enforced layers. `persistence/` still imports from
 the areas above it: `storage.ts` uses `drafts/draft-projector`,
@@ -100,6 +123,11 @@ apply JSON changes atomically, publish events, and leave recovery information
 for interrupted work. Review remains mandatory: generation recall never writes
 durable memory directly.
 
+Before compiling, source extraction recalls existing memories that match the
+source, bounded by the `existingNoteMaxChunks` and `existingNoteMaxTokens`
+extraction settings. The server uses them to drop duplicate details and to pick
+the memories a new unit updates. They are never sent to the model.
+
 ## Backup and Restore
 
 `backup-restore.ts` exports notes, drafts, rejected suggestions, and package
@@ -132,6 +160,19 @@ on the same vault, are seen after a restart or that process's next mutation. A
 rebuild embeds only chunks whose `textHash` is new when the previous index shares
 the embedding space.
 
+Draft apply and source extraction schedule the rebuild in the background
+(`rebuild-job.ts`) instead of running it before they answer. The job starts 1 s
+after the last request, or 10 s after the first one during a steady stream, and
+holds the vault lock only to read the notes and to publish; while it embeds,
+saves, recall and debug writes go ahead. A write in between moves the
+index-state revision, so the job publishes nothing and builds again, reusing the
+vectors it embedded. Recall, extraction, the Engine refresh and the integrity
+check run a scheduled rebuild at once and wait for it before they take the vault
+lock, so they never read an index older than the notes. Waiting for the job while
+holding the vault lock would deadlock, so `flushLtmIndexRebuild` throws there.
+Editor, settings, scope-link, repair, restore and explicit rebuilds still run
+under the lock, because their responses carry the rebuild's result.
+
 The retrieval entrypoint is `retrieval.ts`; ranking and budget behavior are in
 `ranking.ts` and `budget.ts`; the linked-recall lookup is in `graph.ts`; host
 injection and receipts are in `generation-injection.ts`.
@@ -152,11 +193,54 @@ multilingual vector lane is the only cross-language bridge.
 recall would embed with now) and `indexes.indexedEmbeddingSource` (the label
 stored with the vectors). `embeddingsAvailable` is true only while the stored
 `spaceId` matches the current adapter's `spaceId`; after a source switch it
-reads false and the vault re-embeds on the next recall or reindex. The labels
+reads false. The next recall answers from the keyword lanes and schedules a
+background job that re-embeds the vault; an Engine refresh or reindex re-embeds
+it before answering and stops that job. The job also stops, without trying
+again, when a write lands while it embeds. The labels
 are display text only: the clients show the "source changed" note from
 `embeddingsAvailable === false`, because a renamed connection keeps its
 `spaceId` (vectors stay usable) while a switched sidecar model keeps its
 label.
+
+## Services for Other Packages
+
+Other packages look these up with `api.runtime.services.get(key)`. The Engine
+does not say who asks, so `caller` is the name a package gives itself. Each read
+is a debug-log line ("Read by another Agent" in Activity), and Memory Settings
+lists the ten names that read most lately, so Clear log empties that list. Both
+services give nothing while "Other Agents can read memories" is off.
+
+`long-term-memory:recall`, version 1:
+
+```ts
+recall({
+  caller?: string,         // up to 64 letters, digits and . _ : -, else dropped
+  queryText: string,       // 1-8,000 characters: what the package is about to write
+  characterIds?: string[], // the accounts it writes as, up to 20
+  personaId?: string,      // only when the persona's own account writes
+  mode?: "roleplay" | "conversation",
+  maxTokens?: number,      // 50-4,000, default 800
+  signal?: AbortSignal,
+}): Promise<{ version: 1; sections: { noteId; type; title?; text }[] } | null>
+```
+
+- `null` for invalid input (no query, or no character or persona), an aborted
+  call or reads turned off; `{ version: 1, sections: [] }` when nothing matches.
+  Other errors are thrown; malformed vault files are skipped, as in chat recall.
+- Sections are memories available to the named characters or persona
+  everywhere: never limited to a chat or group, archived, game-only or tone
+  memories. A character or relationship memory comes back only when one of its
+  subjects is a named account. Resolved threads and events are included.
+- Order: thread, timeline_event, relationship, character, world, scene, and
+  within a type the order chat recall ranks them in (the user's recall
+  weights). `text` is the recalled part of each memory, within `maxTokens` and
+  at most 20 recalled parts in all. Recall receipts and usage are not touched.
+- A new section field can be added without a version change; removing or
+  renaming one raises `version`.
+
+`long-term-memory:storage` offers `storage.listNotes({ caller?, type?,
+characterIds })`: whole notes available to those characters everywhere, not
+imported sources, archived or game-only (Slurp's flavour brief).
 
 ## Scope and Safety
 
@@ -164,6 +248,11 @@ Scope resolution is shared between chat context and server retrieval. Changes
 must preserve isolation between chat, character, lorebook, persona, universe,
 and global targets. Inspect shared `scope.ts`, `identity/chat-scope.ts`, and
 `extraction/scoped-targets.ts` before changing identity or visibility behavior.
+
+Any installed package can look up a registered service, so whatever `services/`
+hands out lists only memories available to the named characters or persona
+everywhere: never memories limited to a chat or group, imported sources,
+archived or game-only memories, drafts, or the vault folder.
 
 For storage or recovery changes, inspect `paths.ts`, `atomic-json.ts`,
 `mutation-transaction.ts`, `vault-lock.ts`, `restore-recovery.ts`, and the

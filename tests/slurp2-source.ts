@@ -874,6 +874,7 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
   ],
   "packages/client/src/components/slurp/slurp2-release.ts": [
     "packages/client/src/slp/features/onboarding/slp-release.ts",
+    "packages/client/src/slp/features/onboarding/slp-release-archive.ts",
   ],
   "packages/client/src/components/slurp/SlurpAgeGate.tsx": [
     "packages/client/src/slp/features/onboarding/SlpAgeGate.tsx",

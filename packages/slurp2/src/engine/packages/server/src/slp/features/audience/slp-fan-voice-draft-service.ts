@@ -40,6 +40,8 @@ export async function draftSlpFanTypeVoice(db: DB, input: SlpFanVoiceDraftInput)
       connection.claudeFastMode === "true",
       connection.treatAsLocalEndpoint === "true",
       connection.defaultParameters,
+      // The player pressed it: booked as foreground work on the connection, like their chats.
+      connection.id,
     ),
   );
   const result = await provider.chatComplete(buildSlpFanVoiceDraftMessages(input), {

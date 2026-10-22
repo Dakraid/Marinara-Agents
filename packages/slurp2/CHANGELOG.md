@@ -1,8 +1,21 @@
 # Slurp release notes
 
+## 10.1.0 — 2026-10-22
+
+- Includes upstream 0.3.52 and 0.3.53: image failures the Engine marks nonretryable stop automatic and background retries, and keep post prompts for a deliberate retry. Automatic posts and AI-assisted actions now take their turn on your connection like your chats, so they no longer slow your replies or make other automatic work wait.
+
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 0.3.53 — 2026-10-21
+
+- Image failures marked nonretryable by the Engine no longer start automatic replacement requests. Slurp also stops later background retries for posts and Creator artwork, and keeps post prompts for a deliberate retry.
+
+## 0.3.52 — 2026-10-20
+
+- Fixed: an automatic post no longer reads a Creator's card or refreshes shared ideas with the AI while one of your chats on the same connection is replying, and an automatic post no longer makes your other automatic work (Noodle's too) wait 30 seconds. A new Creator's first automatic post no longer refuses itself.
+- Fixed: Write, Improve, Draft voice, Generate schedule, the page style and "Let <Creator> design it", a plan you ask for, an appearance you generate and picture descriptions for replies now take their turn on your connection like your chats, so automatic work waits for them.
 
 ## 0.3.51 — 2026-10-20
 

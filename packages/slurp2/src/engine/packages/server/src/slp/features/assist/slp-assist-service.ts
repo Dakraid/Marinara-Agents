@@ -130,6 +130,8 @@ export async function runSlpAssistText(
       connection.claudeFastMode === "true",
       connection.treatAsLocalEndpoint === "true",
       connection.defaultParameters,
+      // The player's own request: booked as foreground work on the connection, like their chats.
+      connection.id,
     ),
   );
   const result = await provider.chatComplete(

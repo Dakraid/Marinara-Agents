@@ -1,8 +1,20 @@
 # Noodle release notes
 
+## 10.1.0 — 2026-10-22
+
+- Includes upstream 1.5.8 and 1.5.9: image failures the Engine marks nonretryable no longer start automatic replacement requests, and the sticker, emoji, picture and poll menus open inside Noodle and are no longer see-through.
+
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 1.5.9 — 2026-10-21
+
+- Image failures marked nonretryable by the Engine no longer start automatic replacement requests.
+
+## 1.5.8 — 2026-10-20
+
+- The sticker, emoji, picture and poll menus now open inside Noodle. That hides the chat emoji-selection settings, which 1.5.7 meant to hide but still showed, and the menus are no longer see-through.
 
 ## 1.5.7 — 2026-10-20
 

@@ -2,7 +2,7 @@
 // sources/host-runtime-overlay replaces each vendored copy of a stateful Engine service. This loads the overlay
 // modules as the package build stacks them and checks the binding, the pre-activation log buffer, delegation to
 // the host members, the "needs a newer Marinara Engine" answer (HTTP 501) when a member is missing, and the
-// Calls schedule patch.
+// Calls schedule update.
 // Run: node --experimental-transform-types tests/host-runtime-overlay.regression.mjs
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
@@ -259,13 +259,10 @@ try {
     join(root, "packages/conversation-calls/src/engine/packages/server/src/routes/conversation-calls.routes.ts"),
     "utf8",
   );
-  // Character schedules are a patch read and written inside the Engine's metadata queue, never a whole-metadata
-  // write from a snapshot taken before the reply (that dropped any change made in the meantime).
-  assert.match(
-    routesSource,
-    /await hostChatWrite\("patchChatMetadata"\)\(input\.chat\.id, \(current\) => \{\s*const schedules = getEnabledConversationSchedules\(current\);/u,
-  );
-  assert.match(routesSource, /return updated \? \{ characterSchedules: schedules \} : \{\};/u);
+  // A [schedule_update] goes on the character card through the Engine (#1498). The chat's schedule map is a cache
+  // the Engine replaces on its next presence read, so the call never writes it.
+  assert.match(routesSource, /requireHostMember\("Schedule updates in calls", persistence\.updateCharacterStatus\)/u);
+  assert.doesNotMatch(routesSource, /characterSchedules/u, "no writes to the chat's schedule cache");
   assert.doesNotMatch(routesSource, /\.updateMetadata\(/u, "no whole-metadata writes");
   assert.doesNotMatch(
     routesSource,

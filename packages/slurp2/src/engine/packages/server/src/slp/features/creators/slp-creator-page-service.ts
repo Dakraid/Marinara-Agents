@@ -195,6 +195,8 @@ export async function composeSlpCreatorPage(
         connection.claudeFastMode === "true",
         connection.treatAsLocalEndpoint === "true",
         connection.defaultParameters,
+        // The player's "Let <Creator> design it" is foreground work on the connection; world pages are not.
+        input.world ? undefined : connection.id,
       ),
     );
     const result = await provider.chatComplete(messages, {

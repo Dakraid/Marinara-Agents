@@ -1,8 +1,21 @@
 # Calls release notes
 
+## 10.1.0 — 2026-10-22
+
+- Includes upstream 1.1.6 and 1.1.7: a status or activity change made during a call now goes on the character card, as after a chat reply. Opening a call no longer changes the volume of, or mutes, a reply read aloud in another chat. A call in a chat that uses the Local Model now answers through it instead of staying silent.
+
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 1.1.7 — 2026-10-20
+
+- When a character changes their status or activity during a call, the change now goes on their character card, as it does after a chat reply, so it shows in every chat and lasts for the time they gave. Before, the call changed only this chat's copy of their schedule, and the change was soon lost. (#1498)
+
+## 1.1.6 — 2026-10-20
+
+- Opening a call no longer changes the volume of, or mutes, a reply Marinara is reading aloud in another chat. The call's voice volume and mute apply only to the call's own voices.
+- A call in a chat that uses the Local Model now answers through Marinara's Local Model, as the chat does. Before, it stayed silent and showed no error.
 
 ## 1.1.5 — 2026-10-20
 

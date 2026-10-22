@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { basename } from "node:path";
 import type {
   LtmExtractionAccounting,
   LtmExtractionDiagnostic,
@@ -12,7 +13,7 @@ import type {
 } from "../../../../../shared/src/features/agents/long-term-memory/schema.js";
 import { isLtmSourceLikeNote } from "../../../../../shared/src/features/agents/long-term-memory/schema.js";
 import { logger, type PackageLanguageModel } from "../package-runtime.js";
-import { rebuildLongTermMemoryIndexes } from "../recall/rebuild.js";
+import { scheduleLongTermMemoryIndexRebuild } from "../recall/rebuild.js";
 import { applyLongTermMemoryDraft } from "../drafts/reconciliation.js";
 import {
   extractLongTermMemoryFromSourceNote,
@@ -20,7 +21,7 @@ import {
   type LtmSourceExtractionRecompile,
 } from "./source-extraction.js";
 import { LongTermMemoryStorage } from "../persistence/storage.js";
-import { loadTrustedLtmSubjectCatalog } from "../identity/subject-identity.js";
+import { loadTrustedLtmSubjectCatalog } from "../identity/subject-catalog.js";
 import {
   compileEvidenceUnitExtraction,
   sourceHashForEvidenceUnitExtraction,
@@ -31,6 +32,8 @@ import { canUpdateLtmScopedTarget } from "./scoped-targets.js";
 import { LtmServiceError } from "../service-error.js";
 import { addRejectedSuggestions } from "../drafts/rejected-suggestions.js";
 import { withLtmVaultLock } from "../persistence/vault-lock.js";
+import { watchLtmVaultWrites } from "../persistence/vault-snapshot.js";
+import { LTM_VAULT_DIR } from "../persistence/paths.js";
 
 export type ImportedSourceItem = {
   sourceId: string;
@@ -144,14 +147,6 @@ function canMarkCurrent(prepared: PreparedSource) {
   }
   return false;
 }
-async function rebuildAfterSourceExtraction(root?: string) {
-  try {
-    await rebuildLongTermMemoryIndexes({ root });
-  } catch (error) {
-    logger.warn(error, "[ltm] Deferred index rebuild after source extraction");
-  }
-}
-
 function deterministicUuid(seed: string) {
   const hex = createHash("sha256").update(seed).digest("hex");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${((Number.parseInt(hex[16]!, 16) & 3) | 8).toString(16)}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
@@ -279,6 +274,7 @@ async function recompilePreparedWithFreshCandidates(
   prepared: PreparedSource,
   storage: LongTermMemoryStorage,
   overlay?: ReadonlyMap<string, LtmNote>,
+  committedNotes?: BatchCommittedNotes,
 ) {
   if (!prepared.recompile) return null;
   try {
@@ -287,7 +283,7 @@ async function recompilePreparedWithFreshCandidates(
     // batch's newer projected state, so it normally wins — except when the durable note reached a
     // terminal status after the projection, which the stale active copy must not revive.
     const candidates = new Map<string, LtmNote>();
-    for (const note of await storage.listNotes()) candidates.set(note.id, note);
+    for (const note of await (committedNotes?.list() ?? storage.listNotes())) candidates.set(note.id, note);
     for (const note of overlay?.values() ?? []) {
       const durable = candidates.get(note.id);
       candidates.set(
@@ -304,9 +300,61 @@ async function recompilePreparedWithFreshCandidates(
   }
 }
 
+type BatchCommittedNotes = ReturnType<typeof batchCommittedNotes>;
+
+/**
+ * The committed vault notes for one batch, listed once instead of once per item. Notes that any vault write touches
+ * afterwards (source refreshes, draft apply, anything else) are re-read before the next listing, so the list stays
+ * equal to a fresh listNotes(), in the same order. A write that names no files, or a failed re-read, lists again.
+ */
+function batchCommittedNotes(storage: LongTermMemoryStorage) {
+  let notes: Map<string, LtmNote> | undefined;
+  const written = new Set<string>();
+  const stop = watchLtmVaultWrites(storage.root, (paths) => {
+    if (!notes) return;
+    if (!paths) notes = undefined;
+    else for (const path of paths) if (path.startsWith(`${LTM_VAULT_DIR}/`)) written.add(basename(path, ".json"));
+  });
+  return {
+    stop,
+    async list() {
+      if (notes && written.size) {
+        const noteIds = [...written];
+        written.clear();
+        const fresh = await storage.getNotesByIds(noteIds).catch(() => undefined);
+        // A failed re-read, or a write that named no files while it ran, falls back to a full listing below.
+        if (!fresh || !notes) notes = undefined;
+        else {
+          let added = false;
+          for (const noteId of noteIds) {
+            const note = fresh.get(noteId);
+            if (!note) notes.delete(noteId);
+            else {
+              added ||= !notes.has(noteId);
+              notes.set(noteId, note);
+            }
+          }
+          // listNotes() orders by id; keep that order so the candidate order a fresh listing gives is unchanged.
+          if (added) notes = new Map([...notes].sort(([left], [right]) => left.localeCompare(right)));
+        }
+      }
+      if (!notes) {
+        written.clear();
+        notes = new Map((await storage.listNotes()).map((note) => [note.id, note]));
+      }
+      return notes.values();
+    },
+  };
+}
+
 async function commitPreparedLongTermMemorySource(
   prepared: PreparedSource,
-  options: { root?: string; overlay?: Map<string, LtmNote>; applyLowRisk?: boolean },
+  options: {
+    root?: string;
+    overlay?: Map<string, LtmNote>;
+    applyLowRisk?: boolean;
+    committedNotes?: BatchCommittedNotes;
+  },
 ) {
   const storage = new LongTermMemoryStorage(options.root);
   // ponytail: serialize finalization per vault; use narrower locks only if local commit throughput becomes a bottleneck.
@@ -314,7 +362,12 @@ async function commitPreparedLongTermMemorySource(
     // Reconcile against the committed vault plus any sibling projections this batch already
     // prepared, then finalize. A concurrent import or sibling source may have created the
     // compatible target after the preparation snapshot that reconciliation originally saw.
-    const fresh = await recompilePreparedWithFreshCandidates(prepared, storage, options.overlay);
+    const fresh = await recompilePreparedWithFreshCandidates(
+      prepared,
+      storage,
+      options.overlay,
+      options.committedNotes,
+    );
     const response = fresh?.response ?? prepared.response;
     const diagnostics = fresh?.diagnostics ?? prepared.diagnostics;
     const outcome = fresh?.outcome ?? prepared.outcome;
@@ -384,7 +437,7 @@ export async function processLongTermMemorySource(options: PrepareOptions & { ap
     root: options.root,
     applyLowRisk: options.applyLowRisk,
   });
-  if (committed.applyResult?.appliedMutationIds.length) await rebuildAfterSourceExtraction(options.root);
+  if (committed.applyResult?.appliedMutationIds.length) scheduleLongTermMemoryIndexRebuild(options.root);
   return {
     operationId: prepared.operationId,
     draft: committed.draft,
@@ -405,7 +458,14 @@ function failed(
   isCancelled: boolean,
   prepared?: PreparedSource,
 ): LtmImportedSourceResult {
-  const message = error instanceof Error ? error.message : `Failed to ${stage} imported source`,
+  // An unexpected failure's message can carry file paths or library internals, so it stays in the server log.
+  const unexpected = !isCancelled && !(error instanceof LtmServiceError);
+  if (unexpected) logger.error(error, "[ltm] Failed to %s imported source %s", stage, item.sourceId);
+  const message = unexpected
+      ? `Failed to ${stage} imported source. Details are in the server log.`
+      : error instanceof Error
+        ? error.message
+        : `Failed to ${stage} imported source`,
     base = {
       sourceId: item.sourceId,
       title: item.title,
@@ -528,7 +588,9 @@ export async function processLongTermMemorySourceBatch(options: {
   // projections, so an independent write landing between items could otherwise make it stale
   // against the vault at the next item's commit-time reconciliation. The lock is reentrant, so each
   // commit reuses it; the post-batch index rebuild stays outside and runs after release.
-  await withLtmVaultLock(new LongTermMemoryStorage(options.root).root, async () => {
+  const storage = new LongTermMemoryStorage(options.root);
+  const committedNotes = batchCommittedNotes(storage);
+  await withLtmVaultLock(storage.root, async () => {
     for (const entry of preparedResults) {
       if (!entry) continue;
       if (entry.state === "failed") {
@@ -542,6 +604,7 @@ export async function processLongTermMemorySourceBatch(options: {
           root: options.root,
           overlay,
           applyLowRisk: options.applyLowRisk,
+          committedNotes,
         });
         hasAppliedMutations ||= (committed.applyResult?.appliedMutationIds.length ?? 0) > 0;
         // extractionStatus and retryable both follow outcome.incomplete, which the union type cannot see.
@@ -568,7 +631,7 @@ export async function processLongTermMemorySourceBatch(options: {
         );
       }
     }
-  });
-  if (hasAppliedMutations) await rebuildAfterSourceExtraction(options.root);
+  }).finally(committedNotes.stop);
+  if (hasAppliedMutations) scheduleLongTermMemoryIndexRebuild(options.root);
   return results;
 }
