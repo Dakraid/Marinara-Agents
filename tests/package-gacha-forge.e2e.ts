@@ -188,6 +188,9 @@ test("Forge fills every screen, toggles inside the Engine and keeps world drafts
     game._hudView = "chapter";
     game._plan = { title: "Chapter One", nodes: [] };
     game._artBlocking = false;
+    game._artReady = true;
+    game._artState = "idle";
+    game._art = null;
     game._beatState = "ready";
     game._beat = [
       { speaker: "Narrator", text: "A quiet scene for checking the chapter header." },
@@ -227,13 +230,17 @@ test("Forge fills every screen, toggles inside the Engine and keeps world drafts
   expect(presentation.right).toBeLessThanOrEqual(1);
   expect(presentation.background).toBe("rgba(0, 0, 0, 0)");
   expect(presentation.border).toBe("0px");
-  await page.keyboard.press("Tab");
-  await chapterToggle.focus();
+  await forge.locator(".vn-top .vn-exit").focus();
+  // macOS WebKit uses Option-Tab for controls when full keyboard navigation is off.
+  await page.keyboard.press(
+    testInfo.project.name === "mobile-webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab",
+  );
   await expect(chapterToggle).toBeFocused();
   await expect(chapterToggle).toHaveCSS("outline-style", "solid");
   await page.keyboard.press("Enter");
   await expect(page.locator(".mari-home-browser-chrome")).toBeHidden();
   await expect(chapterToggle).toHaveAttribute("aria-label", "Exit fullscreen");
+  await chapterToggle.evaluate((button) => (button as HTMLElement).blur());
   await page.screenshot({
     animations: "disabled",
     path: testInfo.outputPath(`chapter-fullscreen-${testInfo.project.name}.png`),
