@@ -141,7 +141,8 @@ export function SlpSheet({
     };
   }, [open, base]);
 
-  useDialogFocusScope(open && mounted, panelRef);
+  // A base sheet counts the sheets stacked on it as its own, so Tab stays inside the top one.
+  useDialogFocusScope(open && mounted, panelRef, undefined, undefined, base ? "[data-slp-sheet]" : undefined);
 
   useEffect(() => (open && back ? registerSlpBackLayer(() => onCloseRef.current()) : undefined), [open, back]);
 

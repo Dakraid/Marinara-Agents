@@ -236,6 +236,7 @@ export function slpCreatorGoalOf(
 import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useDialogFocusScope } from "../../../hooks/use-dialog-focus-scope";
+import { registerSlpBackLayer } from "../../base/navigation/slp-back-layer";
 import { motion, useReducedMotion } from "framer-motion";
 import { SlurpSparkleVeil } from "../../base/chrome/SlpSparkleVeil";
 import { cn } from "../../../lib/utils";
@@ -707,6 +708,7 @@ function SlpStoryLayer({ title, onClose, children }: { title: string; onClose: (
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   useDialogFocusScope(true, panelRef);
+  useEffect(() => registerSlpBackLayer(() => onCloseRef.current()), []);
   useEffect(() => {
     // Window capture, stopped: an Engine dialog underneath listens on document and would close too.
     const escape = (event: globalThis.KeyboardEvent) => {

@@ -51,6 +51,8 @@ function useSlpStirDeckNavigate({ navigation, onNavigate }: Pick<SlurpHomeProps,
     if (!stir) go(next);
     else if (current.mode === "creator" && current.view === "messages") go({ mode: "creator", view: "hub" });
   });
+  // Leaving Slurp with Stir open must not reopen it on the next visit.
+  useEffect(() => () => useSlpStirDeck.setState({ open: false }), []);
   return navigate;
 }
 

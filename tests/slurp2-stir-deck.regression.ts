@@ -32,4 +32,20 @@ assert.match(sheet, /event\.key === "Escape" && !\(base && closeOpenOverlay\)/, 
 const screen = client("features/stir/SlpStirScreen.tsx");
 assert.match(screen, /<SlpSheet\s+open=\{sheet\.open\}\s+onClose=\{sheet\.onClose\}\s+base\s+back/);
 
+assert.match(
+  sheet,
+  /useDialogFocusScope\(open && mounted, panelRef, undefined, undefined, base \? "\[data-slp-sheet\]" : undefined\)/,
+  "Tab stays in the sheet on top",
+);
+assert.match(
+  host,
+  /useEffect\(\(\) => \(\) => useSlpStirDeck\.setState\(\{ open: false \}\), \[\]\);/,
+  "leaving Slurp closes Stir",
+);
+assert.match(
+  client("app/screens/SlpHomeHelpers.tsx"),
+  /useEffect\(\(\) => registerSlpBackLayer\(\(\) => onCloseRef\.current\(\)\), \[\]\);/,
+  "Android back closes a Story",
+);
+
 console.log("slurp2 stir deck: ok");
