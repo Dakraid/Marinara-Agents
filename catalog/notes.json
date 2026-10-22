@@ -444,10 +444,28 @@
     "gacha-forge": {
       "versions": [
         {
+          "version": "10.1.0",
+          "date": "2026-10-22",
+          "notes": "- Includes upstream 1.8.14 and 1.8.15. On a phone turned sideways, world creation uses the whole screen width and scrolls as one page with a slim Back and Next row. Tapping a text field no longer zooms iPhone in. Ticking a cast member or outfit theme no longer scrolls the list back to the top on Safari-based browsers.",
+          "highlight": true
+        },
+        {
           "version": "10.0.1",
           "date": "2026-10-20",
           "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
           "highlight": true
+        },
+        {
+          "version": "1.8.15",
+          "date": "2026-10-22",
+          "notes": "- Fixed: on iPhone and other Safari-based browsers, ticking a cast member or an outfit theme no longer scrolls the list (and, on a phone turned sideways, the whole world-creation page) back to the top.",
+          "highlight": false
+        },
+        {
+          "version": "1.8.14",
+          "date": "2026-10-22",
+          "notes": "- On a phone turned sideways, creating a world now uses the whole width of the screen and scrolls as one page: the title and the step tabs scroll away with the fields, and a slim Back and Next row stays at the bottom until you start typing.\n- Fixed: tapping a text field in the game no longer makes iPhone zoom in.",
+          "highlight": false
         },
         {
           "version": "1.8.13",
@@ -644,6 +662,12 @@
     "long-term-memory": {
       "versions": [
         {
+          "version": "10.2.0",
+          "date": "2026-10-22",
+          "notes": "- Includes upstream 1.4.85: keyboard and focus fixes. Sources rows are reachable with Tab and open with Enter or Space. Accepting a Review Queue change keeps the list and your place while memories reload. Memory Vault dialogs show on a narrow panel. Place picker arrow keys keep the highlight in view. Backup controls have a cleaner Tab order and screen-reader name.",
+          "highlight": true
+        },
+        {
           "version": "10.1.0",
           "date": "2026-10-22",
           "notes": "- Includes upstream 1.4.58 to 1.4.84. Other Agents can ask for memories about the characters they write as, and packages can no longer reach the memory vault itself, only memories a character has everywhere.\n- New \"Finish cut-off answers\" setting asks the model for the rest of an extraction answer cut at the output limit.\n- Many reliability fixes: names starting with \"Char\" or \"Rel\", digit-led ids, shared-memory review instead of private copies, one background recall-index rebuild, a capped Memory Vault list, a 1.5 MB debug-log trim, and no raw error text (file paths) in messages.",
@@ -654,6 +678,12 @@
           "date": "2026-10-20",
           "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
           "highlight": true
+        },
+        {
+          "version": "1.4.85",
+          "date": "2026-10-22",
+          "notes": "- Five keyboard and focus fixes. In Sources, Tab now reaches the name of each chat or character source in the list, and Enter or Space opens it, so Re-extract, Manage, Review and Open memory work without a mouse. Accepting a change in the Review Queue no longer hides the queue while the memories it shows reload: the list, your place in it and the keyboard position stay, a small spinner shows beside \"Review Queue\", and Accept waits until the memories have reloaded. On a narrow panel, the Memory Vault's \"Rename details\" and unsaved-changes dialogs now show instead of leaving the screen frozen. Arrow keys in the place picker keep the highlighted place in view. In Memory Settings, Tab after \"Choose backup\" goes straight to \"Reset settings\", and screen readers name \"Choose backup\" once.",
+          "highlight": false
         },
         {
           "version": "1.4.84",
@@ -749,18 +779,6 @@
           "version": "1.4.69",
           "date": "2026-10-21",
           "notes": "- Long-Term Memory now starts after a rollback when a newer version saved a setting this version can't use: a new field inside a settings group (such as a prompt template), a new choice (such as a reasoning effort or chat mode), or a value above this version's limit. That setting uses its default, a list keeps the entries this version knows, and the server log names it once, without its value. The file usually keeps the newer value, and saving Settings or Delete all keeps it unless you change that setting. While the retention settings hold such a value, automatic cleanup of old receipts, logs and drafts pauses, so no limit you didn't choose deletes anything. It resumes when the newer version returns, or when you reset the settings or restore a backup made during the rollback, whose limits then apply. Before, activation failed. Wrong types, prompt templates too long for this version, more templates than it allows while one is active, and backups from a newer version are still refused.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.68",
-          "date": "2026-10-21",
-          "notes": "- Extraction no longer drops a memory that cites the chat summary or import it came from, for example as its evidence.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.67",
-          "date": "2026-10-21",
-          "notes": "- Applying several Review suggestions in a row, and extraction that applies memories, no longer rebuild the recall index after each one. One rebuild runs in the background a second after the last change (at most 10 seconds after the first). While it embeds, other saves and debug log entries no longer wait, unless new changes interrupt it three times in a row; it then finishes under the vault lock, as before. Recall still sees every applied memory, because it waits for that rebuild first. After you switch the embedding source, recall answers straight away from keyword matching while the vault is embedded again in the background, then uses the new embeddings; before, the first recall waited for the whole vault to be embedded again. Review no longer says the index rebuild failed after you accept a suggestion. The index status shows stale or building until it is next loaded, then failed (or stale if the embedding source could not be loaded), and the next change or recall rebuilds it.",
           "highlight": false
         }
       ]

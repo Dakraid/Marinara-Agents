@@ -1,6 +1,17 @@
+## 10.1.0 — 2026-10-22
+
+- Includes upstream 1.8.14 and 1.8.15. On a phone turned sideways, world creation uses the whole screen width and scrolls as one page with a slim Back and Next row. Tapping a text field no longer zooms iPhone in. Ticking a cast member or outfit theme no longer scrolls the list back to the top on Safari-based browsers.
+
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 1.8.15 — 2026-10-22
+- Fixed: on iPhone and other Safari-based browsers, ticking a cast member or an outfit theme no longer scrolls the list (and, on a phone turned sideways, the whole world-creation page) back to the top.
+
+## 1.8.14 — 2026-10-22
+- On a phone turned sideways, creating a world now uses the whole width of the screen and scrolls as one page: the title and the step tabs scroll away with the fields, and a slim Back and Next row stays at the bottom until you start typing.
+- Fixed: tapping a text field in the game no longer makes iPhone zoom in.
 
 ## 1.8.13 — 2026-10-19
 - Fixed: places named in Korean, or in any other non-Latin script, get their background painted. Their names used to come out empty, so the background was never made; places whose names mixed Hangul and numbers could also share one background.
