@@ -181,6 +181,62 @@ test("Forge fills every screen, toggles inside the Engine and keeps world drafts
       });
     }
   }
+  // Read a real chapter scene, rather than only the chapter list and its loading screen.
+  await forge.evaluate((node) => {
+    const game = node as any;
+    game._hudView = "chapter";
+    game._plan = { title: "Chapter One", nodes: [] };
+    game._artBlocking = false;
+    game._beatState = "ready";
+    game._beat = [
+      { speaker: "Narrator", text: "A quiet scene for checking the chapter header." },
+      { speaker: "Narrator", text: "The fullscreen toggle must not cover the artwork." },
+    ];
+    game._activeStoryNode = { id: "chapter-layout-proof", title: "A quiet scene", replay: true };
+    game._beatAt = 0;
+    game._beatStartAt = 0;
+    game._beatResumeAsk = 0;
+    game._renderBrowser();
+  });
+  const chapterToggle = forge.locator(".vn-top > .gf-fs-chapter");
+  await expect(chapterToggle).toBeVisible();
+  const presentation = await chapterToggle.evaluate((button) => {
+    const box = button.getBoundingClientRect();
+    const header = button.parentElement!.getBoundingClientRect();
+    const stage = button.closest(".gf-stage")!.getBoundingClientRect();
+    const icon = button.querySelector("svg")!.getBoundingClientRect();
+    const style = getComputedStyle(button);
+    return {
+      width: box.width,
+      height: box.height,
+      iconWidth: icon.width,
+      centerGap: Math.abs(box.top + box.height / 2 - (header.top + header.height / 2)),
+      top: box.top - stage.top,
+      right: stage.right - box.right,
+      background: style.backgroundColor,
+      border: style.borderTopWidth,
+    };
+  });
+  expect(presentation.width).toBeGreaterThanOrEqual(44);
+  expect(presentation.height).toBeGreaterThanOrEqual(44);
+  expect(presentation.iconWidth).toBeLessThanOrEqual(18);
+  expect(presentation.centerGap).toBeLessThanOrEqual(1);
+  expect(presentation.top).toBeGreaterThanOrEqual(0);
+  expect(presentation.right).toBeLessThanOrEqual(1);
+  expect(presentation.background).toBe("rgba(0, 0, 0, 0)");
+  expect(presentation.border).toBe("0px");
+  await chapterToggle.focus();
+  await expect(chapterToggle).toHaveCSS("outline-style", "solid");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".mari-home-browser-chrome")).toBeHidden();
+  await expect(chapterToggle).toHaveAttribute("aria-label", "Exit fullscreen");
+  await page.screenshot({
+    animations: "disabled",
+    path: testInfo.outputPath(`chapter-fullscreen-${testInfo.project.name}.png`),
+  });
+  await chapterToggle.click();
+  await expect(page.locator(".mari-home-browser-chrome")).toBeVisible();
+  await expect(chapterToggle).toHaveAttribute("aria-label", "Enter fullscreen");
   if (mobile) {
     await toggle().click();
     await page.setViewportSize({ width: 390, height: 844 });

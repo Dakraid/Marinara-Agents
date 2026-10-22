@@ -9,6 +9,8 @@ on mobile browsers without native element fullscreen. The game stage fills the a
 height in both modes rather than fitting a fixed 16:9 frame. The existing portrait rotation prompt
 remains; landscape phones gain the width previously left in the gutters.
 
+Chapter scenes in 1.9.1 use a small fullscreen icon in the top-right header fade, with a full touch target. Unit cards also show their affinity symbol; unit portrait decoding and favorite/help button alignment are improved.
+
 Requires Engine capability API 1.376. Earlier releases described below retain their historical behavior.
 
 Gacha Forge is a standalone gacha game mode: describe a world and it builds the rest — banners to pull on, a cast the model writes and paints for you, and the story, battles and events that grow around them. Lorebooks feed the forge when you have them; a hand-written scenario is enough.

@@ -140,6 +140,28 @@
               "replace": "oy=[{version:null,fixed:[\"Fullscreen now fills the Engine content area while keeping its topbar, including on iPhone Safari.\",\"Every game screen uses the available width instead of fitting a fixed 16:9 frame.\"]},{version:\"1.8.15\",fixed:"
             }
           ]
+        },
+        {
+          "version": "1.9.1",
+          "notes": "Chapter header icon, centered Unit controls, visible portrait decoding and existing affinity badges; maintained source supplies the presentation.",
+          "edits": [
+            {
+              "find": "ds=\"1.9.0\"",
+              "replace": "ds=\"1.9.1\""
+            },
+            {
+              "find": "oy=[{version:null,fixed:",
+              "replace": "oy=[{version:null,fixed:[\"Chapter fullscreen controls now use a small icon in the top-right header fade.\",\"Visible unit portraits load and decode immediately on detail updates.\",\"Favorite and help icons are centered in their buttons.\",\"Unit cards show their affinity symbol in the top-right corner.\"]},{version:\"1.9.0\",fixed:"
+            },
+            {
+              "find": "u(ml(t))+'\" alt=\"\" loading=\"lazy\">'",
+              "replace": "u(ml(t))+'\" alt=\"\" loading=\"eager\" decoding=\"sync\">'"
+            },
+            {
+              "find": "data-fly=\"'+u(t.id)+'\">'+It(t.portrait,\"\")+'<span class=\"u-stars\">'",
+              "replace": "data-fly=\"'+u(t.id)+'\">'+It(t.portrait,\"\")+(e?forgeUnitTypeBadge(t,bt):\"\")+'<span class=\"u-stars\">'"
+            }
+          ]
         }
       ]
     },
