@@ -45,6 +45,7 @@ function story(input: {
   stages: Stage[];
   ending: { label: string; line: string; look?: Look; fact?: { tag: string; label: string; line: string } };
   weight?: number;
+  track?: "work" | "public";
 }): SlpStoryline {
   return slpStorylineSchema.parse({
     id: input.id,
@@ -57,7 +58,9 @@ function story(input: {
     cast: [{ key: "her", needs: {} }],
     start: { mode: "auto", weight: input.weight ?? 0.6, cooldownDays: 45 },
     maxDays: 21,
-    stages: input.stages.map(stage),
+    stages: input.stages.map((entry) =>
+      stage(entry.condition ? { ...entry, condition: { track: input.track ?? "work", ...entry.condition } } : entry),
+    ),
     endings: [
       {
         key: "done",
@@ -97,8 +100,7 @@ const set = (key: string, label: string, look: string, line: string): Stage => (
   label,
   days: [2, 3],
   condition: { tag: "lingerie-week", label: "Lingerie week", line: `It is your lingerie week. Today: ${look}.`, look },
-  beats: [tease(line)],
-  deck: [crowd("this one. this one forever", "ok I need a minute", "the fans picked RIGHT")],
+  beats: [tease(line), crowd("this one. this one forever", "ok I need a minute", "the fans picked RIGHT")],
   next: "finale",
 });
 
@@ -182,7 +184,7 @@ export const SLURP_LINGERIE_PACK = pack(
             line: "A lingerie brand sent you a box of their new line to try on for your fans.",
           },
           beats: [post("a lingerie brand sent me their whole new line 👀")],
-          enter: [{ kind: "brand-offer", words: ["lingerie", "underwear", "intimates", "bra*", "lace"] }],
+          enter: [{ kind: "brand-offer", words: ["lingerie", "underwear", "intimates", "bra", "bras", "lace"] }],
         },
         {
           key: "try-on",
@@ -219,8 +221,7 @@ const costume = (key: string, label: string, look: string, line: string): Stage 
     line: `You are in costume as ${label.toLowerCase()}.`,
     look,
   },
-  beats: [post(line)],
-  deck: [crowd("the accuracy??", "ok now do the lewd version", "I'm not ok")],
+  beats: [post(line), crowd("the accuracy??", "ok now do the lewd version", "I'm not ok")],
   next: "lewd",
 });
 
@@ -343,8 +344,8 @@ export const SLURP_COSPLAY_PACK = pack(
 // ── Feet ────────────────────────────────────────────────────────────────────────────────────────────────
 const FEET: SlpFit = {
   level: "suggestive",
-  topic: ["feet", "foot", "toes", "soles", "heels", "socks", "pedicure"],
-  hardNo: ["feet", "foot", "toes"],
+  topic: ["feet", "foot", "toes", "soles", "pedicure"],
+  hardNo: ["feet", "toes"],
 };
 export const SLURP_FEET_PACK = pack(
   "slurp-pack-feet",
@@ -367,8 +368,10 @@ export const SLURP_FEET_PACK = pack(
             label: "Foot fans",
             line: "Foot fans keep asking about your feet in every comment section.",
           },
-          deck: [crowd("feet pics when", "the toes in pic 3 👀", "I'd pay for the feet alone")],
-          beats: [post("why does everyone want my feet lol")],
+          beats: [
+            post("why does everyone want my feet lol"),
+            crowd("feet pics when", "the toes in pic 3 👀", "I'd pay for the feet alone"),
+          ],
         },
         {
           key: "pedicure",
@@ -428,6 +431,7 @@ export const SLURP_FEET_PACK = pack(
         },
         {
           key: "heels",
+          next: "done",
           label: "High heels",
           days: [2, 3],
           condition: {
@@ -484,8 +488,10 @@ export const SLURP_DOMSUB_PACK = pack(
             line: "You are in your domme era: you give orders now and your fans like it.",
             look: "a black leather corset, thigh-high boots, a riding crop",
           },
-          beats: [post("new rules on this page. you'll learn them")],
-          deck: [crowd("yes mistress", "please", "I'll do anything")],
+          beats: [
+            post("new rules on this page. you'll learn them"),
+            crowd("yes mistress", "please", "I'll do anything"),
+          ],
         },
         {
           key: "tribute",
@@ -554,6 +560,7 @@ export const SLURP_DOMSUB_PACK = pack(
         },
         {
           key: "strict",
+          next: "done",
           label: "Strict rules",
           days: [3, 4],
           minSpice: 2,
@@ -586,7 +593,7 @@ export const SLURP_DOMSUB_PACK = pack(
 // ── Exhibition ──────────────────────────────────────────────────────────────────────────────────────────
 const EXHIBITION: SlpFit = {
   level: "nudity",
-  topic: ["exhibition*", "exhibitionist", "public", "outdoor*", "flashing", "risky"],
+  topic: ["exhibition*", "exhibitionist", "public", "flashing"],
   hardNo: ["public", "outdoor", "exhibition"],
 };
 export const SLURP_EXHIBITION_PACK = pack(
@@ -599,6 +606,7 @@ export const SLURP_EXHIBITION_PACK = pack(
       name: "Almost caught",
       description: "An outdoor shoot goes a little too far and somebody almost walks in. The fans go wild.",
       fit: EXHIBITION,
+      track: "public",
       tags: ["exhibition"],
       stages: [
         {
@@ -622,8 +630,10 @@ export const SLURP_EXHIBITION_PACK = pack(
             label: "Almost caught",
             line: "Somebody almost walked in on your outdoor shoot and you are still shaking from it.",
           },
-          beats: [post("someone ALMOST walked in. my heart")],
-          deck: [crowd("you're insane", "do it again", "where is this 👀")],
+          beats: [
+            post("someone ALMOST walked in. my heart"),
+            crowd("you're insane", "do it again", "where is this 👀"),
+          ],
           influences: [{ target: "audience.growth", operation: "multiply", value: 1.3 }],
         },
         {
@@ -650,6 +660,7 @@ export const SLURP_EXHIBITION_PACK = pack(
       name: "Fan dares",
       description: "Her fans dare her to shoot somewhere risky. She picks the dare they vote for.",
       fit: EXHIBITION,
+      track: "public",
       tags: ["exhibition", "fan-vote"],
       weight: 0.5,
       stages: [
@@ -673,6 +684,7 @@ export const SLURP_EXHIBITION_PACK = pack(
         },
         {
           key: "balcony",
+          next: "done",
           label: "The balcony",
           days: [1, 2],
           condition: {
@@ -685,6 +697,7 @@ export const SLURP_EXHIBITION_PACK = pack(
         },
         {
           key: "changing-room",
+          next: "done",
           label: "The changing room",
           days: [1, 2],
           condition: {

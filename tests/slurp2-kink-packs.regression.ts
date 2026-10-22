@@ -17,6 +17,7 @@ import {
 import { SLURP_CONTENT_PACK_LIBRARY } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-content-pack-library.ts";
 import { SLURP_KINK_PACKS } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-kink-packs.ts";
 import { slurpPackFits } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-occasion-beats.ts";
+import { slurpStageOutcomes } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-project-storyline.ts";
 import { slpStorylineSchema } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-storyline.ts";
 
 const ids = [
@@ -108,5 +109,51 @@ assert.ok(
   done.outcomes.some((outcome) => outcome.kind === "add-look"),
   "the set goes in her closet",
 );
+
+// Every fan vote plays exactly one branch, for each option.
+const runOf = (storyline: (typeof storylines)[number], pick: number) => {
+  let next = slpRequestDrama(SLP_EMPTY_DRAMA_STATE, storyline.id, "mia");
+  const keys = new Set<string>();
+  for (let at = T0; at < T0 + 40 * 24 * HOUR; at += 6 * HOUR) {
+    next = slpAdvanceDrama(next, {
+      at: new Date(at),
+      level: "soap",
+      situations: [],
+      dramas: [storyline],
+      dials: {},
+      world: scene,
+      activity: 1,
+      newId: () => `id-${++counter}`,
+    }).state;
+    const run = next.runs[0];
+    if (run?.stage) keys.add(run.stage);
+    if (run?.choice && run.choice.answer === null)
+      next = { ...next, runs: [{ ...run, choice: { ...run.choice, answer: pick, by: "fans" } }] };
+    if (run?.endedAt) break;
+  }
+  return keys;
+};
+for (const storyline of storylines) {
+  const choice = storyline.stages.find((entry) => entry.choice)?.choice;
+  if (!choice) continue;
+  const branches = choice.options.map((option) => option.next);
+  for (const [pick, branch] of branches.entries()) {
+    const keys = runOf(storyline, pick);
+    assert.deepEqual(
+      branches.filter((key) => keys.has(key)),
+      [branch],
+      `${storyline.id} vote ${pick}: ${[...keys]}`,
+    );
+  }
+}
+
+// A stage condition reaches the writer: it has a track, a line and its look.
+const entered = slurpStageOutcomes(week, { enter: "black" }).find((outcome) => outcome.kind === "add-creator-fact");
+assert.equal(entered?.kind === "add-creator-fact" && entered.track, "work");
+assert.match(JSON.stringify(entered), /black lace/);
+const dare = slurpStageOutcomes(byId("fan-dares"), { enter: "balcony" }).find(
+  (outcome) => outcome.kind === "add-creator-fact",
+);
+assert.equal(dare?.kind === "add-creator-fact" && dare.track, "public");
 
 console.log("slurp2 kink packs: ok");
