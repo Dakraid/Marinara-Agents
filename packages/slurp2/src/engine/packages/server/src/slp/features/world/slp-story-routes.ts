@@ -23,6 +23,7 @@ import {
   type SlpStoryPackPreview,
 } from "../../modules/world/events/slp-story-packs.js";
 import { projectSlpStoryCalendar } from "../../modules/world/events/slp-story-runtime.js";
+import { SLURP_CONTENT_PACK_LIBRARY } from "../../modules/world/events/slp-content-pack-library.js";
 import { slurpContentPackSummaries, slurpPackGate } from "../../modules/world/events/slp-content-packs.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
 import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
@@ -49,6 +50,9 @@ const applySchema = z
       .max(100),
   })
   .strict();
+
+const RESERVED_PACK_IDS = () =>
+  new Set([...slpBundledStoryPacks(), ...SLURP_CONTENT_PACK_LIBRARY].map((pack) => pack.id));
 
 /** Story-pack review and the World occurrence ledger share this deliberately small route module. */
 export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteDeps) {
@@ -79,6 +83,9 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
     prune();
     const parsed = parseSlpStoryPack(req.body);
     if (!parsed.pack) return reply.code(400).send({ error: parsed.errors });
+    // Slurp's own pack ids (bundled and built-in) carry its core entries; an upload may not take one.
+    if (RESERVED_PACK_IDS().has(parsed.pack.id))
+      return reply.code(400).send({ error: ["Slurp already uses this pack id. Give the pack its own id."] });
     const settings = await noodle.getSettings();
     const preview = previewSlpStoryPack(parsed.pack, {
       arcs: settings.arcLibrary,
@@ -213,6 +220,13 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
       storylines: library.storylines.filter((entry) => !mine(entry)),
       packs: library.packs.filter((pack) => pack.id !== id),
     });
+    // A running occurrence holds its own copy of the event; it ends with the pack.
+    for (const occurrence of await noodle.listStoryOccurrences())
+      if (
+        (occurrence.status === "active" || occurrence.status === "suggested") &&
+        occurrence.blueprint.provenance?.packId === id
+      )
+        await noodle.setStoryOccurrenceStatus(occurrence.id, "cancelled");
     const settings = await noodle.getSettings();
     const { [id]: _switch, ...contentPacks } = settings.contentPacks;
     await noodle.updateSettings({

@@ -135,7 +135,7 @@ export function SlpContentPacksSection({
                     if (!window.confirm(t("ui.slurp.packs.content.removeConfirm", { name: pack.name }))) return;
                     remove.mutate(pack.id);
                   }}
-                  className="ml-auto inline-flex min-h-10 items-center gap-1 rounded-lg px-2 text-xs font-bold text-[var(--noodle-accent-foreground)] hover:bg-[var(--slurp-surface-raised)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+                  className="ml-auto inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-bold text-[var(--noodle-accent-foreground)] hover:bg-[var(--slurp-surface-raised)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
                 >
                   <Trash2 size={14} aria-hidden="true" />
                   {t("ui.slurp.packs.content.remove")}

@@ -579,6 +579,12 @@ items (PR 8). Version: one patch bump.
   the planner looks them up by content id after the built-in packs. A beat type the planner does not know is
   dropped. A regression reads every built-in pack as a v2 file (arcs as storylines, events as occasions);
   `dateBeats`, birthday and first thousand subscribers stay built-in code hooks.
+- **Review fixes.** The gate also sits in `slpLiveEvents`, the one path for event effects (prompts, economy,
+  signals), so an off pack's events have no effect at all. An upload may not use a bundled or built-in pack id
+  (those carry Slurp's core entries). Remove also cancels the pack's active and suggested occurrences.
+- **Known limits:** packs imported before 0.3.58 have no record, so they are not in the list and cannot be
+  removed there (their entries keep their own switches). Remove, like apply, reads settings outside the update
+  queue. A "copy" of an occasion without a `contentId` gets a new id and loses its beats.
 - **Not yet:** topic chips on cards beyond the list, taste weighting, looks from outcomes (5c).
 
 ## Later: Basic and add-ons

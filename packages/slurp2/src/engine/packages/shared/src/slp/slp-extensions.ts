@@ -109,8 +109,19 @@ export function slpBrandDealsPace<T extends string>(settings: SlpExtensionSettin
  * reach, economy, calendar beats) take this; editors keep `settings.platformEvents`, so the saved
  * list is never lost.
  */
-export function slpLiveEvents<T>(settings: SlpExtensionSettings & { platformEvents: readonly T[] }): readonly T[] {
-  return slpExtensionOn(settings, "world") ? settings.platformEvents : [];
+export function slpLiveEvents<T>(
+  settings: SlpExtensionSettings & {
+    platformEvents: readonly T[];
+    contentPacks?: Readonly<Record<string, boolean>>;
+  },
+): readonly T[] {
+  if (!slpExtensionOn(settings, "world")) return [];
+  const packs = settings.contentPacks ?? {};
+  // An imported pack switched off is a gate: its events stay saved but have no effect.
+  return settings.platformEvents.filter((event) => {
+    const packId = (event as { provenance?: { packId?: string } }).provenance?.packId;
+    return !packId || packs[packId] !== false;
+  });
 }
 
 /** Arcs that stand still while Storylines is off have no effect: no stat change, no mood, no life line. */
