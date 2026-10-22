@@ -490,8 +490,7 @@ const features = [
     assetPaths: [
       "slurp2-logo.png",
       "slurp2agent.png",
-      // Mari's onboarding pictures ship with Slurp: the Engine renamed or never had them.
-      "assets/mari/chibi-professor-mari.webp",
+      // The Basic setup demo post's pictures ship with Slurp: the Engine never had them.
       "assets/mari/Mari_noodler_teaser_locked.webp",
       "assets/mari/Mari_noodler_teaser_unlocked.webp",
       ...slurp2LazyLocalePaths,

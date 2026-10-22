@@ -16,7 +16,7 @@ const used = new Set<string>();
 for (const file of files("packages/slurp2/src/engine/packages/client/src/slp"))
   for (const match of readFileSync(file, "utf8").matchAll(/"\/api\/capability-packages\/slurp2\/assets\/([^"]+)"/gu))
     used.add(match[1]!);
-assert.ok(used.size >= 3, `the onboarding pictures are named (${used.size})`);
+assert.ok(used.size >= 2, `the demo post pictures are named (${used.size})`);
 for (const path of used) {
   assert.ok(existsSync(join("packages/slurp2", path)), `${PREFIX}${path} is in the package`);
   assert.ok(builder.includes(`"${path}"`), `${path} is in assetPaths`);
