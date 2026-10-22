@@ -14,6 +14,7 @@ import { createSlurpEventsStorage } from "../../data/notifications/slp-notificat
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import { readSlurpSpice, resolveSlurpCreatorSpice } from "../../data/creators/slp-spice-storage.js";
 import { readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
+import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
 import { slpStorylineGated } from "../../modules/world/events/slp-drama-cast.js";
 import { getSlurpPostGuidance } from "../../data/settings/slp-post-guidance-storage.js";
 import { selectSlurpExplicitLevel } from "../../modules/feed/slp-post-guidance.js";
@@ -95,11 +96,16 @@ export async function loadDramaWorld(
       creators.map(async (creator) => {
         const account = byId.get(creator.id);
         if (!account) return creator;
-        const [fitText, spice] = await Promise.all([
-          readSlurpCreatorFitText(db, { account, source: await storage.resolveAccountSource(account) }),
-          resolveSlurpCreatorSpice(db, account),
-        ]).catch(() => [undefined, undefined] as const);
-        return fitText === undefined ? creator : { ...creator, fitText, hardNoes: spice?.hardNoes ?? [] };
+        const [fitText, spice, steering] = await Promise.all([
+          storage
+            .resolveAccountSource(account)
+            .then((source) => readSlurpCreatorFitText(db, { account, source }))
+            .catch(() => undefined),
+          resolveSlurpCreatorSpice(db, account).catch(() => undefined),
+          readSlurpCreatorSteering(db, account.id).catch(() => undefined),
+        ]);
+        if (fitText === undefined) return creator;
+        return { ...creator, fitText, hardNoes: spice?.hardNoes ?? [], avoid: steering?.avoid ?? [] };
       }),
     );
   const automatic = new Set(creators.filter((creator) => creator.automatic).map((creator) => creator.id));

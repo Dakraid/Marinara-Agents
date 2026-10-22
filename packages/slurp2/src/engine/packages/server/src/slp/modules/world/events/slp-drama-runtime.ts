@@ -65,6 +65,8 @@ export type SlpDramaCreator = {
   /** Card text and hard noes for `fit` gates; filled only when a switched-on storyline has one. */
   fitText?: string;
   hardNoes?: readonly string[];
+  /** Topics the player asked this Creator to leave out (Steering). */
+  avoid?: readonly string[];
 };
 
 /** What the ties say, as the runtime needs it. */
@@ -457,7 +459,12 @@ export function slpAdvanceDrama(
       .filter(Boolean) as SlpDramaCreator[];
     const tooHot =
       stage.minSpice !== undefined && actors.some((creator) => creator.automatic && creator.spice < stage.minSpice!);
-    const offFit = !slpFitsCreator(stage.fit, cast ? live.get(cast[drama.cast[0]!.key]!) : undefined);
+    const lead = cast ? live.get(cast[drama.cast[0]!.key]!) : undefined;
+    const offered = (stage.choice?.options ?? []).flatMap((option, at) =>
+      slpFitsCreator(option.fit, lead) ? [at] : [],
+    );
+    // A choice with no option that fits the lead is skipped like a stage that does not fit.
+    const offFit = !slpFitsCreator(stage.fit, lead) || Boolean(stage.choice && !offered.length);
     if (!cast || tooHot || offFit)
       return enter(log(run, "skipped", key), drama, wayOn(drama, index, run.cast), depth + 1);
     // A stage with no days stands until its choice is answered, or until the storyline runs out of time.
@@ -471,11 +478,7 @@ export function slpAdvanceDrama(
     );
     queue(stage.beats, entered, now + Math.max(days, 1) * DAY, key);
     write(entered, drama, { leave: run.stage, enter: key });
-    const lead = live.get(cast[drama.cast[0]!.key]!);
-    const offered = (stage.choice?.options ?? []).flatMap((option, at) =>
-      slpFitsCreator(option.fit, lead) ? [at] : [],
-    );
-    if (stage.choice && offered.length) {
+    if (stage.choice) {
       const dueAt =
         stage.choice.asks === "role" ? now + ROLE_CHOICE_HOURS * HOUR : now + stage.choice.timeoutDays * DAY;
       entered = {

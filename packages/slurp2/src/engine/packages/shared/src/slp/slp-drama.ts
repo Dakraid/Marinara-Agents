@@ -11,7 +11,11 @@ import { z } from "zod";
  * - every drama has `maxDays` and an `exit`; text is short
  */
 
-const fitWord = z.string().trim().min(1).max(60);
+const fitWord = z
+  .string()
+  .trim()
+  .max(60)
+  .regex(/[\p{L}\p{N}]/u, "a fit word needs a letter or digit");
 /**
  * A gate (docs/STORYLINES.md, PR 5), checked by `slurpPackFits`: what does not fit is skipped, never
  * softened. Plain word lists so a pack stays JSON: a word matches whole, `word*` matches a word's start.
@@ -113,6 +117,7 @@ export const slpDramaBeatSchema = z
     if (beat.channel === "post" && !beat.heat) issue("a post beat needs a heat block (its one line and angle)");
     if (beat.channel !== "post" && beat.heat) issue("only a post beat carries heat");
     if (beat.role === "crowd" && beat.channel !== "comment") issue("the crowd only comments");
+    if (beat.role === "crowd" && beat.fit) issue("a crowd beat has no Creator to fit");
     if (beat.channel === "comment" && (!beat.on || !beat.lines)) issue("a comment beat needs `on` and `lines`");
     if ((beat.channel === "dm" || beat.channel === "money") && !beat.to) issue(`a ${beat.channel} beat needs \`to\``);
     if ((beat.channel === "dm" || beat.channel === "notification") && !beat.seed)

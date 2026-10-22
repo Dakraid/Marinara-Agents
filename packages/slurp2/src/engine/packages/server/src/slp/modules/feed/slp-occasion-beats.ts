@@ -65,6 +65,7 @@ const wordsOf = (value: string) => value.toLocaleLowerCase().match(/\p{L}{3,}/gu
 const sameWord = (a: string, b: string) =>
   a === b || (a.length >= 4 && b.length >= 4 && (a.startsWith(b) || b.startsWith(a)));
 
+// ponytail: unbounded cache, one entry per distinct word list (built-ins plus imported packs); add an LRU if packs get edited a lot.
 const fitPatterns = new Map<string, RegExp>();
 /** A fit's word list as one pattern: a word matches whole, `word*` matches a word's start; pack words stay plain text. */
 export function slurpFitPattern(words: readonly string[] | undefined): RegExp | undefined {

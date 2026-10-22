@@ -6,7 +6,9 @@
  */
 import assert from "node:assert/strict";
 import {
+  slpDramaBeatSchema,
   slpDramaSchema,
+  slpFitSchema,
   slpSituationSchema,
   type SlpDrama,
   type SlpSituation,
@@ -26,6 +28,7 @@ import {
 import {
   slpDramaCast,
   slpDramaLeadFits,
+  slpFitsCreator,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-cast.ts";
 import { slpStorylineSchema } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-storyline.ts";
 import { slpDramaStorylines } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-library.ts";
@@ -639,7 +642,7 @@ async function main() {
         choice: {
           asks: "player",
           question: "Which?",
-          default: 1,
+          default: 0,
           timeoutDays: 1,
           options: [
             { label: "Hot", next: "end", fit: { level: "explicit" } },
@@ -667,6 +670,49 @@ async function main() {
   assert.deepEqual([gatedC.runs[0]?.choice?.count, gatedC.runs[0]?.choice?.offered], [1, [1]]);
   const gatedAnswer = slpAnswerDramaChoice(gatedC, gatedC.runs[0]!.id, 0, new Date(T0 + 26 * HOUR));
   assert.equal(gatedAnswer?.runs[0]?.choice?.answer, 1, "chip 0 is the real option 1");
+  assert.equal(
+    gatedTick(gatedC, T0 + 50 * HOUR, baker).runs[0]?.choice?.answer,
+    1,
+    "the default was not offered: a timed-out choice falls on an offered option",
+  );
+  // No option fits: the choice stage is skipped, and its way out ends the run.
+  const allHot = {
+    ...gated,
+    stages: gated.stages.map((stage) =>
+      stage.choice
+        ? {
+            ...stage,
+            choice: {
+              ...stage.choice,
+              options: stage.choice.options.map((option) => ({ ...option, fit: { level: "explicit" as const } })),
+            },
+          }
+        : stage,
+    ),
+  };
+  const hotTick = (state: SlpDramaState, at: number) =>
+    slpAdvanceDrama(state, {
+      ...input(at, { situations: [], dramas: [] }),
+      dramas: [allHot],
+      world: world([creator("mia", [], { spice: 1, ...baker })]),
+    }).state;
+  assert.equal(hotTick(hotTick(gatedAsk, T0), T0 + 25 * HOUR).runs[0]?.ending, "done");
+  // Steering leave-out topics count, and a fit word needs a letter; a crowd beat cannot carry a fit.
+  assert.equal(
+    slpFitsCreator({ topic: ["gym"] }, creator("x", [], { fitText: "Loves life.", avoid: ["the gym"] })),
+    false,
+  );
+  assert.equal(slpFitSchema.safeParse({ needs: ["*"] }).success, false);
+  assert.equal(
+    slpDramaBeatSchema.safeParse({
+      role: "crowd",
+      channel: "comment",
+      on: "her",
+      lines: ["wow"],
+      fit: { level: "explicit" },
+    }).success,
+    false,
+  );
 
   console.log("slurp2 drama runtime regression passed");
 }

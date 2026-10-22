@@ -40,6 +40,7 @@ export const slpFitsCreator = (fit: SlpFit | undefined, creator: SlpDramaCreator
       text: creator.fitText,
       level: SLP_EXPLICIT_LEVELS[creator.spice] ?? "none",
       hardNoes: creator.hardNoes ?? [],
+      avoid: creator.avoid ?? [],
     }));
 
 /** Whether a storyline has a `fit` anywhere, so the world has to read card texts for it. */
