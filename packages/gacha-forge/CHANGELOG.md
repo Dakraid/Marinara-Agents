@@ -1,3 +1,17 @@
+## 1.11.1 — 2026-10-23
+- Fixed generated music and effects for worlds using migrated legacy audio connections.
+- Recorded the merged Engine audio connection baseline.
+
+## 1.11.0 — 2026-10-23
+
+### New
+- Optional dialogue using explicitly assigned Engine character voices, with the current speech connection.
+- Stock Game music and effects, plus opt-in generated audio reused per world and cue.
+- A shared mute control, three precise channel volume sliders and configurable autoplay pacing.
+
+### Fixed
+- Home and story portrait frames include their bottom edge.
+
 ## 1.10.2 — 2026-10-23
 
 - New dialogue choices show intent labels instead of revealing the exact spoken line. Selected actions appear as narration; explicitly spoken choices remain protagonist dialogue.

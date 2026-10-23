@@ -277,6 +277,133 @@
               "replace": "oy=[{version:null,fixed:[\"New dialogue choices show intent labels; selected actions appear as narration, and spoken choices keep their dialogue.\"]},{version:\"1.10.1\",fixed:"
             }
           ]
+        },
+        {
+          "version": "1.11.0",
+          "notes": "Optional assigned voices, shared host stock/generated audio, world settings and voice-aware playback.",
+          "edits": [
+            {
+              "find": "var pb=48",
+              "replaceFrom": [
+                "src/audio-settings.mjs",
+                "src/audio-en.mjs",
+                "src/audio-client.mjs",
+                "src/audio-story.mjs"
+              ],
+              "sourceId": "audio",
+              "notes": "Saved world settings, host audio playback, explicit character voices and voice-aware VN timing."
+            },
+            {
+              "find": "ds=\"1.10.2\"",
+              "replace": "ds=\"1.11.0\""
+            },
+            {
+              "find": "oy=[{version:null,fixed:",
+              "replace": "oy=[{version:null,new:[\"Assigned character voices, stock music and sound effects, with optional generated audio.\",\"Per-world mute, three audio levels and voice-aware autoplay pacing.\"],fixed:[\"Home and story portrait frames include their bottom edge.\"]},{version:\"1.10.2\",fixed:"
+            },
+            {
+              "find": "it=[{id:\"name\"",
+              "replace": "it=[...forgeAudioFields(),{id:\"name\""
+            },
+            {
+              "find": "Eb=[{id:\"cast\"",
+              "replace": "Eb=[{id:\"audio\",label:forgeAudioEnglish[\"audio.group.sources\"]},{id:\"audioMix\",label:forgeAudioEnglish[\"audio.group.mix\"]},{id:\"playback\",label:forgeAudioEnglish[\"audio.group.playback\"]},{id:\"cast\""
+            },
+            {
+              "find": " max=\"'+(Number(t.max)||10)+'\" step=\"1\" value=\"",
+              "replace": " max=\"'+(Number(t.max)||10)+'\" step=\"'+(Number(t.stepBy)||1)+'\" value=\""
+            },
+            {
+              "find": "function rp(t,e,a){let r=",
+              "replace": "function rp(t,e,a){loadForgeAudioConnections(t,a);let r="
+            },
+            {
+              "find": "var Wb=new Set([\"image_generation\",\"video_generation\"])",
+              "replace": "var Wb=new Set([\"image_generation\",\"video_generation\",\"audio_generation\",\"audio\",\"decision\"])"
+            },
+            {
+              "find": "var xy=new Set([\"image_generation\",\"video_generation\"])",
+              "replace": "var xy=new Set([\"image_generation\",\"video_generation\",\"audio_generation\",\"audio\",\"decision\"])"
+            },
+            {
+              "find": "wireForgeBrowserFullscreen(this),this._wireLandscape()",
+              "replace": "wireForgeBrowserFullscreen(this),wireForgeAudio(this),this._wireLandscape()"
+            },
+            {
+              "find": "this._stopForge(),this._stopBeat(),this._stopVigorClock",
+              "replace": "this._stopForge(),this._stopBeat(),disposeForgeAudio(this),this._stopVigorClock"
+            },
+            {
+              "find": "async _setSources(e){",
+              "replace": "_setSources(e){return saveForgeAudioSources(this,e)}async _setSourcesNow(e){"
+            },
+            {
+              "find": "let r=await this._postJson(\"/run/sources\",{runId:this._run.runId,sources:e});if(!r||!r.ok)",
+              "replace": "syncForgeAudio(this);let r=await this._postJson(\"/run/sources\",{runId:this._run.runId,sources:e});if(this._run?.runId!==a.runId)return;if(!r||!r.ok)"
+            },
+            {
+              "find": "prepareForgeChoices(this,r),",
+              "replace": "prepareForgeChoices(this,r),this._forgeMusicMood=normalizeForgeMusicMood(r.musicMood),"
+            },
+            {
+              "find": "forgeChoicePlayback(this,{startAt:",
+              "replace": "forgeStoryAudioOptions(this,forgeChoicePlayback(this,{startAt:"
+            },
+            {
+              "find": "onExit:()=>this._exitStoryBeat()})));",
+              "replace": "onExit:()=>this._exitStoryBeat()}))));"
+            },
+            {
+              "find": "function $e(W){B(),l&&(l.textContent=W.text),qe(),T&&_<a.length-1&&!(e.choicePlayback&&e.choicePlayback.blocked(_))&&(C=setTimeout(je,1500))}",
+              "replace": "let forgeVoice=createForgeVoiceLine(e.audio,forgeSchedule);function forgeSchedule(){P();T&&!I&&forgeVoice.ready()&&_<a.length-1&&!(e.choicePlayback&&e.choicePlayback.blocked(_))&&(C=setTimeout(je,(e.audio?.settings?.autoplayPauseSeconds??3)*1000))}function $e(W){B(),l&&(l.textContent=W.text),qe(),forgeVoice.reveal()}"
+            },
+            {
+              "find": "function Ee(W,ce){if(B(),P(),",
+              "replace": "function Ee(W,ce,forgeSilent=!1){forgeVoice.start(W,forgeVoiceCharacter(q,W.speaker,Xl),forgeSilent);if(B(),P(),"
+            },
+            {
+              "find": "T&&!I&&_<a.length-1?C=setTimeout(je,1200):P()",
+              "replace": "T&&!I&&_<a.length-1?forgeSchedule():P()"
+            },
+            {
+              "find": "_=e.choicePlayback?e.choicePlayback.skipTo(_,a.length-1):a.length-1,Ee(a[_],!1)",
+              "replace": "_=e.choicePlayback?e.choicePlayback.skipTo(_,a.length-1):a.length-1,Ee(a[_],!1,!0)"
+            },
+            {
+              "find": "e.choicePlayback&&e.choicePlayback.attach(null),B(),P(),$&&(clearTimeout($),$=null)",
+              "replace": "e.choicePlayback&&e.choicePlayback.attach(null),forgeVoice.dispose(),B(),P(),$&&(clearTimeout($),$=null)"
+            },
+            {
+              "find": "prefs:h=null,onPrefs:d=null,foeSheet:m=null}={})",
+              "replace": "prefs:h=null,onPrefs:d=null,foeSheet:m=null,audio:forgeAudio=null}={})"
+            },
+            {
+              "find": "function St(y,O){switch(y.op)",
+              "replace": "function St(y,O){O&&forgeCombatSound(forgeAudio,y);switch(y.op)"
+            },
+            {
+              "find": "onPrefs:S=>this._saveCombatPrefs(S),onStart:",
+              "replace": "onPrefs:S=>this._saveCombatPrefs(S),audio:this._forgeAudio,onStart:"
+            },
+            {
+              "find": "if(i){for(let F of it){if(F.type===\"custom\"||F.type===\"toggle\")continue;",
+              "replace": "loadForgeAudioConnections(t,i?.values||h);if(i){for(let F of it){if(F.type===\"custom\"||F.type===\"toggle\")continue;"
+            }
+          ]
+        },
+        {
+          "version": "1.11.1",
+          "notes": "Preserve trusted legacy audio IDs and record the actual merged Engine audio baseline.",
+          "edits": [
+            {
+              "find": "ds=\"1.11.0\"",
+              "replace": "ds=\"1.11.1\""
+            },
+            {
+              "find": "oy=[{version:null,new:[\"Assigned character voices, stock music and sound effects, with optional generated audio.\",\"Per-world mute, three audio levels and voice-aware autoplay pacing.\"],fixed:[\"Home and story portrait frames include their bottom edge.\"]}",
+              "replace": "oy=[{version:null,fixed:[\"Saved legacy audio connections keep generating after migration.\"]},{version:\"1.11.0\",new:[\"Assigned character voices, stock music and sound effects, with optional generated audio.\",\"Per-world mute, three audio levels and voice-aware autoplay pacing.\"],fixed:[\"Home and story portrait frames include their bottom edge.\"]}"
+            }
+          ]
         }
       ]
     },
@@ -420,6 +547,41 @@
             {
               "find": "if(!M)return{ok:!1,error:\"plan-missing\"};for(let ne=1;!g&&ne<m;ne+=1)",
               "replace": "if(!M)return{ok:!1,error:\"plan-missing\"};let forgeBlock=await forgeChoices.guard(o,{chapter:m});if(forgeBlock)return forgeBlock;for(let ne=1;!g&&ne<m;ne+=1)"
+            }
+          ]
+        },
+        {
+          "version": "1.11.0",
+          "notes": "Optional assigned voices, shared host stock/generated audio, world settings and voice-aware playback.",
+          "edits": [
+            {
+              "find": "var rb=[",
+              "replaceFrom": "src/audio-settings.mjs",
+              "sourceId": "audio-settings"
+            },
+            {
+              "find": "prologue:!0};",
+              "replace": "prologue:!0,audio:normalizeForgeAudio(u.audio)};"
+            },
+            {
+              "find": "if(Object.prototype.hasOwnProperty.call(i,\"connectionId\"))",
+              "replace": "if(Object.prototype.hasOwnProperty.call(i,\"audio\"))w.audio=normalizeForgeAudio({...w.audio,...i.audio});if(Object.prototype.hasOwnProperty.call(i,\"connectionId\"))"
+            },
+            {
+              "find": "v.push({name:N.name,art:sn(N)||null,prota:!1})",
+              "replace": "v.push({name:N.name,art:sn(N)||null,prota:!1,characterId:l(N.cardId)||null})"
+            },
+            {
+              "find": "let D={segments:I,places:",
+              "replace": "let D={musicMood:normalizeForgeMusicMood(e.musicMood),segments:I,places:"
+            },
+            {
+              "find": "\"You are the narrator of a gacha visual-novel story mode.\",",
+              "replace": "\"You are the narrator of a gacha visual-novel story mode.\",'Add a top-level \"musicMood\": \"happy\", \"tense\", or \"sad\" describing the emotional tone of this beat for its soundtrack.',"
+            },
+            {
+              "find": "data:{chapter:u,storyIndex:o,segments:Fe,places:Ne,choices:",
+              "replace": "data:{chapter:u,storyIndex:o,musicMood:ge.value.musicMood,segments:Fe,places:Ne,choices:"
             }
           ]
         }

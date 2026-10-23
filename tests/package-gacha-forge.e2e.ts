@@ -232,9 +232,10 @@ test("Forge fills every screen, toggles inside the Engine and keeps world drafts
   expect(presentation.border).toBe("0px");
   await forge.locator(".vn-top .vn-exit").focus();
   // macOS WebKit uses Option-Tab for controls when full keyboard navigation is off.
-  await page.keyboard.press(
-    testInfo.project.name === "mobile-webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab",
-  );
+  const nextControl = testInfo.project.name === "mobile-webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab";
+  await page.keyboard.press(nextControl);
+  await expect(forge.locator(".vn-top > .gf-mute-chapter")).toBeFocused();
+  await page.keyboard.press(nextControl);
   await expect(chapterToggle).toBeFocused();
   await expect(chapterToggle).toHaveCSS("outline-style", "solid");
   await page.keyboard.press("Enter");
