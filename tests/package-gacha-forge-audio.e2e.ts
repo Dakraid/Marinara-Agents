@@ -67,6 +67,7 @@ async function openForge(
   }
   const speech: Record<string, unknown>[] = [];
   const generated: Record<string, any>[] = [];
+  const briefs: Record<string, unknown>[] = [];
   const writes: Record<string, any>[] = [];
   await page.setViewportSize(
     testInfo.project.name.includes("mobile") ? { width: 874, height: 402 } : { width: 1440, height: 900 },
@@ -158,6 +159,14 @@ async function openForge(
         },
       });
     });
+  // Exercise the shipped client orchestration without invoking a paid narration provider.
+  // The actual persisted-world narration route has separate maintained Node coverage.
+  await page.route("**/api/gacha-forge/audio/prompt", async (route) => {
+    briefs.push(route.request().postDataJSON());
+    await route.fulfill({
+      json: { ok: true, prompt: "Original fantasy instrumental: woodwinds, harp and soft strings." },
+    });
+  });
   await page.route("**/api/game-assets/manifest", (route) =>
     route.fulfill({
       json: {
@@ -220,7 +229,7 @@ async function openForge(
   await page.getByRole("tab", { name: "Open Gacha Forge" }).click();
   const forge = page.locator("marinara-capability-gacha-forge");
   if (!options.empty) await showHome(forge);
-  return { forge, saved, speech, generated, writes };
+  return { forge, saved, speech, generated, briefs, writes };
 }
 
 async function showHome(forge: Locator) {
@@ -296,7 +305,7 @@ async function frameBottom(frame: Locator, artSelector: string) {
 test("Audio settings persist, mute is compact and portrait frames retain a bottom stroke", async ({
   page,
 }, testInfo) => {
-  const { forge, saved, generated } = await openForge(page, testInfo);
+  const { forge, saved, generated, briefs } = await openForge(page, testInfo);
   expect(generated).toHaveLength(0);
   const settings = forge.getByRole("button", { name: "Game settings", exact: true });
   await settings.click();
@@ -321,6 +330,9 @@ test("Audio settings persist, mute is compact and portrait frames retain a botto
   await forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true }).click();
   await expect.poll(() => saved.audio.generate).toBe(true);
   await expect.poll(() => generated.filter((request) => request.kind === "music").length).toBe(1);
+  expect(briefs).toHaveLength(1);
+  expect(briefs[0]).toMatchObject({ runId: baseRun.runId, cue: "home" });
+  expect(generated[0].prompt).toBe("Original fantasy instrumental: woodwinds, harp and soft strings.");
   await expect(forge.locator('[data-input="audio.audioConnectionId"]')).toContainText("Audio fixture");
   await page.screenshot({ path: testInfo.outputPath("audio-sources.png") });
   await forge.locator("[data-settings-back]").click();
@@ -394,6 +406,59 @@ test("Audio settings persist, mute is compact and portrait frames retain a botto
   await expect(forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true })).toBeVisible();
   await expect(forge.locator(".gf-mute")).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath("audio-world-setup.png") });
+});
+
+test("Provider rejection reasons fit the game stage in dark and light themes", async ({ page }, testInfo) => {
+  const { forge } = await openForge(page, testInfo);
+  await page.route("**/api/audio/generate", (route) =>
+    route.fulfill({
+      status: 502,
+      json: {
+        error: "Audio generation failed",
+        detail: "ElevenLabs audio request returned HTTP 400",
+        providerStatus: 400,
+        reason:
+          "Your prompt appears to have violated our Terms of Service. Please try again with a different prompt. " +
+          "Use an original musical description. ".repeat(7),
+        private: "must not be displayed",
+      },
+    }),
+  );
+  for (const [theme, cue] of [
+    ["aurora", "home"],
+    ["bloom", "boss"],
+  ]) {
+    await forge.evaluate(
+      async (node, { theme, cue }) => {
+        const game = node as any;
+        game._run.hudStyle = theme;
+        game._run.audio = { ...game._run.audio, generate: true };
+        game._renderKey = null;
+        game._renderBrowser();
+        game._forgeAudio.configure(game._run.audio);
+        await game._forgeAudio.generate("music", cue);
+      },
+      { theme, cue },
+    );
+    const notice = forge.locator("[data-forge-audio-status]");
+    await expect(notice).toContainText("HTTP 400");
+    await expect(notice).toContainText("Terms of Service");
+    await expect(notice).not.toContainText("must not be displayed");
+    const bounds = await notice.evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      const stage = node.closest(".gf-stage")!.getBoundingClientRect();
+      return {
+        left: box.left - stage.left,
+        right: stage.right - box.right,
+        top: box.top - stage.top,
+        bottom: stage.bottom - box.bottom,
+        overflowX: node.scrollWidth - node.clientWidth,
+      };
+    });
+    for (const side of ["left", "right", "top", "bottom"] as const) expect(bounds[side]).toBeGreaterThanOrEqual(-1);
+    expect(bounds.overflowX).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: testInfo.outputPath(`audio-provider-error-${theme}.png`) });
+  }
 });
 
 test("Readiness recovers in the current world and single-channel selections keep the other channel on stock", async ({
