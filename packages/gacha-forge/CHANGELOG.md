@@ -1,3 +1,8 @@
+## 1.12.1 — 2026-10-24
+
+- Short audio notices no longer intercept taps on the game stage. Long reasons remain scrollable and keyboard accessible.
+- Recorded the actual merged Engine music-test baseline.
+
 ## 1.12.0 — 2026-10-24
 
 ### New

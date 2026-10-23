@@ -134,10 +134,14 @@ export class ForgeAudioController {
       status.className = "gf-audio-status";
       this.host._root.querySelector(".gf-stage")?.append(status);
     }
-    if (status)
+    if (status) {
       status.textContent = forgeAudioEnglish[key]
         .replace("{status}", String(httpStatus))
         .replace("{reason}", () => reason);
+      const scrollable = status.scrollHeight > status.clientHeight;
+      status.style.pointerEvents = scrollable ? "auto" : "none";
+      status.tabIndex = scrollable ? 0 : -1;
+    }
     clearTimeout(this.noticeTimer);
     this.noticeTimer = setTimeout(() => status?.remove(), 6000);
   }

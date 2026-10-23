@@ -459,6 +459,50 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
     expect(bounds.overflowX).toBeLessThanOrEqual(1);
     await page.screenshot({ path: testInfo.outputPath(`audio-provider-error-${theme}.png`) });
   }
+
+  const short = await forge.evaluate((node) => {
+    const game = node as any;
+    game._forgeAudio.notice("audio.voiceFailed");
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    const stage = notice.closest(".gf-stage")!;
+    const target = document.createElement("button");
+    target.style.cssText = `position:absolute;z-index:7;left:${notice.offsetLeft}px;top:${notice.offsetTop}px;width:${notice.offsetWidth}px;height:${notice.offsetHeight}px;opacity:0`;
+    target.addEventListener("click", (event) => {
+      event.stopPropagation();
+      (node as HTMLElement).dataset.noticeTaps = "1";
+    });
+    stage.append(target);
+    const box = notice.getBoundingClientRect();
+    return {
+      x: box.left + box.width / 2,
+      y: box.top + box.height / 2,
+      overflow: notice.scrollHeight - notice.clientHeight,
+    };
+  });
+  expect(short.overflow).toBeLessThanOrEqual(0);
+  await page.mouse.click(short.x, short.y);
+  await expect.poll(() => forge.evaluate((node) => (node as HTMLElement).dataset.noticeTaps)).toBe("1");
+
+  const long = await forge.evaluate((node) => {
+    const game = node as any;
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    notice.style.maxHeight = "3rem";
+    game._forgeAudio.notice("audio.generationReason", 400, "A longer provider explanation. ".repeat(9));
+    const box = notice.getBoundingClientRect();
+    return {
+      x: box.left + box.width / 2,
+      y: box.top + box.height / 2,
+      overflow: notice.scrollHeight - notice.clientHeight,
+    };
+  });
+  expect(long.overflow).toBeGreaterThan(0);
+  await forge.locator("[data-forge-audio-status]").focus();
+  await expect(forge.locator("[data-forge-audio-status]")).toBeFocused();
+  await page.mouse.move(long.x, long.y);
+  await page.mouse.wheel(0, 80);
+  await expect
+    .poll(() => forge.locator("[data-forge-audio-status]").evaluate((node) => node.scrollTop))
+    .toBeGreaterThan(0);
 });
 
 test("Readiness recovers in the current world and single-channel selections keep the other channel on stock", async ({

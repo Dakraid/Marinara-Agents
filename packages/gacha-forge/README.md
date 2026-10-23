@@ -1,5 +1,7 @@
 # Gacha Forge
 
+In 1.12.1, short audio notices let taps reach the game stage. Long provider reasons can be scrolled and focused with a keyboard.
+
 ## Soundtrack briefs and achievement repairs (1.12.0)
 
 With generated audio enabled, the world's narration connection writes an original musical brief for each soundtrack context: Home, combat, bosses, happy/tense/sad story scenes and Character Stories. It translates world references into instrumentation and mood rather than requesting existing songs. Briefs are saved per world and reused; writing a new brief uses the configured model connection. Generated music still uses the selected audio connection and its provider credits. A provider can reject a prompt; newer Engine versions show its reason, while older compatible hosts show the HTTP status and keep playing stock audio.

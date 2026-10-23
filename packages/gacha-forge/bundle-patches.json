@@ -418,6 +418,20 @@
               "replace": "oy=[{version:null,new:[\"World-specific original soundtrack briefs through the narration connection.\"],fixed:[\"Audio failures show HTTP status and safe provider reasons on newer hosts.\",\"Achievements count gained levels and facets, with conservative existing-save repair.\"]},{version:\"1.11.1\",fixed:[\"Saved legacy audio connections keep generating after migration.\"]}"
             }
           ]
+        },
+        {
+          "version": "1.12.1",
+          "notes": "Keep short audio notices click-through while long reasons remain scrollable and keyboard accessible.",
+          "edits": [
+            {
+              "find": "ds=\"1.12.0\"",
+              "replace": "ds=\"1.12.1\""
+            },
+            {
+              "find": "oy=[{version:null,new:[\"World-specific original soundtrack briefs through the narration connection.\"]",
+              "replace": "oy=[{version:null,fixed:[\"Audio notices preserve stage taps and keep long reasons readable.\"]},{version:\"1.12.0\",new:[\"World-specific original soundtrack briefs through the narration connection.\"]"
+            }
+          ]
         }
       ]
     },

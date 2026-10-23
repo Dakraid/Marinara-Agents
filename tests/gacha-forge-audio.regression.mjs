@@ -580,7 +580,7 @@ try {
     assert.equal(message[3].length, 300);
     assert.equal(message[3].includes("\n"), false);
     assert.equal(JSON.stringify(events).includes("not public"), false);
-    const status = { textContent: "", remove() {} };
+    const status = { textContent: "", style: {}, remove() {} };
     const rendered = { host: { _root: { querySelector: () => status } } };
     ForgeAudioController.prototype.notice.call(rendered, "audio.generationReason", 400, "Provider says $&");
     assert.ok(status.textContent.includes("Provider says $&"), "provider text is interpolated literally");
