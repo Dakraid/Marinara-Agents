@@ -48,8 +48,16 @@ assert.equal(normalizeForgeMusicPrompt({ prompt: "x".repeat(1001) }), null);
 assert.deepEqual(normalizeForgeMusicPrompt({ prompt: ` ${brief} `, secret: "discarded" }), { prompt: brief });
 
 const cached = makeFixture();
-await Promise.all([cached.service(request), cached.service(request)]);
+const traces = [];
+cached.options.log = (messages, debugMode) => traces.push({ messages, debugMode });
+const shared = createForgeMusicPromptService(cached.options);
+await Promise.all([shared(request), shared({ ...request, debugMode: true })]);
 assert.equal(cached.calls.length, 1, "concurrent playback deduplicates the model request");
+assert.deepEqual(
+  traces.map(({ debugMode }) => debugMode),
+  [false, true],
+);
+assert.equal(cached.calls[0].debugMode, false, "a joining trace does not restart an already-billable request");
 assert.equal(cached.calls[0].run.narrationConnectionId, "narration");
 assert.equal(JSON.parse(cached.calls[0].messages[1].content).world, "Genshin Impact, a journey between regions.");
 assert.match(cached.calls[0].messages[0].content, /Do not name franchises/);

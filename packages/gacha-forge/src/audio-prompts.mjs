@@ -46,9 +46,10 @@ export function createForgeMusicPromptService({ readWorld, readSession, updateSe
     if (saved?.fingerprint === fingerprint && normalizeForgeMusicPrompt(saved))
       return { ok: true, prompt: saved.prompt, cached: true };
     const key = JSON.stringify([runId, cue, fingerprint]);
+    // Joining callers can request a prompt trace while sharing the same billable generation.
+    log?.(messages, debugMode);
     if (pending.has(key)) return pending.get(key);
     const task = (async () => {
-      log?.(messages, debugMode);
       const result = await generate({ runId, run, messages, debugMode });
       const brief = result?.ok && normalizeForgeMusicPrompt(result.value);
       if (!brief) return { ok: false, error: "generation-failed" };
