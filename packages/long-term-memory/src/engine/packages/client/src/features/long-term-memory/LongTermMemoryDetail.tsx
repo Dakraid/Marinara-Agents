@@ -850,8 +850,9 @@ export function LongTermMemoryDetail({ props }: { props: CapabilityProps }) {
                 ) : null}
                 <Onboarding
                   props={props}
-                  // A failed first status read opens the guide as for an empty vault; Retry is on the error above.
-                  ready={status.isSuccess || status.isError}
+                  // A failed read leaves the vault count unknown, not zero: the guide waits for a read that succeeds
+                  // (Retry is on the error above) so it never opens or saves a step over a populated vault.
+                  ready={status.isSuccess}
                   onVault={destination === "vault"}
                   savedMemoryCount={savedMemoryCount}
                   pendingDraftCount={pendingDrafts.data?.count}

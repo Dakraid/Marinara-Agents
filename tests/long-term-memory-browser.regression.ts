@@ -7750,8 +7750,8 @@ async function main() {
         "complete",
       );
       await firstRunContext.close();
-      // #1611: a failed first status read still opens the guide, shows one Retry and no "Status unavailable" pill,
-      // and Retry recovers.
+      // #1611: a failed first status read shows one Retry and no "Status unavailable" pill, and leaves the guide
+      // closed and unsaved because the vault count is unknown; Retry recovers to a populated vault without the guide.
       statusFailure = true;
       noteTotal = 0;
       const statusFailContext = await browser.newContext({ viewport: { width: 1280, height: 900 } });
@@ -7771,14 +7771,22 @@ async function main() {
       }, packageManifest.version);
       const statusError = statusFailPage.locator("[data-ltm-status-error]");
       await statusError.waitFor();
-      await statusFailPage.locator('[data-ltm-surface="onboarding"]').waitFor();
+      assert.equal(await statusFailPage.locator('[data-ltm-surface="onboarding"]').count(), 0);
+      assert.equal(
+        await statusFailPage.evaluate(() => localStorage.getItem("marinara-long-term-memory-onboarding-v1")),
+        null,
+      );
       assert.equal(await statusFailPage.locator('[data-ltm-surface="vault-health-pill"]').count(), 0);
       assert.equal(await statusFailPage.getByRole("button", { name: "Retry" }).count(), 1);
       statusFailure = false;
       noteTotal = 5;
       await statusError.getByRole("button", { name: "Retry" }).click();
       await statusError.waitFor({ state: "detached" });
-      await statusFailPage.locator('[data-ltm-surface="onboarding"]').waitFor();
+      assert.equal(await statusFailPage.locator('[data-ltm-surface="onboarding"]').count(), 0);
+      assert.equal(
+        await statusFailPage.evaluate(() => localStorage.getItem("marinara-long-term-memory-onboarding-v1")),
+        null,
+      );
       await statusFailContext.close();
       noteTotal = 3;
       await mobileContext.close();
