@@ -2061,8 +2061,13 @@ async function main() {
       await page.evaluate(() => document.body.removeAttribute("tabindex"));
       const setupGuide = page.getByRole("button", { name: "Show setup guide" });
       await setupGuide.click();
+      // #1611: Help from another screen goes to the Vault first, where the full guide shows.
+      await page.locator('[data-ltm-surface="onboarding"]').waitFor();
       const onboardingTitle = page.locator("#ltm-onboarding-title");
-      assert.equal(await page.locator('[data-ltm-surface="onboarding"]').getByText("Step 1 of 7 · Save").count(), 1);
+      assert.equal(
+        await page.locator('[data-ltm-surface="onboarding"]').getByText("Step 1 of 7 · Overview").count(),
+        1,
+      );
       assert.equal(await onboardingTitle.innerText(), "Overview");
       assert.equal(await page.locator("#ltm-onboarding-description dt").count(), 3);
       const guideWidth = await page
@@ -2130,16 +2135,27 @@ async function main() {
         await page.locator("#ltm-onboarding-description ol li").nth(1).innerText(),
         "When you get a response, peek the prompt and make sure the memories are reaching your chat context.",
       );
-      await page.getByRole("button", { name: "Next: Under the Hood" }).click();
-      assert.equal(await onboardingTitle.innerText(), "Under the Hood");
+      await page.getByRole("button", { name: "Finish setup" }).click();
+      assert.equal(await onboardingTitle.innerText(), "You're Set Up");
+      assert.equal(await page.locator('[data-ltm-surface="onboarding"]').getByText("Step 7 of 7 · Ready").count(), 1);
       assert.equal(await page.locator("#ltm-onboarding-description details").count(), 2);
       assert.deepEqual(await page.locator("#ltm-onboarding-description details summary").allInnerTexts(), [
         "Writing to memory (Extraction)",
         "Reading from memory (Recall)",
       ]);
-      assert.equal(await page.getByRole("button", { name: "Close" }).count(), 1);
-      await page.getByRole("button", { name: "Go to saved memories" }).first().click();
+      // #1611: the last step ends the guide with Done; Not now and Don't show again belong to the steps before it.
+      assert.equal(await page.getByRole("button", { name: "Done", exact: true }).count(), 1);
+      assert.equal(await page.getByRole("button", { name: "Not now" }).count(), 0);
+      assert.equal(await page.getByRole("button", { name: "Don't show again" }).count(), 0);
+      await page.getByRole("button", { name: "Back", exact: true }).click();
+      await page.getByRole("button", { name: "Go to saved memories" }).click();
       await page.locator('[data-ltm-destination-content][aria-label="Memory Vault"]').waitFor();
+      // #1611: a step button that leaves for another screen steps the guide aside, even back onto the Vault.
+      const stepAsideBar = page.locator('[data-ltm-surface="onboarding-bar"]');
+      await stepAsideBar.waitFor();
+      assert.equal(await page.locator('[data-ltm-surface="onboarding"]').count(), 0);
+      await stepAsideBar.getByRole("button", { name: "Dismiss" }).click();
+      await stepAsideBar.waitFor({ state: "detached" });
       await page.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="review"]').click();
       await page.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="vault"]').click();
       await page.locator('[data-ltm-surface="vault"]').waitFor();
@@ -2605,13 +2621,17 @@ async function main() {
       await page.getByRole("button", { name: "Next: Choose a source" }).click();
       await page.getByRole("button", { name: "Next: Reviewing and saving memories" }).click();
       await page.getByRole("button", { name: "Open Review Queue" }).click();
-      assert.equal(await onboardingTitle.innerText(), "Review Before Saving");
+      // #1611: the guide steps aside into a bar on the screen its button opened.
+      const reviewBar = page.locator('[data-ltm-surface="onboarding-bar"]');
+      await reviewBar.waitFor();
+      assert.equal(await page.locator('[data-ltm-surface="onboarding"]').count(), 0);
       assert.equal(await page.locator('[data-ltm-surface="review-queue"]').count(), 1);
+      assert.equal(await reviewBar.getByText("Setup guide · step 5 of 7").count(), 1);
       assert.equal(
         await page.evaluate(() => localStorage.getItem("marinara-long-term-memory-onboarding-v1")),
         "step:4",
       );
-      await page.getByRole("button", { name: "Close", exact: true }).click();
+      await reviewBar.getByRole("button", { name: "Dismiss" }).click();
       pendingDraftCount = 0;
       reviewFingerprintRevision = 0;
       await page.reload();
@@ -2683,19 +2703,38 @@ async function main() {
         "a status surface keeps its text and actions off its border",
       );
       reviewFingerprintRevision = 0;
+      // #1611: Help leaves the Review Queue for the Vault, so the unsaved-state guard asks first; Stay keeps
+      // the screen and opens neither the guide nor the bar.
+      const helpPrompts: string[] = [];
+      page.once("dialog", (dialog) => {
+        helpPrompts.push(dialog.type());
+        void dialog.dismiss();
+      });
+      await setupGuide.click();
+      await page.waitForFunction(() => document.querySelector('[data-ltm-surface="onboarding"]') === null);
+      assert.deepEqual(helpPrompts, ["confirm"]);
+      assert.equal(await page.locator('[data-ltm-surface="review-queue"]').count(), 1);
+      assert.equal(
+        await page.locator('[data-ltm-surface="onboarding"], [data-ltm-surface="onboarding-bar"]').count(),
+        0,
+      );
+      page.once("dialog", (dialog) => void dialog.accept());
       await setupGuide.click();
       await page.getByRole("button", { name: "Next: How recall works" }).click();
       await page.getByRole("button", { name: "Next: Enabling it for the Current Chat" }).click();
       await page.getByRole("button", { name: "Next: Choose a source" }).click();
+      // #1611: the later steps open the source type chosen in step 4, not a fixed Characters tab.
+      await page.locator("[data-ltm-source-choice]").getByRole("button", { name: "Lorebook" }).click();
       await page.getByRole("button", { name: "Next: Reviewing and saving memories" }).click();
       await page.getByRole("button", { name: "Choose a Source" }).click();
-      assert.equal(await onboardingTitle.innerText(), "Review Before Saving");
-      assert.equal(await page.locator('[data-ltm-surface="review-queue"]').count(), 1);
+      await page.locator('[data-ltm-source-tab="lorebooks"][aria-selected="true"]').waitFor();
+      await page.locator('[data-ltm-surface="onboarding-bar"]').waitFor();
+      assert.equal(await page.locator('[data-ltm-surface="onboarding"]').count(), 0);
       assert.equal(
         await page.evaluate(() => localStorage.getItem("marinara-long-term-memory-onboarding-v1")),
         "step:4",
       );
-      await page.getByRole("button", { name: "Close", exact: true }).click();
+      await page.locator('[data-ltm-surface="onboarding-bar"]').getByRole("button", { name: "Dismiss" }).click();
       pendingDraftCount = 2;
       await page.reload();
       await page.evaluate((version) => {
@@ -2726,8 +2765,8 @@ async function main() {
       await page.getByRole("button", { name: "Character" }).click();
       await page.getByRole("button", { name: "Import a character" }).click();
       await page.locator('[data-ltm-source-tab="characters"][aria-selected="true"]').waitFor();
-      assert.equal(await page.locator('[data-ltm-surface="onboarding"]').count(), 1);
-      await page.getByRole("button", { name: "Close", exact: true }).click();
+      assert.equal(await page.locator('[data-ltm-surface="onboarding"]').count(), 0);
+      assert.equal(await page.locator('[data-ltm-surface="onboarding-bar"]').count(), 1);
       await setupGuide.click();
       await page.getByRole("button", { name: "Next: How recall works" }).click();
       await page.getByRole("button", { name: "Next: Enabling it for the Current Chat" }).click();
@@ -2748,10 +2787,10 @@ async function main() {
       await page.locator('[data-ltm-source-tab="chats"][aria-selected="true"]').waitFor();
       assert.equal(
         await page.locator('[data-ltm-surface="onboarding"]').count(),
-        1,
-        "Source handoff must keep the onboarding wizard open",
+        0,
+        "Source handoff must step the full guide aside",
       );
-      await page.getByRole("button", { name: "Close", exact: true }).click();
+      await page.locator('[data-ltm-surface="onboarding-bar"]').getByRole("button", { name: "Dismiss" }).click();
       await page.evaluate(() => {
         const element = document.querySelector("marinara-capability-long-term-memory") as HTMLElement & {
           capabilityProps?: Record<string, unknown>;
@@ -2804,6 +2843,7 @@ async function main() {
       await page.getByRole("button", { name: "Open Prompt Preset Sections" }).click();
       assert.deepEqual(promptPresetEditorOpens.length, 1);
       assert.equal(await page.locator('[data-ltm-surface="onboarding"]').count(), 0);
+      assert.equal(await page.locator('[data-ltm-surface="onboarding-bar"]').getByText("step 3 of 7").count(), 1);
       assert.equal(
         await page.evaluate(() => localStorage.getItem("marinara-long-term-memory-onboarding-v1")),
         "step:2",
@@ -2821,6 +2861,7 @@ async function main() {
         await page.evaluate(() => localStorage.getItem("marinara-long-term-memory-onboarding-v1")),
         "step:3",
       );
+      await page.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="sources"]').click();
       await page.locator('[data-ltm-source-tab="lorebooks"]').click();
       await page.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="review"]').click();
       await page.locator('[data-ltm-review-source-select="source_mobile_review"]').waitFor();
@@ -4634,8 +4675,13 @@ async function main() {
       const restoredGuide = page.locator('[data-ltm-surface="onboarding"]');
       await restoredGuide.waitFor();
       assert.equal(await restoredGuide.getByText("Step 4 of 7 · Import").count(), 1);
-      await restoredGuide.getByRole("button", { name: "Close" }).click();
+      await restoredGuide.getByRole("button", { name: "Not now" }).click();
       await restoredGuide.waitFor({ state: "detached" });
+      // #1611: Not now keeps the saved step for the next visit.
+      assert.equal(
+        await page.evaluate(() => localStorage.getItem("marinara-long-term-memory-onboarding-v1")),
+        "step:3",
+      );
       // #1588: closing the guide returns focus to the button that reopens it.
       await page.waitForFunction(() => document.activeElement?.matches("[data-ltm-onboarding-help]") ?? false);
       assert.equal(
@@ -7441,11 +7487,15 @@ async function main() {
       assert.equal(mobileNavigationLayout.oneRow, true);
       await mobilePage.getByRole("button", { name: "Show setup guide" }).click();
       const onboardingFooter = mobilePage.locator("[data-ltm-onboarding-footer]");
-      const footerCloseBox = await onboardingFooter.getByRole("button", { name: "Close" }).boundingBox();
+      const footerCloseBox = await onboardingFooter.getByRole("button", { name: "Don't show again" }).boundingBox();
       const footerNoteBox = await onboardingFooter.locator(":scope > p").boundingBox();
       assert.ok(footerCloseBox);
       assert.ok(footerNoteBox);
-      assert.ok(footerNoteBox.x >= footerCloseBox.x + footerCloseBox.width);
+      // The note sits beside the buttons or wraps below them, never over them.
+      assert.ok(
+        footerNoteBox.x >= footerCloseBox.x + footerCloseBox.width - 1 ||
+          footerNoteBox.y >= footerCloseBox.y + footerCloseBox.height - 1,
+      );
       assert.ok(
         await mobilePage
           .locator('[data-ltm-surface="onboarding"] [data-ltm-control="button"]')
@@ -7480,7 +7530,7 @@ async function main() {
       const initialSourceButtonPositions = await sourceButtonPositions();
       await mobilePage.getByRole("button", { name: "Lorebook" }).click();
       assert.deepEqual(await sourceButtonPositions(), initialSourceButtonPositions);
-      await mobilePage.getByRole("button", { name: "Close" }).click();
+      await mobilePage.getByRole("button", { name: "Not now" }).click();
       await mobilePage.locator('[data-ltm-surface="onboarding"]').waitFor({ state: "detached" });
       await mobileNavigation.locator('[data-ltm-destination="sources"]').click();
       await mobilePage.locator('[data-ltm-surface="sources"]').waitFor();
@@ -7578,7 +7628,7 @@ async function main() {
       await mobilePage.evaluate(() => {
         document.documentElement.style.fontSize = "";
       });
-      await mobilePage.getByRole("button", { name: "Close" }).click();
+      await mobilePage.getByRole("button", { name: "Not now" }).click();
       noteTotal = 0;
       const firstRunContext = await browser.newContext({
         viewport: { width: 390, height: 844 },
@@ -7607,8 +7657,35 @@ async function main() {
       await firstRunGuide.getByRole("button", { name: "Next: Check it works" }).click();
       assert.equal(await firstRunGuide.getByRole("button", { name: "Choose a Source" }).count(), 1);
       await firstRunGuide.getByRole("button", { name: "Choose a Source" }).click();
-      await firstRunPage.locator('[data-ltm-source-tab="characters"][aria-selected="true"]').waitFor();
-      assert.equal(await firstRunPage.locator('[data-ltm-surface="onboarding"]').count(), 1);
+      // #1611: no source type was picked in step 4, so the default (chats) opens, and the guide becomes a bar.
+      await firstRunPage.locator('[data-ltm-source-tab="chats"][aria-selected="true"]').waitFor();
+      const firstRunBar = firstRunPage.locator('[data-ltm-surface="onboarding-bar"]');
+      await firstRunBar.waitFor();
+      assert.equal(await firstRunGuide.count(), 0);
+      assert.equal(await firstRunBar.getByText("Setup guide · step 6 of 7").count(), 1);
+      await firstRunPage.waitForFunction(
+        () => document.activeElement?.matches('[data-ltm-surface="onboarding-bar"]') ?? false,
+      );
+      // Resume returns to the Vault at the saved step.
+      await firstRunBar.getByRole("button", { name: "Resume" }).click();
+      await firstRunGuide.waitFor();
+      assert.equal(await firstRunPage.locator("#ltm-onboarding-title").innerText(), "Check What the Chat Used");
+      // Off the Vault the full guide is the bar again, and it comes back in place with the Vault.
+      const firstRunNavigation = firstRunPage.locator('[data-ltm-navigation="mobile"]');
+      await firstRunNavigation.locator('[data-ltm-destination="review"]').click();
+      await firstRunBar.waitFor();
+      assert.equal(await firstRunGuide.count(), 0);
+      await firstRunNavigation.locator('[data-ltm-destination="vault"]').click();
+      await firstRunGuide.waitFor();
+      assert.equal(await firstRunBar.count(), 0);
+      // Not now keeps the saved step.
+      await firstRunGuide.getByRole("button", { name: "Not now" }).click();
+      await firstRunGuide.waitFor({ state: "detached" });
+      assert.equal(
+        await firstRunPage.evaluate(() => localStorage.getItem("marinara-long-term-memory-onboarding-v1")),
+        "step:5",
+      );
+      noteTotal = 0;
       await firstRunPage.reload();
       await firstRunPage.evaluate((version) => {
         const element = document.createElement("marinara-capability-long-term-memory") as HTMLElement & {
@@ -7626,6 +7703,28 @@ async function main() {
       await firstRunPage.locator('[data-ltm-surface="onboarding"]').waitFor();
       await firstRunPage.getByRole("button", { name: "Show setup guide" }).click();
       await firstRunPage.locator('[data-ltm-surface="onboarding"]').waitFor();
+      // Don't show again and the last step's Done both record `complete`.
+      await firstRunGuide.getByRole("button", { name: "Don't show again" }).click();
+      await firstRunGuide.waitFor({ state: "detached" });
+      assert.equal(
+        await firstRunPage.evaluate(() => localStorage.getItem("marinara-long-term-memory-onboarding-v1")),
+        "complete",
+      );
+      await firstRunPage.evaluate(() => localStorage.removeItem("marinara-long-term-memory-onboarding-v1"));
+      await firstRunPage.getByRole("button", { name: "Show setup guide" }).click();
+      await firstRunGuide.getByRole("button", { name: "Next: How recall works" }).click();
+      await firstRunGuide.getByRole("button", { name: "Next: Enabling it for the Current Chat" }).click();
+      await firstRunGuide.getByRole("button", { name: "Continue without a chat" }).click();
+      await firstRunGuide.getByRole("button", { name: "Next: Reviewing and saving memories" }).click();
+      await firstRunGuide.getByRole("button", { name: "Next: Check it works" }).click();
+      await firstRunGuide.getByRole("button", { name: "Finish setup" }).click();
+      assert.equal(await firstRunPage.locator("#ltm-onboarding-title").innerText(), "You're Set Up");
+      await firstRunGuide.getByRole("button", { name: "Done", exact: true }).click();
+      await firstRunGuide.waitFor({ state: "detached" });
+      assert.equal(
+        await firstRunPage.evaluate(() => localStorage.getItem("marinara-long-term-memory-onboarding-v1")),
+        "complete",
+      );
       await firstRunContext.close();
       noteTotal = 3;
       await mobileContext.close();

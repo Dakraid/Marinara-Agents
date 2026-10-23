@@ -846,6 +846,7 @@ export function LongTermMemoryDetail({ props }: { props: CapabilityProps }) {
                 <Onboarding
                   props={props}
                   ready={status.isSuccess}
+                  onVault={destination === "vault"}
                   savedMemoryCount={savedMemoryCount}
                   pendingDraftCount={pendingDrafts.data?.count}
                   chatLabel={chatLabel}
