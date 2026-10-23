@@ -611,7 +611,8 @@ assert.deepEqual(
 assert.match(chatSettings, /recallStyles\.map\(\(style\)/u);
 assert.match(chatSettings, /chatsettings\.openLongTermMemory"/u);
 assert.match(chatSettings, /defaults \? \(defaults\.longTermMemoryBudgetTokens \?\? 4096\) : null/u);
-assert.match(chatSettings, /placeholder=\{unknownValueLabel\}/u);
+assert.match(chatSettings, /placeholder=\{effectiveBudget === null \? unknownValueLabel : undefined\}/u);
+assert.match(chatSettings, /placeholder=\{effectiveMaxChunks === null \? unknownValueLabel : undefined\}/u);
 assert.match(sharedControls, /value: number \| null/u);
 
 const localeRoot = ltmClientRoot;

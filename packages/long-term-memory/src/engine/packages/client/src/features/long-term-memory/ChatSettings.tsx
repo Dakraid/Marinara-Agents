@@ -132,7 +132,7 @@ export function ChatSettings({ props }: { props: CapabilityProps }) {
             min={128}
             max={16384}
             step={128}
-            placeholder={unknownValueLabel}
+            placeholder={effectiveBudget === null ? unknownValueLabel : undefined}
             disabled={readOnly}
             busy={pending}
             onChange={(value) => update({ longTermMemoryBudgetTokens: value })}
@@ -153,7 +153,7 @@ export function ChatSettings({ props }: { props: CapabilityProps }) {
             value={effectiveMaxChunks}
             min={1}
             max={100}
-            placeholder={unknownValueLabel}
+            placeholder={effectiveMaxChunks === null ? unknownValueLabel : undefined}
             disabled={readOnly}
             busy={pending}
             onChange={(value) => update({ longTermMemoryMaxChunks: value })}

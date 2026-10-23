@@ -4569,6 +4569,10 @@ async function main() {
         );
         assert.equal(await loadingBudget.inputValue(), "4096");
         assert.equal(await loadingMaxChunks.inputValue(), "20");
+        // A settled load leaves no placeholder behind, so clearing a field to retype it never announces a load.
+        for (const field of [loadingBudget, loadingMaxChunks]) {
+          assert.equal(await field.getAttribute("placeholder"), null);
+        }
         await loadingPage.close();
       }
       const lastInjection = chatSettings.locator("[data-ltm-last-injection]");
