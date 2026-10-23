@@ -27,6 +27,12 @@ async function main() {
   );
   const { OpenAIProvider } = await engine("packages/server/src/services/llm/providers/openai.provider.ts");
   const { agentsRoutes } = await engine("packages/server/src/routes/agents.routes.ts");
+  const { createCapabilityPersistenceHost } = await engine(
+    "packages/server/src/services/capability-packages/capability-persistence.service.ts",
+  );
+  const { createCapabilityResourceHost } = await engine(
+    "packages/server/src/services/capability-packages/capability-resources.service.ts",
+  );
   const originalComplete = OpenAIProvider.prototype.chatComplete;
   const prompts: string[] = [];
   OpenAIProvider.prototype.chatComplete = async (messages: Array<{ content: string }>) => {
@@ -142,6 +148,12 @@ async function main() {
       content: "UNMATCHED_REFERENCE",
     });
     await books.createEntry({
+      lorebookId: reference.id,
+      name: "Over budget",
+      keys: ["crystal"],
+      content: `OVERSIZED_REFERENCE ${"x".repeat(100_000)}`,
+    });
+    await books.createEntry({
       lorebookId: otherReference.id,
       name: "Other chat",
       keys: ["crystal"],
@@ -192,7 +204,7 @@ async function main() {
       "the actual installed package preview includes triggered reference context",
     );
     assert.match(first.user, /EXPLICIT_MAP_SOURCE/, "reference context stays additive to explicit map sources");
-    assert.doesNotMatch(first.user, /OTHER_CHAT_REFERENCE|UNMATCHED_REFERENCE/);
+    assert.doesNotMatch(first.user, /OTHER_CHAT_REFERENCE|UNMATCHED_REFERENCE|OVERSIZED_REFERENCE/);
     assert.equal(prompts.length, 0, "prompt previews never call the model");
     assert(defaultChat);
     assert.doesNotMatch((await preview(defaultChat.id)).user, /MAPS_AGENT_ONLY_REFERENCE|OTHER_CHAT_REFERENCE/);
@@ -243,21 +255,27 @@ async function main() {
     const esbuild = createRequire(join(engineRoot, "packages/client/package.json"))("esbuild");
     const adapterPath = join(directory, "maps-runtime-adapter.mjs");
     await esbuild.build({
-      entryPoints: [
-        join(
-          repoRoot,
-          "packages/hierarchical-maps/src/engine/packages/server/src/services/spatial-context/package-runtime.ts",
-        ),
-      ],
+      stdin: {
+        contents: `export { configurePackageRuntime, resolvePackageAgentLorebookEntries } from ${JSON.stringify(join(repoRoot, "packages/hierarchical-maps/src/engine/packages/server/src/services/spatial-context/package-runtime.ts"))};
+export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/hierarchical-maps/src/engine/packages/server/src/routes/spatial-context.routes.ts"))};`,
+        resolveDir: repoRoot,
+        loader: "ts",
+      },
       bundle: true,
       platform: "node",
       format: "esm",
       outfile: adapterPath,
-      nodePaths: [join(engineRoot, "packages/server/node_modules")],
+      nodePaths: [join(engineRoot, "packages/server/node_modules"), join(engineRoot, "packages/shared/node_modules")],
+      alias: { "@marinara-engine/shared": join(engineRoot, "packages/shared/dist/index.js") },
     });
     const adapter = await import(pathToFileURL(adapterPath).href);
     const release = adapter.configurePackageRuntime(
-      {},
+      {
+        persistence: createCapabilityPersistenceHost(db),
+        resources: createCapabilityResourceHost(db),
+        languageModels: {},
+        json: { parseJsonish: JSON.parse },
+      },
       async () => null,
       async () => null,
     );
@@ -266,9 +284,31 @@ async function main() {
         code: "host_feature_unavailable",
         statusCode: 501,
       });
+      const oldHostApp = serverRequire("fastify")();
+      try {
+        await oldHostApp.register(adapter.spatialContextRoutes, { prefix: "/api/chats" });
+        const completedCalls = prompts.length;
+        for (const suffix of ["generation-prompt/preview", "generate"]) {
+          const response = await oldHostApp.inject({
+            method: "POST",
+            url: `/api/chats/${chat.id}/spatial-context/${suffix}`,
+            payload: { ...body, operation: "replace" },
+          });
+          assert.equal(response.statusCode, 501, response.body);
+          assert.equal(response.json().code, "host_feature_unavailable");
+          assert.match(response.json().error, /newer Marinara Engine/);
+        }
+        assert.equal(prompts.length, completedCalls, "missing-host failures never call the model");
+      } finally {
+        await oldHostApp.close();
+      }
     } finally {
       release();
     }
+    await assert.rejects(() => adapter.resolvePackageAgentLorebookEntries(chat.id), {
+      code: "host_feature_unavailable",
+      statusCode: 501,
+    });
   } finally {
     OpenAIProvider.prototype.chatComplete = originalComplete;
     await capabilityModuleRuntime.stop();
