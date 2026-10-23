@@ -2231,6 +2231,8 @@
   "ui.slurp.settings.images.title": "Creator images",
   "ui.slurp.settings.images.useAvatarReferences": "Use avatar references",
   "ui.slurp.settings.images.useAvatarReferencesDetail": "Give the image model the creator avatar when policy allows it.",
+  "ui.slurp.settings.images.keepOriginal": "Keep original picture files",
+  "ui.slurp.settings.images.keepOriginalDetail": "Store each picture as the provider sent it, so ComfyUI keeps its prompt and workflow in the file. Files are several times larger.",
   "ui.slurp.settings.images.width": "Image width",
   "ui.slurp.settings.images.widthDetail": "Default width for generated Slurp images, from 64 to 4096 pixels.",
   "ui.slurp.settings.inlinePromotions": "Ads in the feed",

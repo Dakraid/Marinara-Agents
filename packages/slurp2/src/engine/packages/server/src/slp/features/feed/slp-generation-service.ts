@@ -488,7 +488,7 @@ export async function generateCreatorPost(
   });
 
   // What the picture is and may show, in one place so the two briefs agree on level, shoot and effort.
-  const tagged = await resolveSlurpMentionedCast(db, account.id, protectedGenerated.content);
+  const tagged = await resolveSlurpMentionedCast(db, account.id, protectedGenerated.content, false);
   const pictureIds = [...new Set([...castIds, ...tagged.ids])];
   const { draftImagePrompt, visualBrief, negativePrompt, shotBriefs, pictureCast } = slurpPostPictureBriefs({
     project,

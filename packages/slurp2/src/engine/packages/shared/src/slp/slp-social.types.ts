@@ -255,6 +255,8 @@ export interface SlpSettings {
   imageGenerationConnectionId: string | null;
   imageGenerationPrompt: string;
   imageGenerationUseAvatarReferences: boolean;
+  /** Store the provider's file as sent (ComfyUI PNG metadata stays), not a smaller WebP. */
+  imageKeepOriginalFiles: boolean;
   imageGenerationIncludeDescriptions: boolean;
   allowGalleryImageAttachments: boolean;
   imageCaptioningEnabled: boolean;

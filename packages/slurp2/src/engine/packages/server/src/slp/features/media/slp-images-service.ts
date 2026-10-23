@@ -124,6 +124,7 @@ type CreatorPostImageInput = {
     | "imageGenerationPrompt"
     | "imagePromptInterpretation"
     | "imageGenerationUseAvatarReferences"
+    | "imageKeepOriginalFiles"
     | "imageGenerationIncludeDescriptions"
     | "imageAppearanceMode"
     | "appearanceProfileMode"
@@ -776,7 +777,7 @@ async function generateCreatorPostImageRun(
       logger.warn(error, "[slurp] Could not charge image energy for %s", input.account.id);
     }
   }
-  const stored = await slpCompactGeneratedImage(image);
+  const stored = await slpCompactGeneratedImage(image, input.settings.imageKeepOriginalFiles);
   const file =
     stageSlurpImageWithHost(`${NOODLER_MEDIA_PREFIX}${input.account.id}`, stored.base64, stored.ext) ??
     stageImageToDisk(`${NOODLER_MEDIA_PREFIX}${input.account.id}`, stored.base64, stored.ext);

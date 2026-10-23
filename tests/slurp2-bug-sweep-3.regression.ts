@@ -25,8 +25,8 @@ assert.doesNotMatch(
 );
 assert.match(
   server("features/projects/slp-creator-couples-service.ts"),
-  /filter\(\(post\) => post\.access === "public"\)/u,
-  "only public posts reach the prompt",
+  /filter\(\(post\) => post\.access === "public" && post\.content\.trim\(\)\)/u,
+  "only public posts with words reach the prompt",
 );
 
 // A tag-list look ("blonde, freckles, red dress") keeps its clothes; only prose drops the clothing sentences.
@@ -42,20 +42,30 @@ assert.match(
   /Array\.isArray\(answer\) && answer\.length === 1 \? answer\[0\] : answer/u,
 );
 
-// Strangers reply like strangers, not old friends.
-assert.match(
-  server("modules/prompting/slp-prompt.ts"),
-  /NOODLE_HISTORY_MOOD_INSTRUCTION,\s*SLP_STRANGER_REPLY_INSTRUCTION/u,
-);
-
 // A Creator tagged with @handle in a post is cast in its picture.
 const generation = server("features/feed/slp-generation-service.ts");
 assert.equal((generation.match(/resolveSlurpMentionedCast\(/gu) ?? []).length, 2, "guide and post text");
+assert.match(
+  generation,
+  /resolveSlurpMentionedCast\(db, account\.id, protectedGenerated\.content, false\)/u,
+  "a caption tag never casts the player",
+);
 
 // A reasoning model gets room to think and still write the picture prompt.
 assert.match(server("base/media/slp-image-prompt-rewrite.ts"), /resolveStoredMaxTokens\([^)]*8_192\), 8_192\)/u);
 
 // Commas can be typed in wardrobe tags.
 assert.match(client("features/creators/SlpWardrobeManager.tsx"), /onBlur=/u);
+
+// "Keep original picture files" (Advanced, off by default) skips the WebP re-encode, so ComfyUI metadata stays.
+assert.match(server("base/media/slp-media.ts"), /if \(keepOriginal \|\| \(ext !== "png" && ext !== "bmp"\)\) return/u);
+assert.match(
+  slurp2Source("packages/slurp2/src/engine/packages/shared/src/slp/slp-social.schema.ts"),
+  /imageKeepOriginalFiles: false,/u,
+);
+assert.match(
+  client("features/media/SlpImagesPanel.tsx"),
+  /settingKey="imageKeepOriginalFiles"[\s\S]*?<\/AdvancedGroup>/u,
+);
 
 console.log("slurp2 bug sweep 3: ok");

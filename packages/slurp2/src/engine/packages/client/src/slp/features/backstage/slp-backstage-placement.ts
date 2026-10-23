@@ -122,6 +122,7 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   enableImageInterpretation: slurp("images", "enhance image prompts", "interpret image prompts"),
   imagePromptConnectionId: slurp("images", "prompt model", "enhance image prompts"),
   imageGenerationUseAvatarReferences: slurp("images", "avatar references"),
+  imageKeepOriginalFiles: slurp("images", "original files"),
   appearanceProfileMode: slurp("images", "appearance profiles", "auto accept appearance"),
   imageGenerationIncludeDescriptions: slurp("images", "image descriptions"),
   imageAppearanceMode: slurp("images", "look in prompts", "appearance twice", "insert appearance"),

@@ -1052,6 +1052,8 @@
   "ui.slurp.settings.connections.unavailableOption": "사용할 수 없는 연결 ({{id}})",
   "ui.slurp.settings.connections.missingSelectionDetail": "선택한 연결이 없으면 같은 작업의 기본 연결을 사용합니다. 선택을 수정할 때까지 이 상태가 표시됩니다.",
   "ui.slurp.settings.images.loading": "이미지 설정 불러오는 중…",
+  "ui.slurp.settings.images.keepOriginal": "원본 이미지 파일 유지",
+  "ui.slurp.settings.images.keepOriginalDetail": "제공자가 보낸 그대로 이미지를 저장해 ComfyUI 프롬프트와 워크플로가 파일에 남습니다. 파일 크기가 몇 배 커집니다.",
   "ui.slurp.settings.images.loadError": "이미지 설정을 불러오지 못했습니다.",
   "ui.slurp.settings.prompts.generationGuidance": "생성 지침",
   "ui.slurp.settings.prompts.editGenerationGuidance": "생성 지침 편집",

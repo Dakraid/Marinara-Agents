@@ -18,7 +18,7 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     version: "0.3.64",
     date: "2026-10-23",
     notes: [
-      "Creators you DM know your latest public posts, and strangers reply like strangers, not old friends.",
+      "Creators you DM know your latest public posts, and Images settings can keep the original picture files.",
       "A Creator tagged with @ in a post shows up in its picture, and tag-list looks keep their clothes.",
       'Commas work in wardrobe tags, and Slurp\'s own words no longer call everyone "she".',
     ],

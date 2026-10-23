@@ -65,6 +65,7 @@ export function stripAppearanceLabel(value: string): string {
  * clothes are dropped here: only the clothing part of a sentence (V, user), so "Her curvy figure looks
  * great in tight clothing" keeps "Her curvy figure looks great" and "red hair, green eyes and a black
  * hoodie" keeps the hair and eyes. A Creator's own Stage appearance is trusted as written.
+ * A tag list (Danbooru card) is the exception: it goes over whole, outfit tags too (`slurpImageLook`).
  * ponytail: a keyword filter over sentences and clauses. If cards need finer handling, generate a look
  * once per Creator with a language model and store it as Stage appearance.
  */

@@ -228,6 +228,7 @@ export const slurpSettingsSchema = z.object({
   imagePromptInterpretation: z.string().max(20_000),
   enableImageInterpretation: z.boolean(),
   imageGenerationUseAvatarReferences: z.boolean(),
+  imageKeepOriginalFiles: z.boolean(),
   imageGenerationIncludeDescriptions: z.boolean(),
   /** How the look reaches the picture prompt: `slurpApplyImageLook`. */
   imageAppearanceMode: z.enum(["writer", "insert", "both"]),
@@ -539,6 +540,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   // the image model invent a different person for every post. A provider that cannot take a
   // reference image simply ignores the references.
   imageGenerationUseAvatarReferences: true,
+  imageKeepOriginalFiles: false,
   imageGenerationIncludeDescriptions: true,
   imageAppearanceMode: "writer",
   appearanceProfileMode: "high_confidence",

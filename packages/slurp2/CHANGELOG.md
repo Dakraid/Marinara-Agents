@@ -2,9 +2,9 @@
 
 ## 0.3.64 — 2026-10-23
 
-- DM prompts list the player's open page's last three public posts (`slurpCoupleDmPage`, `recentPosts` in the role header).
-- Strangers: a reply between Creators with no follow, thread or tag reads like a fan or stranger (`SLP_STRANGER_REPLY_INSTRUCTION`).
-- A Creator tagged with @handle in the guide or post text joins the picture cast (`resolveSlurpMentionedCast`).
+- DM prompts list the player's open page's last three public posts with text (`slurpCoupleDmPage`, `recentPosts` in the role header).
+- Images settings, Advanced: "Keep original picture files" (`imageKeepOriginalFiles`, off) skips the WebP re-encode, so ComfyUI PNG metadata stays.
+- A Creator tagged with @handle in the guide or post text joins the picture cast (`resolveSlurpMentionedCast`); a caption tag never casts a persona.
 - A tag-list look keeps its clothes (`TAG_LIST`), an arc wrapped in a one-item list still parses, and the picture prompt rewrite gets at least 8192 tokens.
 - Wardrobe tags parse on blur, so a comma can be typed. Neutral wording in UI strings that said "her/she" (en/de/ko/pl, `SlpMessageInsights`).
 

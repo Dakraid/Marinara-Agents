@@ -206,6 +206,8 @@
   "ui.slurp.settings.connections.unavailableOption": "Nicht verfügbare Verbindung ({{id}})",
   "ui.slurp.settings.connections.missingSelectionDetail": "Fehlende Auswahlen verwenden die Standardverbindung für denselben Vorgang. Dieser Status bleibt sichtbar, bis die Auswahl korrigiert ist.",
   "ui.slurp.settings.images.loading": "Bildeinstellungen werden geladen…",
+  "ui.slurp.settings.images.keepOriginal": "Originale Bilddateien behalten",
+  "ui.slurp.settings.images.keepOriginalDetail": "Speichert jedes Bild so, wie der Anbieter es schickt. ComfyUI-Dateien behalten so Prompt und Workflow. Die Dateien sind mehrfach größer.",
   "ui.slurp.settings.images.loadError": "Bildeinstellungen konnten nicht geladen werden.",
   "ui.slurp.settings.prompts.generationGuidance": "Generierungsanweisungen",
   "ui.slurp.settings.prompts.editGenerationGuidance": "Generierungsanweisungen bearbeiten",
