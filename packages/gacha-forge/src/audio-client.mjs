@@ -135,7 +135,9 @@ export class ForgeAudioController {
       this.host._root.querySelector(".gf-stage")?.append(status);
     }
     if (status)
-      status.textContent = forgeAudioEnglish[key].replace("{status}", String(httpStatus)).replace("{reason}", reason);
+      status.textContent = forgeAudioEnglish[key]
+        .replace("{status}", String(httpStatus))
+        .replace("{reason}", () => reason);
     clearTimeout(this.noticeTimer);
     this.noticeTimer = setTimeout(() => status?.remove(), 6000);
   }
@@ -185,6 +187,16 @@ export class ForgeAudioController {
             signal: abort.signal,
             body: JSON.stringify({ runId: this.runId, cue, debugMode: this.host.capabilityProps?.debugMode === true }),
           });
+          if (
+            this.disposed ||
+            !this.settings.generate ||
+            this.settings.muted ||
+            this.settings.musicVolume === 0 ||
+            this.settings.audioConnectionId !== settings.audioConnectionId ||
+            this.host._run?.runId !== this.runId
+          )
+            abort.abort();
+          abort.signal.throwIfAborted();
           if (!brief?.ok || typeof brief.prompt !== "string" || !brief.prompt.trim() || brief.prompt.length > 1000)
             throw new Error("Music brief generation failed");
           prompt = brief.prompt.trim();

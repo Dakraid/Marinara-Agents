@@ -580,6 +580,11 @@ try {
     assert.equal(message[3].length, 300);
     assert.equal(message[3].includes("\n"), false);
     assert.equal(JSON.stringify(events).includes("not public"), false);
+    const status = { textContent: "", remove() {} };
+    const rendered = { host: { _root: { querySelector: () => status } } };
+    ForgeAudioController.prototype.notice.call(rendered, "audio.generationReason", 400, "Provider says $&");
+    assert.ok(status.textContent.includes("Provider says $&"), "provider text is interpolated literally");
+    clearTimeout(rendered.noticeTimer);
     controller.dispose();
   });
 
@@ -612,7 +617,7 @@ try {
   });
 
   await test("failed or cancelled model briefs never submit a paid audio generation", async () => {
-    for (const mode of ["failed", "invalid", "cancelled"]) {
+    for (const mode of ["failed", "invalid", "cancelled", "muted", "quiet", "world"]) {
       const model = deferred();
       const requests = [];
       globalThis.Ze = async (path, options) => {
@@ -626,6 +631,9 @@ try {
       const pending = controller.cue("home");
       await tick();
       if (mode === "cancelled") controller.configure({ generate: false });
+      if (mode === "muted") controller.configure({ generate: true, muted: true });
+      if (mode === "quiet") controller.configure({ generate: true, musicVolume: 0 });
+      if (mode === "world") controller.host._run.runId = "another-world";
       model.resolve({
         ok: true,
         json: async () =>
@@ -637,7 +645,7 @@ try {
       assert.deepEqual(requests, ["/api/gacha-forge/audio/prompt"]);
       assert.equal(controller.generated.size, 0);
       const notices = events.filter(([event]) => event === "notice");
-      if (mode === "cancelled") assert.equal(notices.length, 0);
+      if (["cancelled", "muted", "quiet", "world"].includes(mode)) assert.equal(notices.length, 0);
       else assert.equal(notices[0][1], "audio.promptFailed");
       controller.dispose();
     }
@@ -655,6 +663,7 @@ try {
     const { host, controller } = fixture();
     host._run.scenario = "W".repeat(4000);
     controller.runId = "_world-with-a-valid-NanoID-prefix";
+    host._run.runId = controller.runId;
     controller.configure({ generate: true, audioConnectionId: "dedicated" });
     await controller.generate("music", "boss");
     await controller.generate("sfx", "critical");
