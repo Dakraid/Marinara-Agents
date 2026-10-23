@@ -34,26 +34,38 @@ pnpm --filter @marinara-engine/server exec tsx ../Marinara-Agents/tests/noodle-p
 ```
 
 The Long-Term Memory regressions cover storage, extraction, runtime recall,
-privileged routes, debug logging, and the exact release artifact lifecycle:
+privileged routes, debug logging, and the exact release artifact. Suites that
+import only package source and Agents dependencies run from this checkout after
+`npm ci`:
+
+```bash
+set -e
+for test in candidate-reconciliation conversation-summary-import debug-log debug-activity delta-review extraction-graph extraction-reliability index-keys local-characters reconciliation-recall rebuild-job runtime review-queue-ambiguous-link scope-targets scope-fallback-labels source-pagination source-task tab-keys; do
+  npx tsx "tests/long-term-memory-${test}.regression.ts"
+done
+node tests/long-term-memory-loading.regression.mjs
+node tests/long-term-memory-feedback-clarity-ui.regression.mjs
+```
+
+Suites that need the Engine checkout's server, dependencies, shared sources,
+styles or Playwright run through its TypeScript runner:
 
 ```bash
 cd ../Marinara-Engine
- set -e
-for test in storage extraction-graph extraction-reliability runtime routes-notes routes-imports routes-drafts routes-scope-identity routes-backup routes conversation-summary-import debug-log debug-activity browser installation lifecycle local-characters review-queue-ambiguous-link scope-targets scope-fallback-labels source-task index-keys candidate-reconciliation reconciliation-recall; do
+set -e
+for test in browser storage branch-recall engine-fields routes routes-imports routes-scope-identity routes-backup installation host-styles; do
   MARINARA_ENGINE_ROOT="$PWD" pnpm --filter @marinara-engine/server exec tsx \
     "$PWD/../Marinara-Agents/tests/long-term-memory-${test}.regression.ts"
 done
- node "$PWD/../Marinara-Agents/tests/long-term-memory-loading.regression.mjs"
-node "$PWD/../Marinara-Agents/tests/long-term-memory-feedback-clarity-ui.regression.mjs"
 ```
 
 The completion watchdog proof is a direct Node test:
 
 ```bash
-node "$PWD/../Marinara-Agents/tests/regression-helpers.regression.mjs"
+node tests/regression-helpers.regression.mjs
 ```
 
-The lifecycle fixture compiles Engine's `globals.css` with Engine's installed
+The browser fixture compiles Engine's `globals.css` with Engine's installed
 Vite and Tailwind plugin before launching Chromium. Use that fixture for visual
 review evidence; serving `globals.css` directly leaves Tailwind directives
 unprocessed and is not a valid visual pass.
@@ -65,12 +77,12 @@ the served CSS, preventing raw-stylesheet screenshots from being accepted as
 visual evidence.
 
 Set `MARINARA_VISUAL_OUTPUT_DIR` to capture compiled-style mobile and desktop
-review queue screenshots while running the lifecycle fixture:
+review queue screenshots while running the browser fixture:
 
 ```bash
 MARINARA_ENGINE_ROOT="$PWD" MARINARA_VISUAL_OUTPUT_DIR=/tmp/marinara-visuals \
   pnpm --filter @marinara-engine/server exec tsx \
-  "$PWD/../Marinara-Agents/tests/long-term-memory-lifecycle.regression.ts"
+  "$PWD/../Marinara-Agents/tests/long-term-memory-browser.regression.ts"
 ```
 
 ## Social source regressions
@@ -98,16 +110,18 @@ check exercises the same inputs and cannot pass while the removed check fails.
 
 | Layer | Owning suites (`long-term-memory-*.regression.*`) | Contracts |
 | --- | --- | --- |
-| Direct services | `storage`, `runtime`, `extraction-graph`, `extraction-reliability`, `conversation-summary-import`, `candidate-reconciliation`, `reconciliation-recall` | Storage recovery/quarantine, lineage-safe retraction, draft dependencies, activity persistence, retrieval lanes and scope, receipt idempotency/redaction, extraction graph validation, identity/dedup boundaries, bounded candidate reconciliation and recall beyond the prompt window, import invariants |
-| Focused helpers | `index-keys`, `local-characters`, `scope-targets`, `scope-fallback-labels`, `source-task`, `debug-log`, `debug-activity` | Unsafe keys, per-lane score calibration, local identity isolation, scope selection/labels, task cancellation, debug persistence, debug event filtering/status and id lookup |
-| HTTP integration | `routes-notes`, `routes-imports`, `routes-drafts`, `routes-scope-identity`, `routes-backup`, and the direct `routes` scenario | Auth/permissions, validation, statuses and client-consumed errors, request-to-service and response-to-persistence mapping, scope translation, applied mutation IDs, preflight, cancellation, backup semantics |
-| Browser | `browser`, `loading`, `feedback-clarity-ui` | Visible workflows, request construction, response consumption, archive undo/partial failure, review/re-extraction, activation, loading and layout; retain explicit static contracts where behavioral proof is absent |
-| Installation | `installation` | Exact ZIP install, offline restart, full-backup inclusion, uninstall/reinstall and durable-byte preservation; `lifecycle` runs browser plus installation |
+| Direct services | `storage`, `runtime`, `extraction-graph`, `extraction-reliability`, `conversation-summary-import`, `candidate-reconciliation`, `reconciliation-recall`, `branch-recall`, `rebuild-job`, `delta-review` | Storage recovery/quarantine, lineage-safe retraction, draft dependencies, activity persistence, retrieval lanes and scope, receipt idempotency/redaction, extraction graph validation, identity/dedup boundaries, bounded candidate reconciliation and recall beyond the prompt window, branch recall, index rebuild jobs, delta review, import invariants |
+| Focused helpers | `index-keys`, `local-characters`, `scope-targets`, `scope-fallback-labels`, `source-task`, `source-pagination`, `debug-log`, `debug-activity`, `tab-keys`, `review-queue-ambiguous-link`, `engine-fields` | Unsafe keys, per-lane score calibration, local identity isolation, scope selection/labels, task cancellation, source paging, debug persistence, debug event filtering/status and id lookup, Engine field contracts |
+| HTTP integration | `routes-imports`, `routes-scope-identity`, `routes-backup`, and the direct `routes` scenario | Auth/permissions, validation, statuses and client-consumed errors, request-to-service and response-to-persistence mapping, scope translation, applied mutation IDs, preflight, cancellation, backup semantics |
+| Browser | `browser`, `host-styles`, `loading`, `feedback-clarity-ui` | Visible workflows, request construction, response consumption, archive undo/partial failure, review/re-extraction, activation, loading and layout; retain explicit static contracts where behavioral proof is absent |
+| Installation | `installation` | Exact ZIP install, offline restart, full-backup inclusion, uninstall/reinstall and durable-byte preservation |
 | Repository integrity | `node scripts/validate-catalog.mjs` | Manifest-derived lanes and legacy alias, catalog/manifest agreement, artifact URLs, hashes, sizes, archive contents and package contracts |
 
 The split route entrypoints share `long-term-memory-routes.regression.ts` but
-run in separate processes. Its direct `all` scenario also contains unique
-checks; do not remove it as a redundant aggregator. Browser API responses are
+run in separate processes. Its direct `all` scenario holds the notes and drafts
+checks and other unique checks; do not remove it as a redundant aggregator. The
+`imports`, `scope-identity` and `backup` entrypoints start from their own seed
+and keep scenario-only assertions. Browser API responses are
 fixtures, not proof of server behavior, and direct source tests do not prove
 that the committed ZIP works. Run the repository baseline as well as LTM tests.
 
