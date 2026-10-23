@@ -1873,7 +1873,10 @@ export async function spatialContextRoutes(app: FastifyInstance) {
 
     let maxTokens = prompt.maxTokens;
     if (prepared.hasReferenceEntries) {
-      maxTokens = Math.min(maxTokens, resolved.maxOutputTokens ?? maxTokens);
+      const outputCap = resolved.maxOutputTokens;
+      if (typeof outputCap === "number" && Number.isSafeInteger(outputCap) && outputCap > 0) {
+        maxTokens = Math.min(maxTokens, outputCap);
+      }
       const fitted = resolved.fitContext(prompt.messages, { maxTokens });
       if (fitted.trimmed || (typeof fitted.maxTokens === "number" && fitted.maxTokens < maxTokens)) {
         return reply.status(400).send({

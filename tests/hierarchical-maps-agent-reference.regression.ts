@@ -386,7 +386,7 @@ export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/h
               fitReserves.push(options.maxTokens);
               return {
                 messages,
-                trimmed: publicOutputCap !== null && (options.maxTokens ?? 0) > publicOutputCap,
+                trimmed: false,
                 estimatedTokensBefore: 1,
                 estimatedTokensAfter: 1,
                 ...(budgetEcho === undefined ? {} : { maxTokens: budgetEcho }),
@@ -435,6 +435,22 @@ export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/h
         assert.equal(response.statusCode, 200, response.body);
         assert.match(prompts.at(-1)!, sample.reference, "an omitted budget echo preserves reference context");
         assert.match(prompts.at(-1)!, /Design a navigable harbor\./);
+      }
+      for (publicOutputCap of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, 0.5, 1.5]) {
+        for (const sample of cases) {
+          const response = await publicHostApp.inject({
+            method: "POST",
+            url: `/api/chats/${sample.id}/spatial-context/generate`,
+            payload: sample.payload,
+          });
+          assert.equal(response.statusCode, 200, response.body);
+          assert.equal(
+            fittedReserve,
+            first.maxTokens,
+            "invalid output-cap metadata does not replace the valid requested reserve",
+          );
+          assert.equal(completedReserve, first.maxTokens, "the actual call keeps that valid output reserve");
+        }
       }
       publicOutputCap = 2_048;
       for (const sample of cases) {
