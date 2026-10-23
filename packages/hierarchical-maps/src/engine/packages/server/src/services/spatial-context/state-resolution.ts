@@ -1,6 +1,7 @@
 import {
   resolveSpatialBreadcrumb,
   resolveSpatialDestinations,
+  resolveSpatialRoute,
   SPATIAL_CONTEXT_LIMITS,
   type CapabilityPersistenceSession,
   type SpatialAssessedTravel,
@@ -385,9 +386,15 @@ export async function materializeAssistantSpatialStateInTransaction(
       input.commandIdPrefix === "assessment" &&
       input.assessedTravel?.fromLocationId === state.currentLocationId &&
       input.assessedTravel.routeLocationIds.at(-1) === requestedDestinationId;
+    // A destination further than one step moves the party when resolveSpatialRoute, which routes the
+    // player's own travel, finds a path of at least one step to it (a boat to the next town).
+    const routed =
+      destination &&
+      !reachable.has(destination.id) &&
+      (resolveSpatialRoute(definition, state.currentLocationId, destination.id)?.length ?? 0) > 0;
     if (
       destination &&
-      (destination.id === state.currentLocationId || reachable.has(destination.id) || assessedDestination)
+      (destination.id === state.currentLocationId || reachable.has(destination.id) || assessedDestination || routed)
     ) {
       destinationId = destination.id;
       transitionApplied = destinationId !== state.currentLocationId;

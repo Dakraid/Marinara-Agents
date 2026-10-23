@@ -1,3 +1,9 @@
+## 10.2.0 — 2026-10-23
+
+- Includes upstream 1.9.0 to 1.10.0. Choose your protagonist's dialogue or actions from two to four themed options; first-play choices become canon, and a chapter can end with one permanent big choice. Choices survive reloads and are on by default in Settings > Story > Continuity.
+- An in-app fullscreen control beside Settings, and every Forge screen fills the available width and height. Needs Marinara Engine 2.5.1 and Capability API 1.376.
+- Chapter controls, unit portraits and card icons are tidier.
+
 ## 10.1.0 — 2026-10-22
 
 - Includes upstream 1.8.14 and 1.8.15. On a phone turned sideways, world creation uses the whole screen width and scrolls as one page with a slim Back and Next row. Tapping a text field no longer zooms iPhone in. Ticking a cast member or outfit theme no longer scrolls the list back to the top on Safari-based browsers.
@@ -5,6 +11,26 @@
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 1.10.0 — 2026-10-23
+
+- Choose your protagonist's dialogue or actions from two to four themed options above the dialogue box. Player choices are on by default in Settings > Story > Continuity.
+- Small choices include every alternative scene in the same generation and return to the shared story. Your first-play choices become canon; replaying another route does not rewrite them.
+- A chapter or Character Story can end with one optional big choice. That fate is permanent, and later story generation waits for it before continuing from the chosen outcome.
+- Choices survive reloads. Existing linear chapters still work; turning choices off affects newly written scenes and keeps existing decisions.
+
+## 1.9.1 — 2026-10-23
+
+- Chapter fullscreen controls now use a small icon aligned with the top-right header fade, with a usable touch target and visible keyboard focus.
+- Visible unit portraits use eager loading and synchronous decoding on detail updates.
+- Favorite and help icons are centered; unit cards show their existing affinity symbol in the top-right corner.
+
+## 1.9.0 — 2026-10-22
+
+### New
+- The fullscreen control beside Settings expands inside the Engine, hiding Home browser controls while keeping the Engine topbar. Outward/inward arrows show the action, and the button works on iPhone Safari too.
+- Every Forge screen fills the available width and height instead of fitting a fixed 16:9 frame.
+- A floating exit control stays available on screens without the shared toolbar and on the portrait rotation notice. Requires Engine capability API 1.376.
 
 ## 1.8.15 — 2026-10-22
 - Fixed: on iPhone and other Safari-based browsers, ticking a cast member or an outfit theme no longer scrolls the list (and, on a phone turned sideways, the whole world-creation page) back to the top.

@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 10.3.0 — 2026-10-23
+
+- Includes upstream 1.4.86. Keyboard focus moves somewhere sensible after each action, and field errors sit under their fields. Results show beside the action that made them. The layout follows the width of its own panel, batch bars stay in view, and small controls are easier to tap. Long lists stay responsive. Warning notices show an icon and a stronger border.
+
 ## 10.2.0 — 2026-10-22
 
 - Includes upstream 1.4.85: keyboard and focus fixes. Sources rows are reachable with Tab and open with Enter or Space. Accepting a Review Queue change keeps the list and your place while memories reload. Memory Vault dialogs show on a narrow panel. Place picker arrow keys keep the highlight in view. Backup controls have a cleaner Tab order and screen-reader name.
@@ -13,6 +17,14 @@
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 1.4.86 — 2026-10-23
+
+- Keyboard focus now moves somewhere sensible after you act in Review, the Memory Vault, Sources, the setup guide, Settings and Debug, and field errors sit under their fields and are read with them.
+- Results show beside the action that made them. Sources names a failed or partial import as such, and Review and Sources say why Accept or Import is off.
+- Long-Term Memory lays out by the width of its own panel, so a narrow side panel gets the phone layout. Batch bars stay in view while you scroll, and checkboxes, toggles, links and info buttons are easier to tap.
+- Long lists stay responsive: Sources searches once you pause typing and keeps the current rows meanwhile, and place pickers show 100 places at a time with a Show more row.
+- Warning notices show a warning icon and a stronger border instead of relying on color, and error notices show their border and have room inside.
 
 ## 1.4.85 — 2026-10-22
 

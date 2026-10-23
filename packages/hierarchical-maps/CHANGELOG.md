@@ -1,3 +1,7 @@
+## 10.1.0 — 2026-10-23
+
+- Includes upstream 1.6.0. When the Game Master moves the party to a place more than one step away on the map, such as a boat to the next town, the map now follows by the shortest route instead of staying put.
+
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
