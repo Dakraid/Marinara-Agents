@@ -1672,8 +1672,7 @@ async function main() {
           messageIds: [gameWorldTurn.id, gameAssistantAtWorld.id],
         },
       },
-      // ponytail: upstream added message-trash semantics; bulk-delete now always
-      // answers 200 with {trashed, trashedCount} (hard-delete when trash is unused).
+      // The Engine now answers a bulk delete with what went to the message trash.
       200,
     );
     const verifySharedWorldLifecycle = async () => {
@@ -2883,7 +2882,6 @@ async function main() {
         headers: csrfHeaders,
         payload: { messageIds: [worldTurn.message.id, assistantAtWorld.id] },
       },
-      // ponytail: message-trash upstream semantics — always 200 + {trashed, trashedCount}.
       200,
     );
     const rewoundSource = (await expectJson(app, {
@@ -4065,6 +4063,31 @@ async function main() {
     });
     assert.equal(invalidMoveSnapshot?.currentLocationId, "lifecycle_harbor");
     assert.equal(invalidMoveSnapshot?.transitionCommandId, null);
+
+    // A move further than one step follows the shortest route over the same one-step moves: the harbor
+    // and Deck A are both inside the world, two steps apart (no way links them), and the story can take
+    // the party across.
+    const routedMove = async (destinationId: string, content: string) => {
+      const message = (await expectJson(app, {
+        method: "POST",
+        url: `/api/chats/${branch.id}/messages`,
+        headers: csrfHeaders,
+        payload: { role: "assistant", content },
+      })) as { id: string };
+      return materializeAssistantSpatialState({
+        chatId: branch.id,
+        messageId: message.id,
+        swipeIndex: 0,
+        regenerate: false,
+        continuation: false,
+        directive: { type: "move", destinationId },
+      });
+    };
+    const routedThere = await routedMove("lifecycle_deck_a", "The party crosses to the deck.");
+    assert.equal(routedThere?.currentLocationId, "lifecycle_deck_a");
+    assert.match(routedThere?.transitionCommandId ?? "", /^assistant:/u);
+    const routedBack = await routedMove("lifecycle_harbor", "The party walks back to the harbor.");
+    assert.equal(routedBack?.currentLocationId, "lifecycle_harbor");
 
     const knownLevelMessage = (await expectJson(app, {
       method: "POST",

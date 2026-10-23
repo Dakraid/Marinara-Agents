@@ -843,18 +843,18 @@
         "schemaVersion": 2,
         "capabilityApi": {
           "major": 1,
-          "minor": 10
+          "minor": 376
         },
         "builtAgainst": {
-          "engineVersion": "2.4.5",
-          "engineCommit": "c64efcb63fcca6504c0ef6a4f5d694e8b74f7ee8"
+          "engineVersion": "2.5.1",
+          "engineCommit": "1c8d6575af6d7c55a9c4ead54e5f1df6c2cc61cc"
         },
         "id": "gacha-forge",
         "name": "Gacha Forge",
-        "version": "10.1.0",
+        "version": "10.2.0",
         "description": "A complete gacha game mode. Describe a world and Gacha Forge builds the rest: banners to pull on, a cast the model writes and paints for you, story chapters told by a visual-novel narrator, and the battles, gear and events that grow around them. Install it, restart Marinara Engine when prompted, then open Home → Gacha Forge.",
         "engine": {
-          "min": "2.4.4",
+          "min": "2.5.1",
           "maxExclusive": "4.0.0"
         },
         "kind": [
@@ -1140,8 +1140,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "25a238726911cf168227aab78284ff9bde979e1d1f3b9cddfe0837516cad3e07",
-            "bytes": 1444583
+            "sha256": "265bbde3c71703cab0f15bffbc14e1f0ef36e53556123aabb9c83dac983b5301",
+            "bytes": 1464016
           },
           {
             "path": "farm-asc.webp",
@@ -1615,8 +1615,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "defce243452149ed999f24ca2c8ae6615ba9d743ea54a7987c7194b1ae0d3fec",
-            "bytes": 503199
+            "sha256": "f147406a0cae2401e3f380852fce3256e874a609208aad0f0cbb85267482aa47",
+            "bytes": 524534
           },
           {
             "path": "skill-aoe_damage-dark.webp",
@@ -2373,9 +2373,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/gacha-forge-10.1.0.zip",
-        "sha256": "835a08bbe439696cfbca94c9133e8877dc49bebe22c7a2a17cb12b0bd756481a",
-        "bytes": 7847940
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/gacha-forge-10.2.0.zip",
+        "sha256": "7539dd67da28888a83e9f95d7afa3775c6e2ff211140f4e2ad01611de0084583",
+        "bytes": 7888709
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
     },
@@ -2644,7 +2644,7 @@
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
-        "version": "10.2.0",
+        "version": "10.3.0",
         "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
         "engine": {
           "min": "2.4.1",
@@ -2681,8 +2681,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "8f8a9db1f9e152cb2243342ff3cc829aed263b314c9bf1208550d7793a4a1942",
-            "bytes": 649488
+            "sha256": "beffc7b76f9c59d9a9708c5bac7b6cd0a8199f6f4c0b15c5664cc981a769f96f",
+            "bytes": 671734
           }
         ],
         "permissions": [
@@ -2698,9 +2698,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-10.2.0.zip",
-        "sha256": "652ec486bcf9d92cee2b8eabf573e4aaf6ce22b6726cbe87497e74bc6c6ee642",
-        "bytes": 1140919
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-10.3.0.zip",
+        "sha256": "b3748397ae3a9dbdce5e376dca0900e357769dcac7e73c309483258249c2150a",
+        "bytes": 1163165
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#long-term-memory"
     },
@@ -4059,7 +4059,7 @@
         },
         "id": "hierarchical-maps",
         "name": "World Maps",
-        "version": "10.0.1",
+        "version": "10.1.0",
         "description": "Adds world maps to Roleplay and Game, from whole regions down to single rooms, with art and travel between places. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay and Game modes.",
         "engine": {
           "min": "2.4.2",
@@ -4095,13 +4095,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "fd3da31137e1a294a5801ad86cdcb828a3e64db9fae87e7627f4f78656b0ff38",
-            "bytes": 143405
+            "sha256": "5cddb72d52c208f7e2c36602ad693c0c872a63cefa937d19c5427af5bf86fd71",
+            "bytes": 143473
           },
           {
             "path": "client.js",
-            "sha256": "605de008dd46bc4d58a8f92b12f3396e825646ac6a071b8f62d0c4eca6474365",
-            "bytes": 442913
+            "sha256": "4911d08a0623b09aa12a593d7184f89d4b4a193aecc0a0ce439ce50f839594e0",
+            "bytes": 449672
           }
         ],
         "permissions": [
@@ -4119,9 +4119,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/hierarchical-maps.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/hierarchical-maps-10.0.1.zip",
-        "sha256": "f549ec5f9b73888d114e5eaf325e0c348f87e184d552ac40084ef279b7840ed6",
-        "bytes": 588950
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/hierarchical-maps-10.1.0.zip",
+        "sha256": "d9e42dc83bf6a5e002df930d396e10fa86539268402f552448fe71fc7ff43bbd",
+        "bytes": 595777
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
     },

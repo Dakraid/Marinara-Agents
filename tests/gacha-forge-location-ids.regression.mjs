@@ -5,6 +5,7 @@
 // when ticked (1.8.15), so a later bundle drop cannot lose a fix silently. It also rebuilds the shipped
 // client.js and server.mjs from the last contributed bundles and the hand edits recorded in
 // bundle-patches.json.
+import { loadGachaBundlePatches } from "../scripts/gacha-forge-bundle-patches.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -156,12 +157,8 @@ assert.ok(
   blocks.some((block) => /\.st-plate \{ padding:/u.test(block)),
   "settings plates tighten in a short landscape",
 );
-// A fullscreen toggle the browser cannot honour (iPhone Safari) is removed instead of doing nothing.
-css(
-  /s=typeof this\.requestFullscreen=="function"&&document\.fullscreenEnabled!==!1;/u,
-  "fullscreen support is checked",
-);
-css(/r&&\(s\?r\.addEventListener\("click",e\):r\.remove\(\)\)/u, "unsupported fullscreen toggles are removed");
+// In-app fullscreen uses the Engine contract even where native fullscreen is unavailable.
+css(/_wireFullscreen\(\)\{wireForgeBrowserFullscreen\(this\)/u, "the button uses in-app fullscreen");
 
 // One stylesheet out of the bundle: the template literal assigned to `name`.
 function sheet(name) {
@@ -314,7 +311,7 @@ css(/oy=\[\{version:null,/u, "the in-game changelog's newest entry is labelled w
 assert.ok(!client.includes(`{version:"${bundleVersion}"`), "no older in-game entry claims the current version");
 // The entry before it keeps its notes under a release the changelog lists below this one.
 const pinned = client.match(
-  /oy=\[\{version:null,fixed:\[(?:"(?:[^"\\]|\\.)*",?)+\]\},\{version:"(\d+\.\d+\.\d+)",/u,
+  /oy=\[\{version:null,(?:new|changed|fixed):\[(?:"(?:[^"\\]|\\.)*",?)+\]\},\{version:"(\d+\.\d+\.\d+)",/u,
 )?.[1];
 assert.ok(
   released.indexOf(pinned) > released.indexOf(upstreamRelease),
@@ -328,7 +325,7 @@ assert.ok(
 // once at its step, so the edits cannot land anywhere else. A file's patches follow its base in ascending
 // version order and none is newer than this release; the newest client.js patch (or its base, once a new
 // drop empties the list) must be this version, so the next hand edit is recorded too.
-const bundlePatches = JSON.parse(await readFile(new URL("bundle-patches.json", packageRoot), "utf8"));
+const bundlePatches = await loadGachaBundlePatches(packageRoot);
 const digest = (text) => ({
   sha256: createHash("sha256").update(text).digest("hex"),
   bytes: Buffer.byteLength(text),
