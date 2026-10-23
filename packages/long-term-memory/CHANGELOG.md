@@ -1,5 +1,10 @@
 # Long-Term Memory changelog
 
+## Unreleased
+
+- Switching Long-Term Memory on or off, changing a chat's recall settings and running Reindex no longer drop keyboard focus while they work.
+- The unsaved-changes prompt now says where you are going, and the Chat Settings panel is shorter, names the right button and no longer shows made-up defaults while loading.
+
 ## 1.4.87 — 2026-10-23
 
 - The setup guide now stays on the Memory Vault and shrinks to a one-line bar elsewhere, steps out of the way when one of its buttons takes you to another screen, and lets you choose Not now, Don't show again or Done. Later steps follow the source type you picked.
