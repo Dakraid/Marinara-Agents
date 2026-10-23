@@ -117,6 +117,11 @@ if (!source.includes("/* forge-audio-prompts-source:start */")) {
   assert.ok(patch);
   for (const edit of patch.edits) source = swapGachaBundleText(source, edit.find, edit.replace);
 }
+if (!source.includes("generate:({runId,run,messages,debugMode})")) {
+  const patch = ledger.files["server.mjs"].patches.find((entry) => entry.notes?.startsWith("Forward the music debug"));
+  assert.ok(patch);
+  for (const edit of patch.edits) source = swapGachaBundleText(source, edit.find, edit.replace);
+}
 const directory = await mkdtemp(join(tmpdir(), "marinara-forge-music-prompts-"));
 const originalFetch = globalThis.fetch;
 try {
@@ -126,7 +131,15 @@ try {
   const seed = (id, kind, data) => docs.set(id, { id, kind, data, revision: 1 });
   seed("index", "index", {
     activeRunId: "world",
-    runs: [{ runId: "world", scenario: "A fantasy world", connectionId: "main", narrationConnectionId: "narration" }],
+    runs: [
+      {
+        runId: "world",
+        scenario: "A fantasy world",
+        language: "Polish",
+        connectionId: "main",
+        narrationConnectionId: "narration",
+      },
+    ],
   });
   seed("world:session", "session", { progress: { chapter: 4 } });
   const routes = new Map();
@@ -169,9 +182,12 @@ try {
           resolveForRequest: async ({ connectionId }) => ({
             connectionId,
             model: "fixture",
-            chatComplete: async (messages) => {
-              generated.push({ connectionId, messages });
-              return { content: JSON.stringify({ prompt: brief }), finishReason: "stop" };
+            chatComplete: async (messages, options) => {
+              generated.push({ connectionId, messages, options });
+              return {
+                content: generated.length === 1 ? "not valid JSON" : JSON.stringify({ prompt: brief }),
+                finishReason: "stop",
+              };
             },
           }),
         },
@@ -184,8 +200,18 @@ try {
   const route = routes.get("/audio/prompt");
   const result = await route({ body: { ...request, scenario: "untrusted client override", debugMode: true } });
   assert.deepEqual(result, { ok: true, prompt: brief, cached: false });
-  assert.equal(generated.length, 1);
+  assert.equal(generated.length, 2);
   assert.equal(generated[0].connectionId, "narration");
+  assert.equal(
+    generated[0].messages[0].content.includes("write every player-facing string in Polish"),
+    false,
+    "provider briefs remain English in non-English worlds",
+  );
+  assert.equal(
+    generated.every(({ options }) => options.debugMode === true),
+    true,
+    "debug override reaches the actual provider, including later parser retries",
+  );
   assert.equal(
     JSON.parse(generated[0].messages[1].content).world,
     "A fantasy world",
@@ -198,7 +224,7 @@ try {
     "debug mode exposes the final model prompt",
   );
   assert.equal((await route({ body: request })).cached, true);
-  assert.equal(generated.length, 1);
+  assert.equal(generated.length, 2);
   assert.equal(docs.get("world:session").data.progress.chapter, 4);
   assert.equal(docs.get("world:session").data.audioPrompts.home.prompt, brief);
 } finally {

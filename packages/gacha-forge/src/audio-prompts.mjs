@@ -20,7 +20,7 @@ export function forgeMusicBriefMessages(run, cue) {
     {
       role: "system",
       content:
-        'Write an original instrumental game soundtrack brief in English. Return only JSON: {"prompt":"..."}. ' +
+        'LANGUAGE — THIS IS A HARD RULE: Write an original instrumental game soundtrack brief in English. Return only JSON: {"prompt":"..."}. ' +
         "Keep the prompt within 1000 characters. Describe instrumentation, regional musical influences, melody, " +
         "rhythm, texture, energy and mood for a 60-second, seamlessly looping track with no vocals. " +
         "Translate the world's setting and any reference games into musical qualities. Do not name franchises, " +
@@ -49,7 +49,7 @@ export function createForgeMusicPromptService({ readWorld, readSession, updateSe
     if (pending.has(key)) return pending.get(key);
     const task = (async () => {
       log?.(messages, debugMode);
-      const result = await generate({ runId, run, messages });
+      const result = await generate({ runId, run, messages, debugMode });
       const brief = result?.ok && normalizeForgeMusicPrompt(result.value);
       if (!brief) return { ok: false, error: "generation-failed" };
       const current = await readWorld(runId);
