@@ -142,7 +142,7 @@ export function LongTermMemoryDetail({ props }: { props: CapabilityProps }) {
       props,
       localizeUi("ui.longTermMemory.longtermmemorydetail.discardUnsavedChanges"),
       localizeUi("ui.longTermMemory.longtermmemorydetail.unsavedChangesLostBeforeOpening", { destination: next }),
-      localizeUi("ui.longTermMemory.longtermmemorydetail.discardChanges"),
+      localizeUi("ui.longTermMemory.memoryvault.discardAndContinue"),
       true,
     );
   };
@@ -583,7 +583,9 @@ export function LongTermMemoryDetail({ props }: { props: CapabilityProps }) {
               {localizeUi("ui.longTermMemory.memoryvault.unsavedNavigationTitle")}
             </h2>
             <p id="ltm-destination-unsaved-description" className="text-sm text-[var(--muted-foreground)]">
-              {localizeUi("ui.longTermMemory.memoryvault.unsavedNavigationDescription", { action: navigationPrompt })}
+              {localizeUi("ui.longTermMemory.longtermmemorydetail.unsavedNavigationDescription", {
+                action: navigationPrompt,
+              })}
             </p>
             {navigationSaveFailed ? (
               <StatusSurface tone="danger" data-ltm-destination-save-failed>

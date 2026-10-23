@@ -2032,6 +2032,16 @@ async function main() {
         .first()
         .click();
       await page.locator('[data-ltm-field="title"]').fill("Second mobile review memory, edited");
+      // #1617: leaving the dirty Vault editor for another destination says where it leads.
+      const reviewDestination = page.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="review"]');
+      await reviewDestination.click();
+      const destinationDescription = page.locator("#ltm-destination-unsaved-description");
+      await destinationDescription.waitFor();
+      const destinationText = (await destinationDescription.innerText()).trim();
+      assert.match(destinationText, /^Save your changes before opening .+, or discard them\.$/u);
+      assert.doesNotMatch(destinationText, /this memory/u);
+      await page.locator("[data-ltm-destination-stay]").click();
+      await destinationDescription.waitFor({ state: "detached" });
       const focusedPlaceButton = memoryScope.locator("[data-ltm-scope-picker-trigger]:focus");
       await choosePlaceByKeyboard("vault", "character", "character:character-a");
       await page.locator("[data-ltm-unsaved-stay]:focus").waitFor();
@@ -2709,13 +2719,17 @@ async function main() {
       // #1611: Help leaves the Review Queue for the Vault, so the unsaved-state guard asks first; Stay keeps
       // the screen and opens neither the guide nor the bar.
       const helpPrompts: string[] = [];
+      const helpMessages: string[] = [];
       page.once("dialog", (dialog) => {
         helpPrompts.push(dialog.type());
+        helpMessages.push(dialog.message());
         void dialog.dismiss();
       });
       await setupGuide.click();
       await page.waitForFunction(() => document.querySelector('[data-ltm-surface="onboarding"]') === null);
       assert.deepEqual(helpPrompts, ["confirm"]);
+      // #1617: the confirm fallback names where the user is going, like the in-page dialog does.
+      assert.match(helpMessages[0], /Your changes are not saved\. Discard them to open .+\./u);
       assert.equal(await page.locator('[data-ltm-surface="review-queue"]').count(), 1);
       assert.equal(
         await page.locator('[data-ltm-surface="onboarding"], [data-ltm-surface="onboarding-bar"]').count(),
@@ -4566,6 +4580,69 @@ async function main() {
         "inside",
       );
       assert.equal(await touchTargetSize(chatSettings.locator('[data-ltm-info="Recall style"] > span')), "fits");
+      // #1617: the Recall style popover lists every style and marks the one in use.
+      await chatSettings.locator('[data-ltm-info="Recall style"]').click();
+      const styleOptions = page.locator('[data-ltm-info-panel="Recall style"] [data-ltm-recall-style-option]');
+      await styleOptions.nth(4).waitFor();
+      assert.deepEqual(
+        await styleOptions.evaluateAll((items) =>
+          items.map((item) => item.getAttribute("data-ltm-recall-style-option")),
+        ),
+        ["balanced", "exact", "broad", "story", "custom"],
+      );
+      await page
+        .locator('[data-ltm-info-panel="Recall style"] [data-ltm-recall-style-option="balanced"]')
+        .getByText("Current", { exact: true })
+        .waitFor();
+      assert.equal(
+        await page.locator('[data-ltm-info-panel="Recall style"]').getByText("Current", { exact: true }).count(),
+        1,
+      );
+      await page.keyboard.press("Escape");
+      await page.locator('[data-ltm-info-panel="Recall style"]').waitFor({ state: "detached" });
+      // #1617: until the global defaults arrive, an inherited value shows a neutral placeholder, not 4096 / 20 / balanced.
+      {
+        const loadingPage = await browserContext.newPage();
+        let releaseDefaults = () => {};
+        const defaultsGate = new Promise<void>((resolve) => {
+          releaseDefaults = resolve;
+        });
+        // The last-injection counter below belongs to the main page, so this page never reaches that route.
+        await loadingPage.route("**/api/long-term-memory/last-injection/**", (route) => route.abort());
+        await loadingPage.route("**/api/long-term-memory/settings", async (route) => {
+          if (route.request().method() === "GET") await defaultsGate;
+          await route.continue();
+        });
+        await loadingPage.goto(`http://127.0.0.1:${address.port}/`);
+        await loadingPage.evaluate(() => customElements.whenDefined("marinara-capability-long-term-memory"));
+        await loadingPage.evaluate(`(() => {
+          const element = document.createElement("marinara-capability-long-term-memory");
+          element.setAttribute("view", "settings");
+          element.capabilityProps = { chatId: "chat-artifact", onChatSettingsChange: () => undefined };
+          document.body.append(element);
+        })()`);
+        const loadingSettings = loadingPage.locator('[data-ltm-surface="chat-settings"]');
+        await loadingSettings.waitFor();
+        const loadingStyle = loadingSettings.locator('select[data-ltm-control="select"]');
+        const loadingBudget = loadingSettings.getByRole("spinbutton", { name: "Recall context budget" });
+        const loadingMaxChunks = loadingSettings.getByRole("spinbutton", { name: "Maximum memories" });
+        assert.equal(
+          await loadingStyle.evaluate((select: HTMLSelectElement) => select.selectedOptions[0]?.textContent),
+          "Loading default…",
+        );
+        for (const field of [loadingBudget, loadingMaxChunks]) {
+          assert.equal(await field.inputValue(), "");
+          assert.equal(await field.getAttribute("placeholder"), "Loading default…");
+        }
+        assert.equal(await loadingSettings.getByText("Global default").count(), 0);
+        releaseDefaults();
+        await loadingPage.waitForFunction(
+          () => document.querySelector('[data-ltm-surface="chat-settings"] select')?.value === "balanced",
+        );
+        assert.equal(await loadingBudget.inputValue(), "4096");
+        assert.equal(await loadingMaxChunks.inputValue(), "20");
+        await loadingPage.close();
+      }
       const lastInjection = chatSettings.locator("[data-ltm-last-injection]");
       await lastInjection.getByText(/1 saved memory included in the latest model context/u).waitFor();
       await lastInjection.click();

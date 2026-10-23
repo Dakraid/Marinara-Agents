@@ -38,8 +38,10 @@ dirty surface -> save / discard / stay decision -> destination changes or remain
 ```
 
 Opening a memory, review item, source target, activity view, or the Agents
-panel uses the same guard. A successful navigation clears the relevant stale
-selection and closes transient menus. Save and discard decisions restore focus
+panel uses the same guard. The in-page dialog names the destination ("Save your
+changes before opening X, or discard them."); the `confirm()` fallback uses the
+same nouns and the "Discard and continue" verb. A successful navigation clears
+the relevant stale selection and closes transient menus. Save and discard decisions restore focus
 to the control that initiated navigation.
 
 On first successful status load, onboarding opens for an empty vault. Its step
@@ -118,7 +120,11 @@ running task can be cancelled and its latest result can be revisited.
 
 Global settings and per-chat settings are distinct. Chat Settings shows whether
 values inherit global defaults, disables edits when the host owns settings, and
-shows last-injection loading, error, retry, and result states. Memory Settings
+shows last-injection loading, error, retry, and result states. It keeps one short
+explanation above the controls; the Recall style info popover lists every style
+and marks the current one. While the global defaults have not arrived, an
+inherited value shows "Loading default…" (or "Default unavailable" after a
+failed load) instead of an invented number, and the controls stay usable. Memory Settings
 has Recall, Extraction, Maintenance, and Debug tabs; Maintenance holds index and
 identity repair, backup, reset, and delete all data, and Debug is the activity
 view. Repair actions
