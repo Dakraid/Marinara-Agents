@@ -792,76 +792,10 @@
     "slurp2": {
       "versions": [
         {
-          "version": "0.3.65",
+          "version": "0.4.0",
           "date": "2026-10-23",
-          "notes": "- Release to staging: `staging` merged into the Slurp branch; no Slurp source change beyond the version.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.64",
-          "date": "2026-10-23",
-          "notes": "- DM prompts list the player's open page's last three public posts with text (`slurpCoupleDmPage`, `recentPosts` in the role header).\n- Images settings, Advanced: \"Keep original picture files\" (`imageKeepOriginalFiles`, off) skips the WebP re-encode, so ComfyUI PNG metadata stays.\n- A Creator tagged with @handle in the guide or post text joins the picture cast (`resolveSlurpMentionedCast`); a caption tag never casts a persona.\n- A tag-list look keeps its clothes (`TAG_LIST`), an arc wrapped in a one-item list still parses, and the picture prompt rewrite gets at least 8192 tokens.\n- Wardrobe tags parse on blur, so a comma can be typed. Neutral wording in UI strings that said \"her/she\" (en/de/ko/pl, `SlpMessageInsights`).",
-          "highlight": false
-        },
-        {
-          "version": "0.3.63",
-          "date": "2026-10-22",
-          "notes": "- Paid sexting sessions (docs/SPICY.md, item 2): \"Sext with me - 20 min\" in an AI Creator's thread header (`SlpSextingBar`) costs three of her PPV pictures, 15% less from favourite. It is claimed on the thread before it is paid through the tip path.\n- During a session she answers at once at her full level, the prompt walks warm-up, heated, finish (`slurpSextingGuidance`), and the heated phase sends one PPV at her price (`markSextingPicture`). After it, the header asks for a tip.\n- A Story opens in Slurp's own layer (`SlpStoryLayer`), not the Engine modal, so it has one close button.\n- Stir opens as a sheet over the current page (`SlpStirDeck`). `SlpSheet` `base` mode lets its play, plan and Pulse sheets stack on top.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.62",
-          "date": "2026-10-22",
-          "notes": "- Intimacy ladder (docs/SPICY.md, item 1): rapport tiers open doors (`slurpRapportDoors`, `modules/messages/slp-rapport.ts`). Regular: her full DM level without a subscription. Favourite: one spicy chat picture in four is a free gift, customs 15% cheaper (quotes, the prompt's price range, counter floors; `commissionPricingFor`). Whale: free chat pictures at her full level.\n- The highest tier reached is kept per pair (`peak` in the thread's rapport JSON, seeded from the stored tier), so a quiet week never closes a door; an edited tier moves it. When the peak passes what she has said (`said`), the prompt asks her to say it once in her reply.\n- The tier sheet in a chat's Details lists the open doors (`SlurpTierDoors`, en/de/ko/pl).",
-          "highlight": false
-        },
-        {
-          "version": "0.3.61",
-          "date": "2026-10-22",
-          "notes": "- Five kink theme packs, off by default (`slp-kink-packs.ts`): Lingerie, Cosplay, Feet, Dom/sub and Exhibition, two storylines each, pure pack data on the storyline engine. Fans vote between sets, costumes and dares; endings add a locked look or a Creator fact; the lingerie brand storyline makes a `brand-offer`.\n- Each storyline has a `fit` (level, hard-no words, topic words): Exhibition needs nudity, a hard-no or a \"never\" line rules a Creator out, turn-ons lean the lead pick. The spiciest stages wait on `minSpice` 2–3.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.60",
-          "date": "2026-10-22",
-          "notes": "- Family pack (`slurp-pack-family`, off by default): four pregnancy storylines (couple partner, collab partner, the player, a father she won't name), listed in Drama and switched by the pack.\n- New tie kind `collab` (from `creatorCollabs`), stage influences on the lead (`slpDramaStageMultiplier`), turn-ons lean the lead pick, choice options with `when` dials, and the `brand-offer` outcome.\n- The child never appears in a picture or a spicy post; the loss ending sits behind the `hard` dial.\n- The Basic setup demo post's teaser pictures (locked/unlocked) ship as package assets; the Engine never had them. Its Mari avatar is the Professor Mari the player picked in the Engine (appearance packs).",
-          "highlight": false
-        },
-        {
-          "version": "0.3.59",
-          "date": "2026-10-22",
-          "notes": "- Pack topics switch: a topic chip off on an imported pack is a \"never\" for that pack's occasions and\n  storylines (`contentPacks[\"<pack>:<topic>\"]`).\n- The player's tastes weigh the drama start pick and the occasion moment pick (`slurpTasteWeight`).\n- Story outcomes `add-look` and `remove-look`: a storyline gives a Creator a look (source `storyline`) or takes\n  back the one it gave.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.58",
-          "date": "2026-10-22",
-          "notes": "- One Packs list: imported packs get a record (name, version, topics, occasions) and a card next to the built-in\n  ones. Their switch (`contentPacks[id]`) is a gate: off stops new arcs, events, dramas and occasions of the pack;\n  each entry keeps its own switch. Remove (with a confirm) deletes the pack's entries, record and switch.\n- v2 packs take `occasions` (today's event shape plus beats and a JSON `fit`) and `topics`. Review lists an\n  occasion as an event; the planner runs its beats like a built-in pack's. Every built-in pack also reads as v2.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.57",
-          "date": "2026-10-22",
-          "notes": "- One JSON `fit` (level, hard noes, needed words, topic words) on storylines, stages, choice options and beats; the\n  built-in content packs use it instead of code patterns.\n- The drama runtime checks it: the lead pick, skipped stages, options not offered, dropped moments.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.56",
-          "date": "2026-10-22",
-          "notes": "- Story Packs import v2 files: their storylines land in the drama library and run as dramas or standing situations.\n- Drama stage moves write story state for the lead (conditions on, then off; ending outcomes), as arcs do.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.55",
-          "date": "2026-10-21",
-          "notes": "- Dramas and situations run on storylines: the drama library converts on load, runs keep their ids.\n  A start's `requires` and `lacks` and a stage's `when` ways read the lead's story tags; the ending\n  reached applies its ties and sends its beat. A Story Pack whose drama or situation does not convert\n  (a loop, a stage nobody reaches) is refused on import with the reason.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.54",
-          "date": "2026-10-21",
-          "notes": "- Arcs run on their own storyline copy (stage, the ways taken, the ending); the chapter fields are its view, so\n  screens and prompts read as before. Stage conditions and enter, leave and ending outcomes write story state\n  when Storylines is on. Records stored before convert on read and take their library type's outcomes again.",
-          "highlight": false
+          "notes": "One release for everything built since 0.3.53 (unreleased 0.3.54 to 0.3.65 folded in):\n\n- Storylines: arcs, dramas and situations run on one storyline engine; Story Packs import v2 files, one JSON `fit`, one Packs list with a gate and Remove, topic switches `<pack>:<topic>`.\n- Packs (off by default): Family pack and five kink packs (Lingerie, Cosplay, Feet, Dom/sub, Exhibition).\n- Intimacy ladder: rapport tiers open doors in DMs (`slurpRapportDoors`), the highest tier is kept.\n- Paid sexting sessions (`SlpSextingBar`); Stir as a slide-up sheet (`SlpStirDeck`); Stories in Slurp's own layer.\n- Fixes: DM prompts know the player's latest public posts, @tagged Creators join the picture cast, tag-list looks go over whole, picture prompt rewrite floor 8192, wardrobe tag commas, neutral wording; Images > Advanced \"Keep original picture files\".",
+          "highlight": true
         },
         {
           "version": "0.3.53",
@@ -909,6 +843,72 @@
           "version": "0.3.46",
           "date": "2026-10-15",
           "notes": "- Added: Creators react to each other. Each hour a character Creator may like or comment on another Creator's public post (about two a day), persona Creators' posts included. Free canned copy; no messages, tips or subscriptions between Creators.\n- Fixed: the browsing persona was saved per browser, so one install could show an empty Inbox on one device and 87 unread on another. The pick is now a Slurp setting shared by every device; an older per-browser pick is saved once.\n- Fixed: the custom tag field greyed out with no reason when a draft had filled all eight tags. It now says so.\n- Fixed: Hinted profiles checked tags joined with the bio, so words from separate fields could add up to a copied source detail. Tags are checked one at a time, and the save error names the tag that leaks.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.45",
+          "date": "2026-10-15",
+          "notes": "- Fixed: picture prompts carried the style profile's tags twice. The prompt writer now gets the bare draft; the style is compiled onto its result once.\n- Fixed: the gallery fallback picked the first gallery image every time. It now picks the image this Creator showed least recently.\n- Added: \"Draw missing avatars and banners\" in Settings › Images. Off stops background drawing; Open Creators still copy their card's pictures. On for existing installs; first-run setup sets it from its images choice.\n- Added: \"Caption instructions\" in Settings › Images. Blank uses a Slurp default that describes people, clothes, pose, place and text, and leaves out the art style.\n- Added: \"Always in their pictures\" per Creator. The text opens the Creator's part of every picture prompt, after the style tags, in place of the card name.\n- Fixed: the post writer no longer dresses Creators in worn-out, faded or shabby clothes unless the card or caption asks for it.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.44",
+          "date": "2026-10-15",
+          "notes": "- Added: trends. A post that takes off (shown likes; your likes, unlocks and tips count most), your own page's hits, a platform trend, or Stir \"Start a trend\" (ready-made trends, a starter, what to lean into) starts one. Stir \"Steer a trend\" changes what it leans into. The right Creators join, each at their own spice level and limits, quote the origin post, peak, then cool; some roast it, some never join. The starter gains followers.\n- Added: Discover \"Trending on Slurp\" row, a trend chip on posts, and trend search.\n- Changed: the invented \"silly trend\" daily-life moment is gone; trend posts skip the feed spice damping.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.43",
+          "date": "2026-10-15",
+          "notes": "- Fixed: long DMs end at a sentence or word (up to 2400 characters), and commission quotes use the Creator's own prices.\n- Fixed: Cancel ends a subscription to a removed Creator at once.\n- Fixed: fans react to what a picture shows, not its art style.\n- Fixed: post drift. Tips no longer teach a guessed taste, and a spicy kind or taste that other Creators posted that day steps aside, so the whole feed is not in the shower at once. Spice level is unchanged.\n- Changed: family is never paired up on its own. Cards that say they are lovers, or the player in Stir, still can.\n- Fixed: clearer \"monogamous\" message in Stir, with the Relationships switch on the Creator sheet.\n- Fixed: work mode no longer blurs the coin and G's face; Couples pages are not a missing source; the sign-up scene names an unreachable connection.\n- Fixed: a scheduled post goes up once, and a shared-page post waits its turn.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.42",
+          "date": "2026-10-15",
+          "notes": "- Added: chats with \"Carryover to chats\" on also learn the character's Slurp storyline, love life, how well they know you, and the Slurp memories a chat with you may read.\n- Added: Carryover settings show in how many chats with your Creators \"Include Slurp activity\" is on.\n- Fixed: a scene started from a DM runs on the connection Slurp planned it with, not the Engine's plain default.\n- Fixed: an unreadable scene plan is asked for once more before \"The scene plan got lost\" shows.\n- Fixed: \"Start the scene\" shows an error when the Engine's scene host is missing.\n- Fixed: lorebook entries set to \"At Depth\" reach Slurp DMs and posts.\n- Added: Deep details has a \"Lore\" section with the entries a reply used or had no room for.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.41",
+          "date": "2026-10-14",
+          "notes": "- Faster: Slurp shows character and persona avatars as small copies instead of the full card picture. On opening Slurp the feed downloaded about 16 MB of avatar pictures (1–2.5 MB each, shown 44 px wide), and Discover about 14 MB more; those downloads also held up the feed's other requests. The small copies are made once and kept in Slurp's own media folder.\n- Faster: the \"Report\" sheet of a post or a reply is built only when you open it. Before, every post card and reply built a closed copy, which made the feed and Creator pages slower to open.\n- Faster: the ambient background colour measures the pictures on screen only after the screen has drawn, so opening a screen no longer forces extra layout work.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.40",
+          "date": "2026-10-14",
+          "notes": "- Changed: Slurp follows a Creator's gender instead of calling everyone \"she\". Drama packs use the gender of whoever plays each role (\"{her:he}\" tokens), and pack names and descriptions no longer assume a woman. Post, DM and scene prompts tell the model the Creator's pronouns. A Creator without a gender is \"they\".\n- Added: a \"Clothing style\" choice in the Creator's stage profile: Auto, Feminine, Masculine or Neutral. Auto follows gender. It decides what a \"lingerie\" spice post is: lingerie for feminine, an underwear shoot with briefs for masculine, either for neutral. Male Creators no longer get bra-and-panties shoots unless their style is Feminine. The post prompt also names the style.\n- Added: a picture of a Creator whose appearance text does not say their sex starts with \"Male.\" or \"Female.\" from their gender, so the image model stops defaulting to a woman.\n- Changed: the stage profile field hints read \"he\", \"she\" or \"they\" from the gender you picked.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.39",
+          "date": "2026-10-14",
+          "notes": "- Fixed: on Android, choosing a picture for a post (in the composer, or \"replace\" while editing a post) no longer opens the system photo picker, which lists only a few albums such as Camera, Screenshots and Downloads. Android now offers its full file browser, so every folder is reachable. A file that is not a picture still gets \"Choose an image file.\". Other platforms keep the picture-only file dialog. (#1378)",
+          "highlight": false
+        },
+        {
+          "version": "0.3.38",
+          "date": "2026-10-13",
+          "notes": "- Added: in a Creator's settings, \"Appearance for pictures\" has a new button, \"Use the card's image tags\". It shows only while the linked character or persona has the Image Appearance Override switched on and filled in, and it saves those tags as the Creator's own appearance. It asks first when that replaces an appearance you wrote. \"Use linked appearance\" (or \"Clear override\") removes it again. (#1366)",
+          "highlight": false
+        },
+        {
+          "version": "0.3.37",
+          "date": "2026-10-13",
+          "notes": "- With a Claude (Subscription) connection, Slurp no longer makes a hidden second request to name each session, and a request now stops with an error if Claude Code turns on claude.ai connectors. With a Marinara Engine release after 2.5.0, Claude Code also no longer adds your account email, the date or this computer's details to the prompt. Engine 2.5.0's Claude Code still adds them, and the server log warns about it until you update Marinara. (#1313)\n- Changed: avatar references are allowed for SpicyAPI edit models (model IDs ending in /edit) and still left out for its text-to-image models. Slurp's bundled image code cannot call SpicyAPI yet, so SpicyAPI pictures do not work in Slurp until it can. (#1337)",
+          "highlight": false
+        },
+        {
+          "version": "0.3.36",
+          "date": "2026-10-13",
+          "notes": "- Fixed: a Creator's bio and stage voice now steer what she posts about. The post planner reads them beside the character card (hidden identities stay hidden), so a hobby named only in the bio, such as cosplay, becomes post subjects. The post prompt also says that interests named in the bio and stage voice count. (#1358)\n- Changed: the no-repeat rule no longer blocks a theme that the bio, stage voice, or card names as what the Creator does. A new setting, framing, and look each time is still required, and the same outfit or wording is still a repeat. (#1358)",
+          "highlight": false
+        },
+        {
+          "version": "0.3.35",
+          "date": "2026-10-13",
+          "notes": "- Added: \"The image model knows this character\" can be chosen while adding a Creator, in Quick setup, in the customise path, in the role-play sign-up and in the manual Create flow. It starts on, like before, and is saved with the new Creator. You can still change it later in the Creator's settings. (#1353)",
           "highlight": false
         }
       ]
