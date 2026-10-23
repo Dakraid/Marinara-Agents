@@ -79,6 +79,8 @@ jobs:
           node tests/gacha-forge-location-ids.regression.mjs
           node tests/gacha-forge-player-choices.regression.mjs
           node tests/gacha-forge-audio.regression.mjs
+          node tests/gacha-forge-music-prompts.regression.mjs
+          node tests/gacha-forge-achievements.regression.mjs
           node tests/gacha-forge-bundle-rebuild.regression.mjs
 
           # Prints how much of the reference extension's interface the Beholder package actually

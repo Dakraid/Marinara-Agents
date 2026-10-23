@@ -404,6 +404,20 @@
               "replace": "oy=[{version:null,fixed:[\"Saved legacy audio connections keep generating after migration.\"]},{version:\"1.11.0\",new:[\"Assigned character voices, stock music and sound effects, with optional generated audio.\",\"Per-world mute, three audio levels and voice-aware autoplay pacing.\"],fixed:[\"Home and story portrait frames include their bottom edge.\"]}"
             }
           ]
+        },
+        {
+          "version": "1.12.0",
+          "notes": "World-specific music briefs, actionable audio failures and repaired achievement quantities.",
+          "edits": [
+            {
+              "find": "ds=\"1.11.1\"",
+              "replace": "ds=\"1.12.0\""
+            },
+            {
+              "find": "oy=[{version:null,fixed:[\"Saved legacy audio connections keep generating after migration.\"]}",
+              "replace": "oy=[{version:null,new:[\"World-specific original soundtrack briefs through the narration connection.\"],fixed:[\"Audio failures show HTTP status and safe provider reasons on newer hosts.\",\"Achievements count gained levels and facets, with conservative existing-save repair.\"]},{version:\"1.11.1\",fixed:[\"Saved legacy audio connections keep generating after migration.\"]}"
+            }
+          ]
         }
       ]
     },
@@ -582,6 +596,56 @@
             {
               "find": "data:{chapter:u,storyIndex:o,segments:Fe,places:Ne,choices:",
               "replace": "data:{chapter:u,storyIndex:o,musicMood:ge.value.musicMood,segments:Fe,places:Ne,choices:"
+            }
+          ]
+        },
+        {
+          "version": "1.12.0",
+          "notes": "Count actual unit/relic levels and gained facets; restore proven lifetime lower bounds without changing claimed rewards or pass missions.",
+          "edits": [
+            {
+              "find": "var rb=[",
+              "replaceFrom": "src/achievement-progress.mjs",
+              "sourceId": "achievement-progress"
+            },
+            {
+              "find": "dA(Je,E,Date.now())&&await Pe(E,rt,Je);",
+              "replace": "let forgeProgressRepaired=repairForgeAchievementProgress(Je,E,(v.find(forgeInventory=>forgeInventory.id===xh(E))?.data?.items)||{});(dA(Je,E,Date.now())||forgeProgressRepaired)&&await Pe(E,rt,Je);"
+            },
+            {
+              "find": "Xt(S,o,\"level-up\",1,Date.now())",
+              "replace": "Xt(S,o,\"level-up\",j,Date.now())"
+            },
+            {
+              "find": "Xt(x,o,\"relic-feed\",1,Date.now())",
+              "replace": "Xt(x,o,\"relic-feed\",Math.max(0,Q.level-(Number(S.level)||0)),Date.now())"
+            },
+            {
+              "find": "Ht&&(ue+=1)",
+              "replace": "Ht&&Ht.gained&&(ue+=1)"
+            },
+            {
+              "find": "U.facet=Q.facet,O.push({qty:1,material:l(F.name),kind:\"unit\",unitId:g,isNew:!1,facet:Q})",
+              "replace": "U.facet=Q.facet,Q.gained&&Xt(S,o,\"facet\",1,Date.now()),O.push({qty:1,material:l(F.name),kind:\"unit\",unitId:g,isNew:!1,facet:Q})"
+            }
+          ]
+        },
+        {
+          "version": "1.12.0",
+          "edits": [
+            {
+              "find": "var rb=[",
+              "replaceFrom": "src/audio-prompts.mjs",
+              "sourceId": "audio-prompts",
+              "notes": "World-specific soundtrack briefs through the existing narration connection, with session caching and generation logging."
+            },
+            {
+              "find": "a=r.persistence.documents,f=(s,c)",
+              "replace": "a=r.persistence.documents,forgeMusicPrompts=createForgeMusicPromptService({readWorld:async runId=>{let{data}=await be();return Ae(data,runId)},readSession:async runId=>(await pe(runId)).data,updateSession:xn,generate:({runId,run,messages})=>_t({runtime:r,runId,run,job:\"narration\",messages,options:{temperature:.7,maxTokens:It(1024)},parse:Vt(r,normalizeForgeMusicPrompt),label:\"music-prompt\"}),log:(messages,debugMode)=>r.logger[debugMode===!0||/^(1|true)$/i.test(process.env.DEBUG_AGENTS||\"\")?\"info\":\"debug\"](\"[debug/gacha-forge/music-prompt] Messages sent to the provider: %s\",JSON.stringify(messages))}),f=(s,c)"
+            },
+            {
+              "find": "s.post(\"/run/sources\",async p=>{",
+              "replace": "s.post(\"/audio/prompt\",async p=>forgeMusicPrompts(p?.body||{})),s.post(\"/run/sources\",async p=>{"
             }
           ]
         }

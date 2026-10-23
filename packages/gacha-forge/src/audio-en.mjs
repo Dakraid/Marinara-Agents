@@ -24,6 +24,12 @@ export const forgeAudioEnglish = {
   "audio.unmute": "Unmute audio",
   "audio.unavailable": "Audio needs a newer Marinara Engine.",
   "audio.generationFailed": "Generated audio is unavailable. Playing the existing soundtrack and effects.",
+  "audio.generationRejected":
+    "Audio generation failed (HTTP {status}). Check the connection and provider account. Playing the existing soundtrack and effects.",
+  "audio.generationReason":
+    "Audio generation failed (HTTP {status}): {reason} Playing the existing soundtrack and effects.",
+  "audio.promptFailed":
+    "The music brief could not be generated. Check the world's narration connection. Playing the existing soundtrack.",
   "audio.voiceFailed": "This spoken line could not play. You can keep reading.",
   "audio.connectionsFailed": "Could not read audio connections. Open Engine Settings to check them.",
 };

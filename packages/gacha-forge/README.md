@@ -1,5 +1,11 @@
 # Gacha Forge
 
+## Soundtrack briefs and achievement repairs (1.12.0)
+
+With generated audio enabled, the world's narration connection writes an original musical brief for each soundtrack context: Home, combat, bosses, happy/tense/sad story scenes and Character Stories. It translates world references into instrumentation and mood rather than requesting existing songs. Briefs are saved per world and reused; writing a new brief uses the configured model connection. Generated music still uses the selected audio connection and its provider credits. A provider can reject a prompt; newer Engine versions show its reason, while older compatible hosts show the HTTP status and keep playing stock audio.
+
+Level and relic achievements now count the levels actually gained, and facet achievements count only successful gains, including Tower-shop duplicates. Existing worlds recover a conservative lifetime minimum from their current units and relics when loaded. Higher saved totals, claimed rewards and pass progress are preserved.
+
 ## Audio and pacing (1.11.0)
 
 Gacha Forge 1.11.0 adds optional dialogue using voices assigned in the Engine, stock Game music and sound effects, and optional generated audio through a dedicated audio connection. In world creation, open Lore to opt in. For an existing world, use Settings → World → Sources; Settings → Look → Visual has independent music, dialogue and effects levels and an autoplay pause (three seconds by default). The compact mute button silences all three channels. Autoplay waits for the revealed text and spoken line, and choices still wait for the player. Home and story portraits include their bottom frame edge. This version requires Engine Capability API 1.381 or newer.

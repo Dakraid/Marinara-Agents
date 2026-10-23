@@ -40,6 +40,10 @@ const generationConfig = (path, values = {}) => ({
     ...values,
   }),
 });
+const musicBriefResponse = () => ({
+  ok: true,
+  json: async () => ({ ok: true, prompt: "Original instrumental fantasy theme with woodwinds and harp." }),
+});
 let cases = 0;
 async function test(name, callback) {
   await callback();
@@ -279,6 +283,7 @@ try {
         let reads = 0;
         let posts = 0;
         globalThis.Ze = async (path) => {
+          if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
           if (path.startsWith("/api/audio/config")) {
             reads += 1;
             if (!ready && initial === "offline") throw new Error("offline");
@@ -316,6 +321,7 @@ try {
     let reads = 0;
     const posts = [];
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path.startsWith("/api/audio/config")) {
         reads += 1;
         return reads === 1 ? first.promise : generationConfig(path);
@@ -347,6 +353,7 @@ try {
       const posts = [];
       const id = `${supported}-only`;
       globalThis.Ze = async (path, options) => {
+        if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
         if (path.startsWith("/api/audio/config")) {
           paths.push(path);
           return generationConfig(path, { music: supported === "music", soundEffects: supported === "sfx" });
@@ -375,6 +382,7 @@ try {
     const missingRequests = [];
     // API 1.381 rejects unknown explicit IDs rather than borrowing its default connection.
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       missingRequests.push([path, options?.method || "GET"]);
       return { ok: false, status: 409, json: async () => ({ error: "Selected source unavailable" }) };
     };
@@ -389,6 +397,7 @@ try {
     const posts = [];
     const reads = [];
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path.startsWith("/api/audio/config")) {
         reads.push(path);
         return generationConfig(path, { connectionId: "canonical-generation" });
@@ -461,6 +470,7 @@ try {
   await test("generated cues dedupe, reuse and return to stock when disabled", async () => {
     const requests = [];
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path.startsWith("/api/audio/config")) return generationConfig(path);
       const body = JSON.parse(options.body);
       requests.push({ path, ...body });
@@ -496,6 +506,7 @@ try {
   await test("generation errors leave stock music playing and do not retry a cue on every render", async () => {
     let requests = 0;
     globalThis.Ze = async (path) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path.startsWith("/api/audio/config")) return generationConfig(path);
       requests += 1;
       return { ok: false, status: 503 };
@@ -520,6 +531,7 @@ try {
 
   await test("generation failures retain the provider HTTP status without displaying response bodies", async () => {
     globalThis.Ze = async (path) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path.startsWith("/api/audio/config")) return generationConfig(path);
       return {
         ok: false,
@@ -544,9 +556,97 @@ try {
     controller.dispose();
   });
 
+  await test("new hosts expose their bounded provider reason while old hosts retain numeric fallback", async () => {
+    globalThis.Ze = async (path) => {
+      if (path.startsWith("/api/audio/config")) return generationConfig(path);
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
+      return {
+        ok: false,
+        status: 502,
+        json: async () => ({
+          error: "Audio generation failed",
+          providerStatus: 400,
+          reason: "Prompt rejected.\n" + "x".repeat(400),
+          secret: "not public",
+        }),
+      };
+    };
+    const { controller, events } = fixture();
+    controller.configure({ generate: true });
+    await controller.cue("home");
+    const message = events.filter(([event]) => event === "notice").at(-1);
+    assert.equal(message[1], "audio.generationReason");
+    assert.equal(message[2], 400);
+    assert.equal(message[3].length, 300);
+    assert.equal(message[3].includes("\n"), false);
+    assert.equal(JSON.stringify(events).includes("not public"), false);
+    controller.dispose();
+  });
+
+  await test("music waits for one model brief and submits its exact output before caching the asset", async () => {
+    const model = deferred();
+    const requests = [];
+    globalThis.Ze = async (path, options) => {
+      if (path.startsWith("/api/audio/config")) return generationConfig(path);
+      requests.push({ path, body: JSON.parse(options.body) });
+      if (path === "/api/gacha-forge/audio/prompt") return model.promise;
+      return { ok: true, json: async () => ({ tag: "music:model", path: "music/model.mp3" }) };
+    };
+    const { controller } = fixture();
+    controller.configure({ generate: true });
+    const first = controller.generate("music", "home");
+    const second = controller.generate("music", "home");
+    await tick();
+    assert.deepEqual(requests, [
+      { path: "/api/gacha-forge/audio/prompt", body: { runId: "audio-world", cue: "home", debugMode: false } },
+    ]);
+    model.resolve(musicBriefResponse());
+    assert.equal((await first).tag, "music:model");
+    assert.equal((await second).tag, "music:model");
+    assert.equal(requests.length, 2);
+    assert.equal(requests[1].path, "/api/audio/generate");
+    assert.equal(requests[1].body.prompt, (await musicBriefResponse().json()).prompt);
+    await controller.generate("music", "home");
+    assert.equal(requests.length, 2, "cached music does not pay for another brief or composition");
+    controller.dispose();
+  });
+
+  await test("failed or cancelled model briefs never submit a paid audio generation", async () => {
+    for (const mode of ["failed", "invalid", "cancelled"]) {
+      const model = deferred();
+      const requests = [];
+      globalThis.Ze = async (path, options) => {
+        if (path.startsWith("/api/audio/config")) return generationConfig(path);
+        requests.push(path);
+        assert.equal(path, "/api/gacha-forge/audio/prompt");
+        return model.promise;
+      };
+      const { controller, events } = fixture();
+      controller.configure({ generate: true });
+      const pending = controller.cue("home");
+      await tick();
+      if (mode === "cancelled") controller.configure({ generate: false });
+      model.resolve({
+        ok: true,
+        json: async () =>
+          mode === "failed"
+            ? { ok: false }
+            : { ok: true, prompt: mode === "invalid" ? "x".repeat(1001) : "late brief" },
+      });
+      await pending;
+      assert.deepEqual(requests, ["/api/gacha-forge/audio/prompt"]);
+      assert.equal(controller.generated.size, 0);
+      const notices = events.filter(([event]) => event === "notice");
+      if (mode === "cancelled") assert.equal(notices.length, 0);
+      else assert.equal(notices[0][1], "audio.promptFailed");
+      controller.dispose();
+    }
+  });
+
   await test("complete provider prompts are bounded and sound effects never use a music context", async () => {
     const requests = [];
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path.startsWith("/api/audio/config")) return generationConfig(path);
       const body = JSON.parse(options.body);
       requests.push(body);
@@ -571,6 +671,7 @@ try {
   await test("current connection capabilities limit generation and disabling it aborts an in-flight request", async () => {
     const requests = [];
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path === "/api/audio/config")
         return {
           ok: true,
