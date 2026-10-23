@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.2 — 2026-10-23 [highlight]
+
+- Korean, Japanese and Chinese now work. A name followed directly by a Korean particle (김민수는) or written without spaces in Japanese (アリスは) or Chinese (张三很信任李四) now counts as naming that character. Before, Update from History and automatic updates rejected these sentences, and Scene-only couldn't tell who was present.
+- A longer card name doesn't count as a shorter one: 김민수 isn't 김민, and アリス isn't リス. A one-character Chinese or Japanese name still needs a space or punctuation next to it, because single characters appear inside ordinary words.
+- When a persona perception is rejected, the message now says which name it expected.
+
 ## 0.7.1 — 2026-10-14 [highlight]
 
 - When Update from History can't use the model's answer, it now shows the changes the model suggested instead of only an error. Each change uses character names, says in plain words what needs fixing, and can be edited, removed or saved. Relationship changes and persona perceptions are saved separately, and the model's original answer is under Details for bug reports.
