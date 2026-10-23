@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { createServer } from "node:http";
 
 const engineRoot = process.env.MARINARA_ENGINE_ROOT;
 if (!engineRoot) throw new Error("Set MARINARA_ENGINE_ROOT to a compatible Engine checkout");
@@ -45,9 +46,18 @@ const scene = {
   ],
 };
 
-async function openForge(page: Page, testInfo: TestInfo, options: { voice?: boolean; empty?: boolean } = {}) {
+async function openForge(
+  page: Page,
+  testInfo: TestInfo,
+  options: { voice?: boolean; empty?: boolean; realGeneration?: string } = {},
+) {
   const saved = structuredClone(baseRun);
   saved.audio.tts = options.voice === true;
+  if (options.realGeneration) {
+    saved.scenario = "W".repeat(4000);
+    saved.audio.generate = true;
+    saved.audio.audioConnectionId = options.realGeneration;
+  }
   const speech: Record<string, unknown>[] = [];
   const generated: Record<string, any>[] = [];
   const writes: Record<string, any>[] = [];
@@ -74,20 +84,21 @@ async function openForge(page: Page, testInfo: TestInfo, options: { voice?: bool
   await page.route("**/api/app-settings/ui", (route) =>
     route.fulfill({ json: route.request().method() === "GET" ? { value: null } : { success: true } }),
   );
-  await page.route("**/api/connections", (route) =>
-    route.fulfill({
-      json: [
-        { id: "fixture-model", name: "Text fixture", provider: "custom", model: "fixture" },
-        {
-          id: "music-fixture",
-          name: "Audio fixture",
-          provider: "audio_generation",
-          audioMusic: true,
-          audioSoundEffects: true,
-        },
-      ],
-    }),
-  );
+  if (!options.realGeneration)
+    await page.route("**/api/connections", (route) =>
+      route.fulfill({
+        json: [
+          { id: "fixture-model", name: "Text fixture", provider: "custom", model: "fixture" },
+          {
+            id: "music-fixture",
+            name: "Audio fixture",
+            provider: "audio_generation",
+            audioMusic: true,
+            audioSoundEffects: true,
+          },
+        ],
+      }),
+    );
   await page.route("**/api/tts/config", (route) =>
     route.fulfill({
       json: {
@@ -116,18 +127,24 @@ async function openForge(page: Page, testInfo: TestInfo, options: { voice?: bool
     speech.push(route.request().postDataJSON());
     await route.fulfill({ contentType: "audio/wav", body: wav });
   });
-  await page.route("**/api/audio/config", (route) =>
-    route.fulfill({
-      json: { configured: true, connectionId: "music-fixture", music: true, soundEffects: false, source: "custom" },
-    }),
-  );
-  await page.route("**/api/audio/generate", async (route) => {
-    const body = route.request().postDataJSON();
-    generated.push(body);
-    await route.fulfill({
-      json: { tag: `music:package:${body.context.key}`, path: `music/package/${body.context.key}.wav`, cached: false },
+  if (!options.realGeneration)
+    await page.route("**/api/audio/config", (route) =>
+      route.fulfill({
+        json: { configured: true, connectionId: "music-fixture", music: true, soundEffects: false, source: "custom" },
+      }),
+    );
+  if (!options.realGeneration)
+    await page.route("**/api/audio/generate", async (route) => {
+      const body = route.request().postDataJSON();
+      generated.push(body);
+      await route.fulfill({
+        json: {
+          tag: `music:package:${body.context.key}`,
+          path: `music/package/${body.context.key}.wav`,
+          cached: false,
+        },
+      });
     });
-  });
   await page.route("**/api/game-assets/manifest", (route) =>
     route.fulfill({
       json: {
@@ -178,7 +195,7 @@ async function openForge(page: Page, testInfo: TestInfo, options: { voice?: bool
           ? {
               ok: true,
               draft: {
-                step: 3,
+                step: 4,
                 furthest: 6,
                 values: { scenario: "A synthetic world.", "audio.tts": false, "audio.generate": false },
               },
@@ -242,6 +259,16 @@ async function seedScene(forge: Locator, theme = "aurora") {
 }
 
 async function frameBottom(frame: Locator, artSelector: string) {
+  await expect(frame).toBeVisible();
+  await frame.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .closest(".gf-stage")!
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
   return frame.evaluate((node, selector) => {
     const art = node.querySelector(selector)!;
     return {
@@ -353,6 +380,87 @@ test("Audio settings persist, mute is compact and portrait frames retain a botto
   await page.screenshot({ path: testInfo.outputPath("audio-world-setup.png") });
 });
 
+test("Shipped audio requests pass the real Engine route and reuse a local provider's cached MP3", async ({
+  page,
+}, testInfo) => {
+  const providerCalls: { path: string; body: Record<string, any> }[] = [];
+  const provider = createServer(async (request, response) => {
+    let body = "";
+    for await (const chunk of request) body += chunk;
+    providerCalls.push({ path: request.url!, body: JSON.parse(body) });
+    response.setHeader("content-type", "audio/mpeg");
+    response.end(Buffer.from([0xff, 0xfb, 0x90, 0, 1]));
+  });
+  await new Promise<void>((resolve) => provider.listen(0, "127.0.0.1", resolve));
+  const address = provider.address();
+  if (!address || typeof address === "string") throw new Error("Missing local provider port");
+  let connectionId = "";
+  const outbound: { request: Record<string, any>; status: number; result: Record<string, any> }[] = [];
+  const responses: Promise<void>[] = [];
+  page.on("response", (response) => {
+    if (response.url().endsWith("/api/audio/generate"))
+      responses.push(
+        response.json().then((result) => {
+          outbound.push({ request: response.request().postDataJSON(), status: response.status(), result });
+        }),
+      );
+  });
+  try {
+    const created = await page.request.post("/api/connections", {
+      data: {
+        name: "Local Gacha MP3 fixture",
+        provider: "audio_generation",
+        audioGenerationSource: "custom",
+        baseUrl: `http://127.0.0.1:${address.port}/v1`,
+        model: "local-mp3",
+        audioMusic: true,
+        audioSoundEffects: true,
+        audioMusicEndpoint: "music",
+        audioSoundEffectsEndpoint: "sfx",
+      },
+    });
+    expect(created.ok(), await created.text()).toBe(true);
+    connectionId = (await created.json()).id;
+    expect(connectionId).toBeTruthy();
+    const rejected = await page.request.post("/api/audio/generate", {
+      data: {
+        kind: "sfx",
+        prompt: "old package shape",
+        audioConnectionId: connectionId,
+        context: { scope: "gacha-forge", key: "negative-control" },
+      },
+    });
+    expect(rejected.status(), "the actual route rejects the old sound-effects request shape").toBe(400);
+    const { forge } = await openForge(page, testInfo, { realGeneration: connectionId });
+    await expect.poll(() => providerCalls.filter((call) => call.path === "/v1/music").length).toBe(1);
+    await forge.getByRole("button", { name: "Game settings", exact: true }).click();
+    await expect.poll(() => providerCalls.filter((call) => call.path === "/v1/sfx").length).toBe(1);
+    await expect.poll(() => outbound.length).toBe(2);
+    expect(outbound.every((response) => response.status === 200)).toBe(true);
+    expect(outbound.find((response) => response.request.kind === "sfx")!.request).not.toHaveProperty("context");
+    for (const { path, body } of providerCalls)
+      expect(body.prompt.length).toBeLessThanOrEqual(path.endsWith("music") ? 1000 : 500);
+    const music = outbound.find((response) => response.request.kind === "music")!;
+    const replay = await page.request.post("/api/audio/generate", { data: music.request });
+    expect(replay.status(), await replay.text()).toBe(200);
+    expect((await replay.json()).cached).toBe(true);
+    expect(providerCalls).toHaveLength(2);
+    expect(music.result.path).toMatch(/^music\/contexts\/gacha-forge\/world-/);
+    await Promise.all(responses);
+    await testInfo.attach("real-route-audio-proof.json", {
+      body: JSON.stringify({ outbound, providerCalls }, null, 2),
+      contentType: "application/json",
+    });
+  } finally {
+    await page
+      .getByRole("tab", { name: "Home", exact: true })
+      .click()
+      .catch(() => {});
+    if (connectionId) await page.request.delete(`/api/connections/${connectionId}`);
+    await new Promise<void>((resolve, reject) => provider.close((error) => (error ? reject(error) : resolve())));
+  }
+});
+
 test("Autoplay waits three seconds after revealed text and voice end, and Skip cancels speech", async ({
   page,
 }, testInfo) => {
@@ -406,6 +514,7 @@ test("Autoplay waits three seconds after revealed text and voice end, and Skip c
       json: {
         ...scene,
         segments: [
+          { speaker: "", text: "BEFORE_CHOICE" },
           { speaker: "", text: "CHOOSE_A_PATH" },
           { speaker: "", text: "AFTER_CHOICE" },
         ],
@@ -413,7 +522,7 @@ test("Autoplay waits three seconds after revealed text and voice end, and Skip c
           {
             id: "pause-choice",
             kind: "small",
-            at: 0,
+            at: 1,
             options: [
               { id: "a", text: "I follow the path." },
               { id: "b", text: "I wait here." },
@@ -424,11 +533,13 @@ test("Autoplay waits three seconds after revealed text and voice end, and Skip c
     }),
   );
   await seedScene(forge);
-  await expect(forge.locator("[data-forge-choices]")).toBeVisible();
   await forge.locator("[data-auto]").click();
+  await page.clock.runFor(4000);
+  await expect(forge.locator("[data-forge-choices]")).toBeVisible();
+  await expect(forge.locator("[data-auto]")).toBeDisabled();
   await page.clock.runFor(30_000);
   await expect(forge.locator("[data-forge-choices]")).toBeVisible();
-  await expect(forge.locator("[data-count]")).toHaveText("01 / 02");
+  await expect(forge.locator("[data-count]")).toHaveText("02 / 03");
   await expect(forge.locator("[data-skip]")).toBeDisabled();
   expect(speech).toHaveLength(2);
 });

@@ -1,8 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 import config from "./playwright.package.config.js";
 
+const webServer =
+  config.webServer && !Array.isArray(config.webServer)
+    ? { ...config.webServer, env: { ...config.webServer.env, TTS_LOCAL_URLS_ENABLED: "true" } }
+    : config.webServer;
+
 export default defineConfig({
   ...config,
+  webServer,
   testMatch: [
     "package-gacha-forge.e2e.ts",
     "package-gacha-forge-units.e2e.ts",

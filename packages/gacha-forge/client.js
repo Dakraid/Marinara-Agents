@@ -3571,6 +3571,14 @@ const forgeMusicDescriptions = {
 };
 let forgeAudioSession = 0;
 
+function forgeMusicContextKey(runId, connectionId, cue) {
+  // A compact cache identity preserves full, case-sensitive IDs without requiring a secure-context WebCrypto API.
+  let hash = 0xcbf29ce484222325n;
+  for (const byte of new TextEncoder().encode(JSON.stringify([runId, connectionId])))
+    hash = BigInt.asUintN(64, (hash ^ BigInt(byte)) * 0x100000001b3n);
+  return `world-${hash.toString(16)}-${cue}`;
+}
+
 async function forgeAudioJson(path, options) {
   const response = await Ze(path, options);
   if (!response.ok) throw new Error(`Audio request failed (${response.status})`);
@@ -3671,10 +3679,11 @@ class ForgeAudioController {
     const abort = new AbortController();
     this.requests.add(abort);
     const world = String(this.host._run?.scenario || "").slice(0, 2000);
-    const key = `${this.runId}-${kind}-${cue}`
-      .toLowerCase()
-      .replace(/[^a-z0-9_-]/gu, "_")
-      .slice(0, 80);
+    const prompt = (
+      kind === "music"
+        ? `Instrumental looping game soundtrack, no vocals. ${forgeMusicDescriptions[cue] || cue}. World: ${world}`
+        : `A short game sound effect for ${cue}, no music or speech. World: ${world}`
+    ).slice(0, kind === "music" ? 1000 : 500);
     const request = forgeAudioJson("/api/audio/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -3682,11 +3691,16 @@ class ForgeAudioController {
       body: JSON.stringify({
         kind,
         audioConnectionId: connectionId,
-        prompt:
-          kind === "music"
-            ? `Instrumental looping game soundtrack, no vocals. ${forgeMusicDescriptions[cue] || cue}. World: ${world}`
-            : `A short game sound effect for ${cue}, no music or speech. World: ${world.slice(0, 500)}`,
-        context: { scope: "gacha-forge", key, ...(kind === "music" ? { lengthMs: 60_000 } : {}) },
+        prompt,
+        ...(kind === "music"
+          ? {
+              context: {
+                scope: "gacha-forge",
+                key: forgeMusicContextKey(this.runId, connectionId, cue),
+                lengthMs: 60_000,
+              },
+            }
+          : {}),
         debugMode: this.host.capabilityProps?.debugMode === true,
       }),
     })

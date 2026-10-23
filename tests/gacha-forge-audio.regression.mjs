@@ -5,6 +5,7 @@ import { forgeAudioEnglish, forgeAudioFields } from "../packages/gacha-forge/src
 import {
   ForgeAudioController,
   forgeExplicitVoice,
+  forgeMusicContextKey,
   saveForgeAudioSources,
 } from "../packages/gacha-forge/src/audio-client.mjs";
 import { createForgeVoiceLine, forgeVoiceCharacter } from "../packages/gacha-forge/src/audio-story.mjs";
@@ -222,12 +223,100 @@ try {
     await Promise.all([controller.cue("boss"), controller.cue("boss")]);
     await controller.cue("boss");
     assert.equal(requests.length, 1);
-    assert.deepEqual(requests[0].context, { scope: "gacha-forge", key: "audio-world-music-boss", lengthMs: 60000 });
+    assert.deepEqual(requests[0].context, {
+      scope: "gacha-forge",
+      key: forgeMusicContextKey("audio-world", "dedicated", "boss"),
+      lengthMs: 60000,
+    });
     assert.equal(requests[0].audioConnectionId, "dedicated");
     assert.equal(events.filter(([event]) => event === "playMusic").length, 2, "stock then generated");
     controller.configure({ generate: false });
     await controller.cue("boss");
     assert.equal(events.filter(([event]) => event === "playMusic").at(-1)[1], "stock:boss");
+    controller.dispose();
+  });
+
+  await test("generation errors leave stock music playing and do not retry a cue on every render", async () => {
+    let requests = 0;
+    globalThis.Ze = async () => {
+      requests += 1;
+      return { ok: false, status: 503 };
+    };
+    const { controller, events } = fixture();
+    controller.configure({ generate: true, audioConnectionId: "unavailable" });
+    await controller.cue("home");
+    await controller.cue("home");
+    assert.equal(requests, 1);
+    assert.deepEqual(
+      events.filter(([event]) => event === "playMusic").map(([, tag]) => tag),
+      ["stock:home"],
+    );
+    assert.equal(events.filter(([event]) => event === "notice").at(-1)[1], "audio.generationFailed");
+    assert.equal(controller.generated.size, 0);
+    controller.dispose();
+  });
+
+  await test("complete provider prompts are bounded and sound effects never use a music context", async () => {
+    const requests = [];
+    globalThis.Ze = async (_path, options) => {
+      const body = JSON.parse(options.body);
+      requests.push(body);
+      return { ok: true, json: async () => ({ tag: `${body.kind}:fixture`, path: `${body.kind}/fixture.mp3` }) };
+    };
+    const { host, controller } = fixture();
+    host._run.scenario = "W".repeat(4000);
+    controller.runId = "_world-with-a-valid-NanoID-prefix";
+    controller.configure({ generate: true, audioConnectionId: "dedicated" });
+    await controller.generate("music", "boss");
+    await controller.generate("sfx", "critical");
+    assert.equal("context" in requests[1], false, "the real generic route rejects contexts on sound effects");
+    assert.ok(requests[0].prompt.length <= 1000, "the entire music style must fit SunoAPI's bound");
+    assert.ok(requests[1].prompt.length <= 500, "the entire sound-effects prompt must fit SunoAPI's bound");
+    assert.match(requests[0].context.key, /^[a-z0-9][a-z0-9_-]{0,159}$/);
+    assert.notEqual(forgeMusicContextKey("_world", "A", "boss"), forgeMusicContextKey("_world", "a", "boss"));
+    assert.notEqual(forgeMusicContextKey("_world", "a", "boss"), forgeMusicContextKey("-world", "a", "boss"));
+    assert.match(forgeMusicContextKey("W".repeat(200), "C".repeat(200), "happy"), /^world-[a-f0-9]+-happy$/);
+    controller.dispose();
+  });
+
+  await test("current connection capabilities limit generation and disabling it aborts an in-flight request", async () => {
+    const requests = [];
+    globalThis.Ze = async (path, options) => {
+      if (path === "/api/audio/config")
+        return {
+          ok: true,
+          json: async () => ({ configured: true, connectionId: "current-music", music: true, soundEffects: false }),
+        };
+      requests.push({ ...JSON.parse(options.body), signal: options.signal });
+      return new Promise((_resolve, reject) => {
+        options.signal.addEventListener("abort", () => reject(new DOMException("Cancelled", "AbortError")), {
+          once: true,
+        });
+      });
+    };
+    const { controller, events } = fixture();
+    controller.configure({ generate: true });
+    await controller.effect("click");
+    await tick();
+    assert.equal(requests.length, 0, "music-only connections do not generate sound effects");
+    const pending = controller.cue("home");
+    await tick();
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].audioConnectionId, "current-music");
+    assert.equal(requests[0].signal.aborted, false);
+    controller.configure({ generate: false });
+    await pending;
+    assert.equal(requests[0].signal.aborted, true);
+    assert.equal(controller.generated.size, 0);
+    assert.deepEqual(
+      events.filter(([event]) => event === "playMusic").map(([, tag]) => tag),
+      ["stock:home"],
+    );
+    assert.equal(
+      events.some(([event]) => event === "notice"),
+      false,
+      "cancellation is not a provider failure",
+    );
     controller.dispose();
   });
 
