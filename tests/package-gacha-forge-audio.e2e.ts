@@ -483,11 +483,15 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
   await page.mouse.click(short.x, short.y);
   await expect.poll(() => forge.evaluate((node) => (node as HTMLElement).dataset.noticeTaps)).toBe("1");
 
+  await forge.locator("[data-forge-audio-status]").evaluate((node) => {
+    (node as HTMLElement).style.maxHeight = "3rem";
+    // Settle the fixture's size transition before freezing time for dismissal checks.
+    for (const animation of node.getAnimations()) animation.finish();
+  });
   await page.clock.install();
   const long = await forge.evaluate((node) => {
     const game = node as any;
     const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
-    notice.style.maxHeight = "3rem";
     game._forgeAudio.notice("audio.generationReason", 400, "A longer provider explanation. ".repeat(9));
     const box = notice.getBoundingClientRect();
     return {
