@@ -26,7 +26,11 @@ import { type SlurpAccount } from "../../modules/records/slp-storage-model.js";
 import { createPromptOverridesStorage } from "../../../services/storage/prompt-overrides.storage.js";
 import { generateCreatorPostImage, SLURP_SECONDARY_IMAGE_COUNT } from "../media/slp-media-contract.js";
 import { finishSlurpPostImage } from "./slp-post-media-operation.js";
-import { prepareSlurpBeatRun, resolveSlurpBeatCastContext } from "./slp-post-beat-service.js";
+import {
+  prepareSlurpBeatRun,
+  resolveSlurpBeatCastContext,
+  resolveSlurpMentionedCast,
+} from "./slp-post-beat-service.js";
 import { slurpArcBeat, slurpPlannedExplicitLevel } from "../../modules/feed/slp-post-beat.js";
 import { slpCreatorUnlockPriceMetadata } from "../../modules/economy/slp-prices.js";
 import { persistCreatorPostWithUploadedMedia } from "../../base/media/slp-media.js";
@@ -329,6 +333,8 @@ export async function generateCreatorPost(
     at,
   });
   const { postLevel, angle: spiceAngle, beat } = spiced;
+  const mentioned = await resolveSlurpMentionedCast(db, account.id, input.request.noodlerPostGuide ?? "");
+  const castIds = [...new Set([...(beat?.castIds ?? []), ...mentioned.ids])];
   variation = spiced.variation;
   let flavourShaped: SlpDeepDetailsFlavour | null = null;
   const flavourBrief = await resolveSlurpCreatorFlavour(db, {
@@ -345,7 +351,7 @@ export async function generateCreatorPost(
   const messages = buildNoodlerPostMessages({
     account,
     sourceCharacterContext,
-    castContext: await resolveSlurpBeatCastContext(db, beat?.castIds),
+    castContext: await resolveSlurpBeatCastContext(db, castIds),
     flavourBrief,
     stagePersonality: account.settings.privacy.stagePersonality ?? "",
     stageFacts: account.settings.stage,
@@ -482,6 +488,8 @@ export async function generateCreatorPost(
   });
 
   // What the picture is and may show, in one place so the two briefs agree on level, shoot and effort.
+  const tagged = await resolveSlurpMentionedCast(db, account.id, protectedGenerated.content);
+  const pictureIds = [...new Set([...castIds, ...tagged.ids])];
   const { draftImagePrompt, visualBrief, negativePrompt, shotBriefs, pictureCast } = slurpPostPictureBriefs({
     project,
     variation,
@@ -495,7 +503,7 @@ export async function generateCreatorPost(
     access: input.request.access,
     explicitLevel,
     partner: spiceAngle?.partner?.company ?? null,
-    cast: beat?.cast,
+    cast: [...new Set([...(beat?.cast ?? []), ...mentioned.names, ...tagged.names])],
     modelImagePrompt: generated.imagePrompt,
     stageFacts: account.settings.stage,
     scene: generated.scene,
@@ -606,7 +614,7 @@ export async function generateCreatorPost(
       ...(beat?.tie ? { slurpTie: beat.tie } : {}),
       // A trend this post joins: the chip, and the origin post it quotes.
       ...(beat?.trend ? { slurpTrend: beat.trend } : {}),
-      ...(pictureCast && beat?.castIds?.length ? { slurpPictureCast: beat.castIds } : {}),
+      ...(pictureCast && pictureIds.length ? { slurpPictureCast: pictureIds } : {}),
       // What made it spicy, so unlocks, likes and tips can teach Slurp the player's taste.
       ...spiced.metadata,
       ...(wardrobeSelection.look ? { wardrobeLookId: wardrobeSelection.look.id } : {}),
@@ -643,7 +651,7 @@ export async function generateCreatorPost(
     return {
       account,
       linkedPublicAccount,
-      companionIds: pictureCast ? beat?.castIds : undefined,
+      companionIds: pictureCast && pictureIds.length ? pictureIds : undefined,
       disclosureMode,
       postContent: protectedGenerated.content,
       draftPrompt,

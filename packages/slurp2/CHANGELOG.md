@@ -1,5 +1,13 @@
 # Slurp release notes
 
+## 0.3.64 — 2026-10-23
+
+- DM prompts list the player's open page's last three public posts (`slurpCoupleDmPage`, `recentPosts` in the role header).
+- Strangers: a reply between Creators with no follow, thread or tag reads like a fan or stranger (`SLP_STRANGER_REPLY_INSTRUCTION`).
+- A Creator tagged with @handle in the guide or post text joins the picture cast (`resolveSlurpMentionedCast`).
+- A tag-list look keeps its clothes (`TAG_LIST`), an arc wrapped in a one-item list still parses, and the picture prompt rewrite gets at least 8192 tokens.
+- Wardrobe tags parse on blur, so a comma can be typed. Neutral wording in UI strings that said "her/she" (en/de/ko/pl, `SlpMessageInsights`).
+
 ## 0.3.63 — 2026-10-22
 
 - Paid sexting sessions (docs/SPICY.md, item 2): "Sext with me - 20 min" in an AI Creator's thread header (`SlpSextingBar`) costs three of her PPV pictures, 15% less from favourite. It is claimed on the thread before it is paid through the tip path.

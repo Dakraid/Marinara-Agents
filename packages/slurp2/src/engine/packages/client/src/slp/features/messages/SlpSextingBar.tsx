@@ -62,7 +62,7 @@ export function SlpSextingBar({ model }: { model: SlurpThreadViewModel }) {
     return (
       <div className={row}>
         <span className="min-w-0 flex-1 text-[var(--slurp-muted)]">
-          {localizeUi("ui.slurp.sexting.over", { defaultValue: "Session over. Leave her a tip?" })}
+          {localizeUi("ui.slurp.sexting.over", { defaultValue: "Session over. Leave a tip?" })}
         </span>
         <SlpButton
           variant="quiet"

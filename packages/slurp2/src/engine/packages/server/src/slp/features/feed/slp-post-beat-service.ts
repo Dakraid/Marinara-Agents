@@ -60,6 +60,7 @@ import {
 } from "../../modules/creators/slp-creator-schedule-context.js";
 import type { SlpAccount, SlpCreatorManagedPost } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlpCreatorNudge, SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
+import { findSlpTextMentions } from "../../../../../shared/src/slp/slp-mentions.js";
 
 type SlurpBeatConnection = Parameters<typeof createSlurpPostProvider>[0]["connection"] & { model: string };
 
@@ -507,4 +508,15 @@ export async function resolveSlurpBeatCastContext(db: DB, castIds: readonly stri
     }),
   );
   return people.filter(Boolean).join("\n\n");
+}
+
+/** Creators a post tags by @handle (the player's idea or the written post). They join its cast, so the writer
+ * knows them and the picture draws them instead of a second copy of her. */
+export async function resolveSlurpMentionedCast(db: DB, selfId: string, text: string) {
+  const handles = new Set(findSlpTextMentions(text).map((mention) => mention.handle));
+  if (!handles.size) return { ids: [] as string[], names: [] as string[] };
+  const accounts = (await createSlurpStorage(db).listNoodlerAccounts()).filter(
+    (account) => account.id !== selfId && handles.has(account.handle.toLowerCase()),
+  );
+  return { ids: accounts.map((account) => account.id), names: accounts.map((account) => account.displayName) };
 }

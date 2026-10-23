@@ -34,6 +34,8 @@ export const NOODLE_CONTENT_MIX_INSTRUCTION =
   "- Vary the feed across casual updates, humor, questions, useful observations, teasing, affection, projects, promotion, and occasional conflict or low mood. Drama, hostility, anxiety, and sadness are possibilities, not the default mood or a quota.";
 export const NOODLE_HISTORY_MOOD_INSTRUCTION =
   "- Use recent activity for facts, relationships, and continuity. Do not copy its length, format, or emotional mood by default; let each account's present personality and situation set the tone.";
+export const SLP_STRANGER_REPLY_INSTRUCTION =
+  "- Creators who do not follow each other, share no thread and are not tagged are strangers: a reply between them reads like a fan or a stranger (polite, curious, flirty, catty), never like an old friend with shared history.";
 export const SLP_TIMELINE_BASE_DEFAULT_PROMPT = [
   "You write a fake social media timeline for Marinara Engine's in-app parody site called Slurp.",
   NOODLE_ADULT_PLATFORM_POLICY,
@@ -46,6 +48,7 @@ export const SLP_TIMELINE_BASE_DEFAULT_PROMPT = [
   NOODLE_SOCIAL_LENGTH_INSTRUCTION,
   NOODLE_CONTENT_MIX_INSTRUCTION,
   NOODLE_HISTORY_MOOD_INSTRUCTION,
+  SLP_STRANGER_REPLY_INSTRUCTION,
   NOODLE_PERSONA_AUTHORSHIP_INSTRUCTION,
   NOODLE_PERSONA_IDENTITY_INSTRUCTION,
   "- For each interaction, set either targetTempId or targetPostId and set the unused target field to null.",

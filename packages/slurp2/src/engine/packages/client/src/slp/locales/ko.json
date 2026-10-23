@@ -2010,7 +2010,7 @@
   "ui.slurp.scene.direction": "지시",
   "ui.slurp.scene.directionTitle": "이 장면에 대한 지시",
   "ui.slurp.scene.directionHelp": "이 장면에만 적용되는 메모로, 배우에게 속삭이는 것과 같습니다. 채팅에는 표시되지 않습니다.",
-  "ui.slurp.scene.directionPlaceholder": "가볍게 진행하세요. 돈 얘기에는 부끄러워합니다.",
+  "ui.slurp.scene.directionPlaceholder": "가볍게 진행하세요. 돈 얘기는 하지 마세요.",
   "ui.slurp.scene.directionSave": "저장",
   "ui.slurp.scene.directionClear": "지우기",
   "ui.slurp.scene.preset.friend.title": "친구",
