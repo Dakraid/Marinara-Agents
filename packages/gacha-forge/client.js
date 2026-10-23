@@ -3859,7 +3859,7 @@ function wireForgeAudio(host) {
   for (const fullscreen of root.querySelectorAll(
     ".gf-fs-bar, .gf-fs-chapter, .gf-fs-portrait, .gf-stage > .gf-fs-exit",
   )) {
-    if (!fullscreen.previousElementSibling?.classList.contains("gf-mute")) {
+    if (host._run?.runId && !fullscreen.previousElementSibling?.classList.contains("gf-mute")) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = `icon-button gf-mute${fullscreen.classList.contains("gf-fs-chapter") ? " gf-mute-chapter" : ""}`;

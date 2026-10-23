@@ -386,6 +386,7 @@ test("Audio settings persist, mute is compact and portrait frames retain a botto
   });
   await expect(forge.getByRole("checkbox", { name: "Read character dialogue", exact: true })).toBeVisible();
   await expect(forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true })).toBeVisible();
+  await expect(forge.locator(".gf-mute")).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath("audio-world-setup.png") });
 });
 
@@ -502,6 +503,7 @@ test("Audio selectors accept real stored flags and preserve unavailable choices 
       await expect(picker).toHaveValue(selected);
       await expect(picker.locator(`option[value="${selected}"]`)).toBeDisabled();
       // A real eligible row also remains available in the setup list.
+      await expect(forge.locator(".gf-mute")).toHaveCount(0);
       if (!quarantined) await expect(picker.locator(`option[value="${ids[1]}"]`)).toHaveText("Stored audio fixture");
       await forge.locator("[data-next]").click();
       await expect.poll(() => drafts.at(-1)?.snapshot.values["audio.audioConnectionId"]).toBe(selected);
