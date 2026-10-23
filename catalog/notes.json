@@ -278,6 +278,12 @@
     "hierarchical-maps": {
       "versions": [
         {
+          "version": "1.7.0",
+          "date": "2026-10-23",
+          "notes": "- World Maps can use the reference lorebook selected for it in Chat Settings. Matching entries help chat-specific map creation, replacement, expansion and prompt previews without changing the map builder's other lore sources or global templates. Update both the Engine and World Maps to use this setting.",
+          "highlight": true
+        },
+        {
           "version": "1.6.0",
           "date": "2026-10-23",
           "notes": "- When the Game Master moves the party to a place more than one step away on the map, such as a boat to the next town, the map now follows by the shortest route instead of staying put. Before, only a move to a place one step away (a place inside, the place around it, or a linked place) moved the map.",
