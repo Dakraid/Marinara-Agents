@@ -265,7 +265,7 @@ try {
       tts: { ttsService: { getActiveId: () => null, speakSequence: async (...args) => voices.push(args) } },
     };
     const controller = new ForgeAudioController(host, services);
-    controller.notice = (message) => events.push(["notice", message]);
+    controller.notice = (...message) => events.push(["notice", ...message]);
     return { host, controller, events, voices };
   };
 
@@ -509,7 +509,37 @@ try {
       events.filter(([event]) => event === "playMusic").map(([, tag]) => tag),
       ["stock:home"],
     );
-    assert.equal(events.filter(([event]) => event === "notice").at(-1)[1], "audio.generationFailed");
+    assert.deepEqual(events.filter(([event]) => event === "notice").at(-1), [
+      "notice",
+      "audio.generationRejected",
+      503,
+    ]);
+    assert.equal(controller.generated.size, 0);
+    controller.dispose();
+  });
+
+  await test("generation failures retain the provider HTTP status without displaying response bodies", async () => {
+    globalThis.Ze = async (path) => {
+      if (path.startsWith("/api/audio/config")) return generationConfig(path);
+      return {
+        ok: false,
+        status: 502,
+        json: async () => ({
+          error: "Audio generation failed",
+          detail: "ElevenLabs audio request returned HTTP 401",
+          secret: "must never appear in a notice",
+        }),
+      };
+    };
+    const { controller, events } = fixture();
+    controller.configure({ generate: true, audioConnectionId: "rejected" });
+    await controller.cue("home");
+    assert.deepEqual(events.filter(([event]) => event === "notice").at(-1), [
+      "notice",
+      "audio.generationRejected",
+      401,
+    ]);
+    assert.equal(JSON.stringify(events).includes("secret"), false);
     assert.equal(controller.generated.size, 0);
     controller.dispose();
   });
