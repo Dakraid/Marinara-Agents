@@ -2,7 +2,7 @@
 
 ## Audio and pacing (1.11.0)
 
-Gacha Forge 1.11.0 adds optional dialogue using voices assigned in the Engine, stock Game music and sound effects, and optional generated audio through a dedicated audio connection. World Sources controls the opt-in features; Look → Visual has independent music, dialogue and effects levels and an autoplay pause (three seconds by default). The compact mute button silences all three channels. Autoplay waits for the revealed text and spoken line, and choices still wait for the player. Home and story portraits include their bottom frame edge. This version requires Engine Capability API 1.380 or newer.
+Gacha Forge 1.11.0 adds optional dialogue using voices assigned in the Engine, stock Game music and sound effects, and optional generated audio through a dedicated audio connection. In world creation, open Lore to opt in. For an existing world, use Settings → World → Sources; Settings → Look → Visual has independent music, dialogue and effects levels and an autoplay pause (three seconds by default). The compact mute button silences all three channels. Autoplay waits for the revealed text and spoken line, and choices still wait for the player. Home and story portraits include their bottom frame edge. This version requires Engine Capability API 1.381 or newer.
 
 Welcome Gift in 1.10.1 keeps its rewards above Claim on short mobile screens. Scroll the event when needed; the Claim button has a full touch target.
 
@@ -19,7 +19,9 @@ Chapter scenes in 1.9.1 use a small fullscreen icon in the top-right header fade
 
 ### Player choices (1.10.0)
 
-Settings → Story → Continuity includes **Allow choices**, enabled by default. Newly written chapters and Character Stories can offer two to four dialogue lines or actions for your protagonist above the dialogue box, using the current game theme.
+In 1.10.2, newly generated dialogue options paraphrase intent, such as “Apologize” or “Say that you trust them”. The selected spoken line then appears as protagonist dialogue; a selected physical action appears as narration. Existing saved choices keep their labels and decisions, with untyped selections displayed as narration rather than guessing that they were spoken.
+
+Settings → Story → Continuity includes **Allow choices**, enabled by default. Newly written chapters and Character Stories can offer two to four dialogue or action intents for your protagonist above the dialogue box, using the current game theme.
 
 Small choices include every alternative branch in the same narration response. The selected branch plays for a few lines and rejoins the shared story. First-play selections are saved as canon; replay can show the other small branches without changing that history. Reloading or resuming restores the canonical selections.
 

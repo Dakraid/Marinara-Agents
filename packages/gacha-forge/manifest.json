@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "capabilityApi": {
     "major": 1,
-    "minor": 380
+    "minor": 381
   },
   "builtAgainst": {
     "engineVersion": "2.5.1",
@@ -299,8 +299,8 @@
     },
     {
       "path": "client.js",
-      "sha256": "5717a6537b20de13ed3ffd9c72ab3dcbcef30baa1e689187b80a9dffbfb5f4ed",
-      "bytes": 1492004
+      "sha256": "b27fb181aea22b1706f69ce587864b9610e367492e6353564fc1cd1fefb95980",
+      "bytes": 1492427
     },
     {
       "path": "farm-asc.webp",
@@ -774,8 +774,8 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "f20280753d0752a5c08f2daadc7c4f65ac0f2c562805ccb6cfd58c72866226a4",
-      "bytes": 526167
+      "sha256": "6ee10380284c59a5cdb35d4147feca692d7ab85d9749d25464deb9e7ad562b8a",
+      "bytes": 527995
     },
     {
       "path": "skill-aoe_damage-dark.webp",

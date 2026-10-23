@@ -763,7 +763,7 @@
         "schemaVersion": 2,
         "capabilityApi": {
           "major": 1,
-          "minor": 380
+          "minor": 381
         },
         "builtAgainst": {
           "engineVersion": "2.5.1",
@@ -1060,8 +1060,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "5717a6537b20de13ed3ffd9c72ab3dcbcef30baa1e689187b80a9dffbfb5f4ed",
-            "bytes": 1492004
+            "sha256": "b27fb181aea22b1706f69ce587864b9610e367492e6353564fc1cd1fefb95980",
+            "bytes": 1492427
           },
           {
             "path": "farm-asc.webp",
@@ -1535,8 +1535,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "f20280753d0752a5c08f2daadc7c4f65ac0f2c562805ccb6cfd58c72866226a4",
-            "bytes": 526167
+            "sha256": "6ee10380284c59a5cdb35d4147feca692d7ab85d9749d25464deb9e7ad562b8a",
+            "bytes": 527995
           },
           {
             "path": "skill-aoe_damage-dark.webp",
@@ -2294,8 +2294,8 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/gacha-forge-1.11.0.zip",
-        "sha256": "4b89f3b8a59d492864d458e3ef3e27a8fc0939009fb23f933fad87866fc7e14e",
-        "bytes": 7918330
+        "sha256": "c50dd3d6ff3d2208bfe9985837e53689a7555667b3123a21d8cbcfe0a8f5de0f",
+        "bytes": 7920581
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
     },
@@ -3871,15 +3871,15 @@
         "schemaVersion": 2,
         "capabilityApi": {
           "major": 1,
-          "minor": 379
+          "minor": 380
         },
         "builtAgainst": {
           "engineVersion": "2.5.1",
-          "engineCommit": "46faa1ad32a945054a94b88971349908151b773b"
+          "engineCommit": "3f9868540ed9264ddd228cf1b559cf1b7f2ce4de"
         },
         "id": "hierarchical-maps",
         "name": "World Maps",
-        "version": "1.7.0",
+        "version": "1.7.1",
         "description": "Adds world maps to Roleplay and Game, from whole regions down to single rooms, with art and travel between places. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay and Game modes.",
         "engine": {
           "min": "2.5.1",
@@ -3939,8 +3939,8 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/hierarchical-maps.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/hierarchical-maps-1.7.0.zip",
-        "sha256": "4bea15daf6d1226dced36386bbce670be83670c7a9aff735e692e72ddbd98ad2",
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/hierarchical-maps-1.7.1.zip",
+        "sha256": "04b45bf0d1d90041cc61d6d40e06a19c90a84130339a6d85fbddf888d66c6a82",
         "bytes": 581365
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
