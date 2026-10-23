@@ -45,7 +45,7 @@ for (const brief of ["a quick sketch", "a detailed full-body scene of the two of
   assert.ok(quote >= range.from && quote <= range.upTo, "every quote is inside the range the DM names");
 }
 const dm = server("features/messages/slp-message-generation-service.ts");
-assert.match(dm, /commissionPrices: supportDesk\s*\? undefined/u);
+assert.match(dm, /commissionPrices: supportThread\s*\? undefined/u);
 assert.match(dm, /\.\.\.\(input\.commissionPrices \? \{ commissionPrices: input\.commissionPrices \} : \{\}\)/u);
 
 // ── Cancel ends a subscription to a removed Creator at once (#28) ──
