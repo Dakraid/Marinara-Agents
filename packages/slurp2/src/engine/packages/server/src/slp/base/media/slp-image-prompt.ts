@@ -65,12 +65,15 @@ export function stripAppearanceLabel(value: string): string {
  * clothes are dropped here: only the clothing part of a sentence (V, user), so "Her curvy figure looks
  * great in tight clothing" keeps "Her curvy figure looks great" and "red hair, green eyes and a black
  * hoodie" keeps the hair and eyes. A Creator's own Stage appearance is trusted as written.
+ * A tag list (Danbooru card) is the exception: it goes over whole, outfit tags too (`slurpImageLook`).
  * ponytail: a keyword filter over sentences and clauses. If cards need finer handling, generate a look
  * once per Creator with a language model and store it as Stage appearance.
  */
 const CLOTHING_SENTENCE =
   /\b(?:wear|wears|wearing|worn|dress|dresses|dressed|outfits?|cloth(?:es|ing)|fashion|favou?rs|cosplay|costumes?|accessor(?:y|ies)|carries|carrying|shoes|boots|jewel(?:ry|lery)|hoodies?|shirts?|skirts?|jeans|jackets?|gowns?|couture|heels|lingerie|bikinis?|sweaters?|uniforms?)\b/iu;
 const MAX_LOOK_LENGTH = 600;
+/** Two or more commas and no sentence end: a tag list, not prose. */
+const TAG_LIST = /^[^.!?]*,[^.!?]*,[^.!?]*$/u;
 /** Where a sentence splits into clauses; the separator stays with the clause after it. */
 const CLAUSE_BREAK = /(,\s*|;\s*|\s+(?:and|but|while)\s+|\s+[—–]\s+)/u;
 /** What a kept clause of a clothing sentence must be about: the body, not a mood or a habit. */
@@ -117,11 +120,15 @@ export function slurpImageSexWord(appearance: string, gender: string | null | un
 export function slurpImageLook(appearance: string): string {
   const text = stripAppearanceLabel(appearance).replace(/\s+/gu, " ").trim();
   if (!text) return "";
-  const kept = text
-    .split(/(?<=[.!?])\s+/u)
-    .map(withoutClothes)
-    .filter(Boolean)
-    .join(" ");
+  // A tag list (Danbooru-style card) goes over one-to-one: the clause filter is for prose and dropped every
+  // tag without a body word, even the character's own name.
+  const kept = TAG_LIST.test(text)
+    ? text
+    : text
+        .split(/(?<=[.!?])\s+/u)
+        .map(withoutClothes)
+        .filter(Boolean)
+        .join(" ");
   const look = kept || text;
   return look.length <= MAX_LOOK_LENGTH ? look : `${look.slice(0, look.lastIndexOf(" ", MAX_LOOK_LENGTH))}`;
 }

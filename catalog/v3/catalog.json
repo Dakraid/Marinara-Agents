@@ -3537,7 +3537,7 @@
         },
         "id": "slurp2",
         "name": "Slurp",
-        "version": "0.3.53",
+        "version": "0.4.0",
         "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
         "localizations": {
           "de": {
@@ -3590,6 +3590,8 @@
           },
           "assets": {
             "paths": [
+              "assets/mari/Mari_noodler_teaser_locked.webp",
+              "assets/mari/Mari_noodler_teaser_unlocked.webp",
               "src/engine/packages/client/src/slp/locales/de.json",
               "src/engine/packages/client/src/slp/locales/ko.json",
               "src/engine/packages/client/src/slp/locales/pl.json"
@@ -3604,13 +3606,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "a8f9fdd298f59d2f0018d61122cdfd93dc1362d1524629d306b7e6d1c3725c8e",
-            "bytes": 1922448
+            "sha256": "2f8f75e42e58f3cb1459307baf3b2d422bf84930e88f705a5309f29f1fb86e20",
+            "bytes": 2008746
           },
           {
             "path": "client.js",
-            "sha256": "d1c440c450cd358b11ac13f0a417791d81815e35aca7f7341008331be833144a",
-            "bytes": 2758939
+            "sha256": "0333fe55a3f09a0cfbb623d72996c6dc079f58d05c2557e17b46f557873c373e",
+            "bytes": 2839399
           },
           {
             "path": "slurp2-logo.png",
@@ -3623,19 +3625,29 @@
             "bytes": 120424
           },
           {
+            "path": "assets/mari/Mari_noodler_teaser_locked.webp",
+            "sha256": "e587f1fd0e9a8ba842af1f2ce8d1a1f84c0960a7737313d6081819a4a89a69da",
+            "bytes": 13598
+          },
+          {
+            "path": "assets/mari/Mari_noodler_teaser_unlocked.webp",
+            "sha256": "6349a29529b7597f16bba9ac3c83480c9b0e6c1b286c8dcdcdc7653e05e29eaf",
+            "bytes": 59402
+          },
+          {
             "path": "src/engine/packages/client/src/slp/locales/de.json",
-            "sha256": "6493af3a378ba85540485413538e620801ff0d2e269044ac34e7f3fec4c25480",
-            "bytes": 218687
+            "sha256": "1f6bf145d2f707bcf4600bfe9b32a330cfa2314d9772eb14e7d29d928252b65a",
+            "bytes": 231893
           },
           {
             "path": "src/engine/packages/client/src/slp/locales/ko.json",
-            "sha256": "1fb42f733d588a8995e121fe78b91e8249b464efd9bab90a95e9a8fc5c1453cc",
-            "bytes": 315128
+            "sha256": "af21ea5829363ccbe6999893eb62ef838ef9c02347cd4f2b80c8d0b4a208c8de",
+            "bytes": 328893
           },
           {
             "path": "src/engine/packages/client/src/slp/locales/pl.json",
-            "sha256": "7414b8c8bd5ebbed04695dca19ecfa4d562d3d77dde485ec8995742366904077",
-            "bytes": 220418
+            "sha256": "2a7eba40377498e64f1ba4ca534e74c1143a6378a309fe517e1ebdb6d5dc8377",
+            "bytes": 233528
           }
         ],
         "permissions": [
@@ -3653,9 +3665,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.3.53.zip",
-        "sha256": "47c8e380fceeeacc31de8ba72c0ca87df199bf23b545f908bbe060bbfc7018e5",
-        "bytes": 5593832
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.4.0.zip",
+        "sha256": "c646122bc39ca89eda873e7c66abfcd92b4ed3b66c7784aeb539de526d843855",
+        "bytes": 5874470
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },
@@ -3859,18 +3871,18 @@
         "schemaVersion": 2,
         "capabilityApi": {
           "major": 1,
-          "minor": 341
+          "minor": 379
         },
         "builtAgainst": {
-          "engineVersion": "2.5.0",
-          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
+          "engineVersion": "2.5.1",
+          "engineCommit": "46faa1ad32a945054a94b88971349908151b773b"
         },
         "id": "hierarchical-maps",
         "name": "World Maps",
-        "version": "1.6.0",
+        "version": "1.7.0",
         "description": "Adds world maps to Roleplay and Game, from whole regions down to single rooms, with art and travel between places. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay and Game modes.",
         "engine": {
-          "min": "2.4.2",
+          "min": "2.5.1",
           "maxExclusive": "4.0.0"
         },
         "kind": [
@@ -3903,13 +3915,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "c3d1c817c43072b506d7fe5904115a42cfb841ce8c86fe20941cc76d6ae164ff",
-            "bytes": 135565
+            "sha256": "08bad852d9b2193d0106305330e2c92475f854c9ffd0bf11e74bc8abdaeb4646",
+            "bytes": 137268
           },
           {
             "path": "client.js",
-            "sha256": "16d5a1c9fba4bf47ba220805a731a3523bceedc860f942c7f9a7dad6abf3d1bf",
-            "bytes": 436959
+            "sha256": "6a38be8b9502cca77da968620c52532a132510e70a398a0ad7e228cfdb1cb330",
+            "bytes": 441581
           }
         ],
         "permissions": [
@@ -3927,9 +3939,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/hierarchical-maps.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/hierarchical-maps-1.6.0.zip",
-        "sha256": "cfa292247b8c874c152f55624915fc73b53f8da6998160fdb7229f7913b029f2",
-        "bytes": 575040
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/hierarchical-maps-1.7.0.zip",
+        "sha256": "4bea15daf6d1226dced36386bbce670be83670c7a9aff735e692e72ddbd98ad2",
+        "bytes": 581365
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
     },
