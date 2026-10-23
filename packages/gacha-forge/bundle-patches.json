@@ -390,6 +390,20 @@
               "replace": "loadForgeAudioConnections(t,i?.values||h);if(i){for(let F of it){if(F.type===\"custom\"||F.type===\"toggle\")continue;"
             }
           ]
+        },
+        {
+          "version": "1.11.1",
+          "notes": "Preserve trusted legacy audio IDs and record the actual merged Engine audio baseline.",
+          "edits": [
+            {
+              "find": "ds=\"1.11.0\"",
+              "replace": "ds=\"1.11.1\""
+            },
+            {
+              "find": "oy=[{version:null,new:[\"Assigned character voices, stock music and sound effects, with optional generated audio.\",\"Per-world mute, three audio levels and voice-aware autoplay pacing.\"],fixed:[\"Home and story portrait frames include their bottom edge.\"]}",
+              "replace": "oy=[{version:null,fixed:[\"Saved legacy audio connections keep generating after migration.\"]},{version:\"1.11.0\",new:[\"Assigned character voices, stock music and sound effects, with optional generated audio.\",\"Per-world mute, three audio levels and voice-aware autoplay pacing.\"],fixed:[\"Home and story portrait frames include their bottom edge.\"]}"
+            }
+          ]
         }
       ]
     },
