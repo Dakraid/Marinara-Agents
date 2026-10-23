@@ -104,7 +104,11 @@ export function forgeNormalizeChoiceBeat(raw, options, normalizeBeat, { enabled,
 }
 
 export function forgeChoiceResponse(data) {
-  return { choices: data?.choices || [], choiceCanon: { ...data?.choiceCanon } };
+  return {
+    musicMood: ["happy", "tense", "sad"].includes(data?.musicMood) ? data.musicMood : "happy",
+    choices: data?.choices || [],
+    choiceCanon: { ...data?.choiceCanon },
+  };
 }
 
 export function forgePendingChoice(data) {
