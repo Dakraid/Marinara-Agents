@@ -56,6 +56,7 @@ import {
   newTimeSortableId,
   now,
   resolvePackageAgentLorebookEntries,
+  SpatialPackageRuntimeError,
   updatePackageAgentConfiguration,
   updatePackageAgentSettings,
 } from "../services/spatial-context/package-runtime.js";
@@ -525,8 +526,8 @@ function sendServiceError(reply: FastifyReply, error: unknown) {
 }
 
 function sendPromptRequestError(reply: FastifyReply, error: unknown) {
-  if (error instanceof Error && (error as { code?: unknown }).code === "host_feature_unavailable") {
-    return reply.status(501).send({ error: error.message, code: "host_feature_unavailable" });
+  if (error instanceof SpatialPackageRuntimeError) {
+    return reply.status(error.statusCode).send({ error: error.message, code: error.code });
   }
   if (error instanceof SpatialMapPromptRequestError) {
     return reply.status(error.statusCode).send({

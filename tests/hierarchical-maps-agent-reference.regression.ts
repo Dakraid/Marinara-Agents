@@ -521,6 +521,18 @@ export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/h
           assert.match(response.json().error, /newer Marinara Engine/);
         }
         assert.equal(prompts.length, completedCalls, "missing-host failures never call the model");
+        release();
+        for (const suffix of ["generation-prompt/preview", "generate"]) {
+          const response = await oldHostApp.inject({
+            method: "POST",
+            url: `/api/chats/${chat.id}/spatial-context/${suffix}`,
+            payload: { ...body, operation: "replace" },
+          });
+          assert.equal(response.statusCode, 503, response.body);
+          assert.equal(response.json().code, "spatial_runtime_unavailable");
+          assert.match(response.json().error, /runtime is not configured/);
+        }
+        assert.equal(prompts.length, completedCalls, "torn-down runtimes never call the model");
       } finally {
         await oldHostApp.close();
       }
@@ -528,8 +540,8 @@ export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/h
       release();
     }
     await assert.rejects(() => adapter.resolvePackageAgentLorebookEntries(chat.id), {
-      code: "host_feature_unavailable",
-      statusCode: 501,
+      code: "spatial_runtime_unavailable",
+      statusCode: 503,
     });
   } finally {
     OpenAIProvider.prototype.chatComplete = originalComplete;
