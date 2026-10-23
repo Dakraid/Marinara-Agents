@@ -1872,8 +1872,9 @@ export async function spatialContextRoutes(app: FastifyInstance) {
     }
 
     if (prepared.hasReferenceEntries) {
-      const fitted = resolved.fitContext(prompt.messages, { maxTokens: prompt.maxTokens });
-      if (fitted.trimmed || fitted.maxTokens !== prompt.maxTokens) {
+      const maxTokens = Math.min(prompt.maxTokens, resolved.maxOutputTokens ?? prompt.maxTokens);
+      const fitted = resolved.fitContext(prompt.messages, { maxTokens });
+      if (fitted.trimmed || fitted.maxTokens !== maxTokens) {
         return reply.status(400).send({
           error:
             "The complete map request does not fit the selected model's context. Reduce the reference lorebook or map sources, or choose a connection with a larger context.",

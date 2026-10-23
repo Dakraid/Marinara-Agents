@@ -256,6 +256,27 @@ async function main() {
     assert.equal(oversizedResponse.json().code, "spatial_ai_context_too_large");
     assert.match(oversizedResponse.json().error, /complete map request.*context/i);
     assert.equal(prompts.length, callsBeforeOversized, "an oversized complete prompt never calls the model");
+    const cappedConnection = await createConnectionsStorage(db).create({
+      name: "Maps configured-output fixture",
+      provider: "custom",
+      baseUrl: "http://127.0.0.1:1/v1",
+      model: "fixture",
+      apiKey: "fixture",
+      maxContext: 32_768,
+      maxTokensOverride: 2_048,
+    });
+    assert(cappedConnection);
+    await request(`/api/chats/${chat.id}/spatial-context/generate`, {
+      ...body,
+      connectionId: cappedConnection.id,
+    });
+    assert.match(
+      prompts.at(-1)!,
+      /OVERSIZED_REFERENCE/,
+      "the configured output cap leaves room for complete references",
+    );
+    assert(prompts.at(-1)!.includes(first.system), "the complete map instructions are preserved");
+    assert.match(prompts.at(-1)!, /Design a navigable harbor\./);
     await chats.patchMetadata(chat.id, { lorebookTokenBudget: null });
     const created = await request(`/api/chats/${chat.id}/spatial-context/generate`, {
       ...body,
