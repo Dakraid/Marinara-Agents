@@ -11,6 +11,29 @@ const forgeBrowserLayout = `
 @media (any-pointer: coarse), (pointer: coarse) {
   .ev-pane.nw .ev-claim { min-height: 44px; }
 }
+/* Portrait artwork leaves the same accent stroke at the foot as at its top. */
+/* Home and chapter sheets are loaded lazily, so keep this ahead of their inset shorthand. */
+.gf-stage .hm-plate, .gf-stage .vn-plate[data-side] { padding-bottom: var(--edge-w); }
+.gf-stage .hm-art, .gf-stage .vn-plate[data-side] .vn-art { bottom: var(--edge-w); }
+.gf-mute { display: inline-grid; place-items: center; padding: 0; cursor: pointer; }
+.gf-mute svg { display: block; width: 1em; height: 1em; }
+.gf-mute:focus-visible { outline: 2px solid var(--coral); outline-offset: -3px; }
+.gf-mute.gf-mute-chapter {
+  position: absolute; top: 50%; right: 44px; transform: translateY(-50%);
+  width: 44px; height: 44px; border: 0; background: transparent; color: var(--text);
+  font-size: 0.9rem; box-shadow: none; clip-path: none;
+}
+.vn-top:has(.gf-mute-chapter) { padding-right: 88px; }
+.gf-stage > .gf-mute, .gf-rot > .gf-mute {
+  position: absolute; z-index: 9; top: 0.55rem; right: 3rem;
+  width: 1.9rem; height: 1.9rem; background: var(--ink); color: var(--text);
+  border: 1px solid var(--steel-dark); clip-path: none;
+}
+.gf-audio-status {
+  position: absolute; z-index: 8; inset: 3.5rem 0.75rem auto auto; max-width: min(36ch, calc(100% - 1.5rem)); padding: 0.5rem 0.75rem;
+  background: var(--ink); color: var(--text); border: 1px solid var(--steel-dark);
+  font: max(12px, var(--t-xs))/1.4 var(--body); overflow-wrap: anywhere; pointer-events: none;
+}
 /* Chapter artwork keeps a small icon in its header fade, with a full touch target. */
 .vn-top:has(> .gf-fs-chapter) { min-height: 44px; }
 .gf-fs-exit.gf-fs-chapter {
