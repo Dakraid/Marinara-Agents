@@ -62,6 +62,7 @@ export function forgeNormalizeChoiceBeat(raw, options, normalizeBeat, { enabled,
       big = true;
     }
     const labels = new Set();
+    const selections = new Set();
     const normalizedOptions = [];
     for (const [optionIndex, option] of choice.options.entries()) {
       const text = typeof option?.text === "string" ? option.text.trim() : "";
@@ -72,6 +73,9 @@ export function forgeNormalizeChoiceBeat(raw, options, normalizeBeat, { enabled,
       if (!selection || !["dialogue", "action"].includes(selection.kind) || !selectedText || selectedText.length > 280)
         return null;
       if (selection.kind === "dialogue" && selectedText === text) return null;
+      const selectionKey = `${selection.kind}:${selectedText}`;
+      if (selections.has(selectionKey)) return null;
+      selections.add(selectionKey);
       if (!Array.isArray(option.segments)) return null;
       if (choice.kind === "big" && option.segments.length) return null;
       if (choice.kind === "small" && (!option.segments.length || option.segments.length > 8)) return null;

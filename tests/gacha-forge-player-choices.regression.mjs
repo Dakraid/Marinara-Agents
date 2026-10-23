@@ -372,6 +372,17 @@ try {
     }
   });
 
+  await test("different labels cannot disguise identical performed small or big options", async () => {
+    for (const kind of ["small", "big"]) {
+      const host = await harness({ chapters: [plan(1, 1)] });
+      const choice = kind === "small" ? smallChoice() : bigChoice();
+      choice.options[1].selection = clone(choice.options[0].selection);
+      host.responses.push({ ...line("Choose a path."), choices: [choice] });
+      expectError(await host.post("/beat", { runId, chapter: 1, storyIndex: 0 }), "invalid-shape");
+      assert.equal(host.data(beatId(1, 0)), undefined);
+    }
+  });
+
   await test("untyped saved choices remain playable without inventing a dialogue speaker", async () => {
     const host = await harness();
     const saved = smallBeat();
