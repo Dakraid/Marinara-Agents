@@ -620,10 +620,11 @@ test("Shipped audio requests pass the real Engine route and reuse a local provid
 test("Autoplay waits three seconds after revealed text and voice end, and Skip cancels speech", async ({
   page,
 }, testInfo) => {
-  const { forge, speech } = await openForge(page, testInfo, { voice: true });
   const now = new Date();
   await page.clock.install({ time: now });
-  await page.clock.pauseAt(now);
+  const { forge, speech } = await openForge(page, testInfo, { voice: true });
+  // Pause in the future: install starts a running clock, so its initial instant may already be past.
+  await page.clock.pauseAt(new Date(now.getTime() + 60_000));
   await seedScene(forge);
   await expect.poll(() => speech.length).toBe(1);
   expect(speech[0].voice).toBe("voice-arden");
