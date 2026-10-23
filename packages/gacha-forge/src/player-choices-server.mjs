@@ -141,6 +141,11 @@ export function forgeCreateChoiceRuntime({
     });
   }
 
+  async function readOrGenerate(runId, work) {
+    const cached = await work(true);
+    return cached === null ? generate(runId, () => work(false)) : cached;
+  }
+
   async function completed(runId, chapter, storyIndex, plan) {
     const { data: session } = await readSession(runId);
     if (plan?.bondUnitId) {
@@ -334,5 +339,5 @@ export function forgeCreateChoiceRuntime({
     return { ok: false, error: "write-conflict" };
   }
 
-  return { completed, pending, guard, planGuard, continuity, completeGuard, select, generate };
+  return { completed, pending, guard, planGuard, continuity, completeGuard, select, generate, readOrGenerate };
 }

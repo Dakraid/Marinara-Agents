@@ -196,6 +196,13 @@ test("Choices pause playback, preserve resume canon and allow only small replay 
   await expect(choices).toHaveAttribute("data-choice-id", "choice-1");
   await expect(choices.getByRole("button")).toHaveCount(4);
   await assertChoiceLayout(forge);
+  const fullscreen = forge.locator(".vn-top > .gf-fs-chapter");
+  await fullscreen.click();
+  await expect(page.locator(".mari-home-browser-chrome")).toBeHidden();
+  await expect(choices).toHaveAttribute("data-choice-id", "choice-1");
+  await assertChoiceLayout(forge);
+  await fullscreen.click();
+  await expect(page.locator(".mari-home-browser-chrome")).toBeVisible();
   await expect(forge.locator("[data-skip]")).toBeDisabled();
   await forge.locator("[data-skip]").dispatchEvent("click");
   await expect(choices).toHaveAttribute("data-choice-id", "choice-1");
@@ -280,6 +287,9 @@ test("Continuity choices default on and persist alongside pre-forging", async ({
   }, run);
   const toggle = forge.locator("[data-forge-allow-choices]");
   await expect(toggle).toHaveAttribute("aria-checked", "true");
+  const touch = await toggle.boundingBox();
+  expect(touch!.width).toBeGreaterThanOrEqual(44);
+  expect(touch!.height).toBeGreaterThanOrEqual(44);
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-checked", "false");
   await expect.poll(() => saved?.story?.choices).toBe(false);

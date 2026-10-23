@@ -1,5 +1,17 @@
 // Maintained package source, inlined after player-choices-en.mjs by the bundle builder.
 /* global forgeChoiceEnglish */
+const forgeChoiceSettingsLayout = `
+.st-pane .gf-choice-settings-toggle {
+  grid-template-columns: 44px minmax(0, 1fr); gap: 0.75rem; align-items: center; padding: 0.4rem 0.6rem;
+}
+.st-pane .gf-choice-settings-toggle > .ob-bx {
+  width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0;
+  display: grid; place-items: center; line-height: 1;
+}
+.gf-choice-settings-toggle > .ob-bx > svg { display: block; width: 20px; height: 20px; }
+.st-pane .gf-choice-settings-copy { display: grid; gap: 0.3rem; min-width: 0; }
+.gf-choice-settings-copy > .bd { overflow-wrap: anywhere; }
+`;
 const forgeChoiceLayout = `
 .vn-choices {
   position: relative; z-index: 4; margin: 0 var(--sp-3) var(--sp-2);
@@ -33,7 +45,7 @@ function forgeChoiceEscape(value) {
 }
 
 export function forgeChoiceSettings(run) {
-  return `<div class="st-plate" data-player-choice-settings><div class="hd"><h3>${forgeChoiceEnglish["settings.playerChoices.title"]}</h3></div><label class="ob-toggle"><button class="ob-bx" type="button" role="checkbox" aria-checked="${run?.story?.choices !== false}" data-forge-allow-choices aria-label="${forgeChoiceEnglish["settings.playerChoices.allow"]}"><span>✓</span></button><span class="bt"><b>${forgeChoiceEnglish["settings.playerChoices.allow"]}</b><span class="bd">${forgeChoiceEnglish["settings.playerChoices.hint"]}</span></span></label></div>`;
+  return `<style data-forge-choice-settings-layout>${forgeChoiceSettingsLayout}</style><div class="st-plate" data-player-choice-settings><div class="hd"><h3>${forgeChoiceEnglish["settings.playerChoices.title"]}</h3></div><label class="ob-toggle gf-choice-settings-toggle"><button class="ob-bx" type="button" role="checkbox" aria-checked="${run?.story?.choices !== false}" data-forge-allow-choices aria-label="${forgeChoiceEnglish["settings.playerChoices.allow"]}"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 8.4 3.1 3.1 5.9-7.3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="bt gf-choice-settings-copy"><b>${forgeChoiceEnglish["settings.playerChoices.allow"]}</b><span class="bd">${forgeChoiceEnglish["settings.playerChoices.hint"]}</span></span></label></div>`;
 }
 
 export function wireForgeChoiceSettings(root, _run, onSources) {

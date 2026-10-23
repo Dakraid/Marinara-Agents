@@ -442,6 +442,60 @@ try {
     assert.equal(host.data(beatId(1, 1)), undefined);
   });
 
+  await test("cached beats and plans remain readable while a future model request is pending", async () => {
+    const host = await harness();
+    const unitId = `${runId}:unit:arden`;
+    const chapter = "bond-arden";
+    host.seed(unitId, "unit", {
+      kind: "character",
+      name: "Arden",
+      identitySex: "male",
+      rarity: 5,
+      role: "Warrior",
+      affinity: "Fire",
+    });
+    host.seed(chapterId(chapter), "chapter-plan", { ...plan(chapter, 3), bondUnitId: unitId, bondPart: 1, after: 0 });
+    const session = host.data(sessionId);
+    session.roster = { [unitId]: { bondFights: 100, bondCurve: 2 } };
+    session.bondChapters = { [unitId]: { beats: 3, after: 0, opened: 1 } };
+    host.seed(sessionId, "session", session);
+    host.responses.push(line("Already generated and ready to read."));
+    const first = await host.post("/beat", { runId, chapter: 1, storyIndex: 0 });
+    assert.equal(first.ok, true, JSON.stringify(first));
+    for (const cached of [
+      await host.post("/chapter-plan", { runId, chapter: 1 }),
+      await host.post("/bond-chapter/plan", { runId, unitId, part: 1 }),
+    ])
+      assert.equal(cached.ok, true, JSON.stringify(cached));
+    host.responses[0] = line("The next scene eventually finishes generating.");
+    const pause = host.pauseNextGeneration();
+    const future = host.post("/beat", { runId, chapter: 1, storyIndex: 1 });
+    await pause.ready;
+    let cachedReplies;
+    const cachedReads = Promise.all([
+      host.post("/beat", { runId, chapter: 1, storyIndex: 0 }),
+      host.post("/chapter-plan", { runId, chapter: 1 }),
+      host.post("/bond-chapter/plan", { runId, unitId, part: 1 }),
+    ]).then((replies) => {
+      cachedReplies = replies;
+    });
+    try {
+      // All persistence/metadata fixture operations resolve as promises. One event-loop turn
+      // drains those reads while the provider stays explicitly blocked on pause.release().
+      await new Promise(setImmediate);
+      assert.ok(cachedReplies, "Reading cached story or plans must not wait for the pending model response");
+      for (const reply of cachedReplies) assert.equal(reply.ok, true, JSON.stringify(reply));
+      assert.equal(cachedReplies[0].segments[0].text, "Already generated and ready to read.");
+      assert.equal(cachedReplies[1].plan.chapter, 1);
+      assert.equal(cachedReplies[2].plan.bondUnitId, unitId);
+      assert.equal(host.modelCalls.length, 2, "Cache reads must not request more generation");
+    } finally {
+      pause.release();
+      assert.equal((await future).ok, true);
+      await cachedReads;
+    }
+  });
+
   await test("accepted fate survives package reactivation without another write or model call", async () => {
     const firstHost = await harness({ chapters: [plan(1, 1), plan(2)] });
     firstHost.responses.push({ ...line("The last decision"), choices: [bigChoice()] });
