@@ -172,6 +172,12 @@
     "gacha-forge": {
       "versions": [
         {
+          "version": "1.11.0",
+          "date": "2026-10-23",
+          "notes": "### New\n- Optional dialogue using explicitly assigned Engine character voices, with the current speech connection.\n- Stock Game music and effects, plus opt-in generated audio reused per world and cue.\n- A shared mute control, three precise channel volume sliders and configurable autoplay pacing.\n\n### Fixed\n- Home and story portrait frames include their bottom edge.",
+          "highlight": true
+        },
+        {
           "version": "1.10.2",
           "date": "2026-10-23",
           "notes": "- New dialogue choices show intent labels instead of revealing the exact spoken line. Selected actions appear as narration; explicitly spoken choices remain protagonist dialogue.\n- Existing untyped saved choices remain playable as narration. First-play canon, replay alternatives and permanent big decisions are preserved.",
