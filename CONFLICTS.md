@@ -5,7 +5,7 @@ This file lists every intentional difference between the fork branch `customized
 Keep it current: a branch that adds or changes a fork deviation updates its entry in the same change.
 
 - Upstream remote: `upstream` = Pasta-Devs/Marinara-Agents; `origin` = Dakraid. The fork merges `upstream/staging`.
-- Last merged upstream commit: `e79842733` (#1590, 2026-10-22). That merge folded gacha-forge 1.8.15 into fork `10.1.0` and long-term-memory 1.4.85 into fork `10.2.0`. The merge before it (`64bab6768`, #1581) folded conversation-calls 1.1.7, long-term-memory 1.4.84, noodle 1.5.9 and slurp2 0.3.53 into `10.1.0`.
+- Last merged upstream commit: `5bef5fa20` (#1598, 2026-10-23). That merge folded gacha-forge 1.9.0–1.10.0 into fork `10.2.0`, long-term-memory 1.4.86 into `10.3.0`, hierarchical-maps 1.6.0 into `10.1.0`, and added blackjack 1.0.0 as `10.0.1`. The merge before it (`e79842733`, #1590) folded gacha-forge 1.8.15 into `10.1.0` and long-term-memory 1.4.85 into `10.2.0`. Earlier (`64bab6768`, #1581) folded conversation-calls 1.1.7, long-term-memory 1.4.84, noodle 1.5.9 and slurp2 0.3.53 into `10.1.0`.
 
 To tell who owns a failing test: equal `git hash-object tests/<f>` and `git ls-tree upstream/staging -- tests/<f>` mean upstream owns it.
 
@@ -38,7 +38,9 @@ Marked _(inferred)_: read from code or history rather than stated in a commit or
 - **Version sources (must agree):** `packages/<id>/manifest.json` (agent-only packages, gacha-forge, relationship-tracker, modern-life-sim, ruleset-5e-2014); `version:` in `scripts/build-feature-packages.mjs` (noodle, slurp2, long-term-memory, memory-nag, card-editor, pokedex, hierarchical-maps, conversation-calls, the 6 turn games); `VERSION` in `scripts/build-{beholder,pixelforge,quartermaster}-package.mjs`; `SLURP2_VERSION` plus the top `SLURP2_RELEASES` entry in `packages/slurp2/.../onboarding/slp-release.ts`; the top `## <version>` of `packages/<id>/CHANGELOG.md` (builder-enforced, max 20 entries, 1,000 chars each).
 - **Keep on conflict:** always the 10.x value. Never take upstream `1.x`/`0.x` lines in manifests, builder maps, `VERSION`, `SLURP2_VERSION` or the CHANGELOG top.
 - **Fork-created CHANGELOGs** (add/add conflicts if upstream adds its own; union with the fork entry on top): background, card-evolution-auditor, chess, combat, continuity, cyoa, director, echo-chamber, eightball, expression, haptic, html, illustrator, knowledge-retrieval, knowledge-router, lorebook-keeper, persona-stats, poker, prose-guardian, quest, rock-paper-scissors, spotify, storyboard, tic-tac-toe, uno.
-- **Current versions:** card-editor `10.0.8`; modern-life-sim `10.0.3`; long-term-memory `10.2.0`; conversation-calls, gacha-forge, noodle and slurp2 `10.1.0`; all 40 other packages `10.0.1`.
+- **Current versions:** card-editor `10.0.8`; modern-life-sim `10.0.3`; long-term-memory `10.3.0`; gacha-forge `10.2.0`; conversation-calls, hierarchical-maps, noodle and slurp2 `10.1.0`; all other packages (including the new blackjack) `10.0.1`.
+- **New upstream packages** start at `10.0.1` with a fork CHANGELOG entry on top ("Includes upstream X"); set the version in the manifest and the builder entry.
+- **Multi-package bumps:** each builder validates every catalog entry's CHANGELOG lead, so bumping several packages fails on the first builder. Bypass the version check in `scripts/catalog-release-notes.mjs` for the builds, restore it byte-for-byte, then rerun one builder to prove the check passes.
 
 ### Packages with fork changes beyond the version
 
@@ -48,10 +50,10 @@ Marked _(inferred)_: read from code or history rather than stated in a commit or
 | lorebook-editor   | 10.0.1       | fork-only agent-only package                       |
 | pokedex           | 10.0.1       | fork-only feature package                          |
 | modern-life-sim   | 10.0.3       | source recovered into `src/`; features 0.4.0–0.8.0 |
-| hierarchical-maps | 10.0.1       | Movement Assessment, ko locale, parallel artwork   |
+| hierarchical-maps | 10.1.0       | Movement Assessment, ko locale, parallel artwork   |
 | character-tracker | 10.0.1       | prompt: scene scan                                 |
 | lorebook-keeper   | 10.0.1       | prompt: description backfill                       |
-| long-term-memory  | 10.2.0       | compact control sizing                             |
+| long-term-memory  | 10.3.0       | compact control sizing                             |
 | noodle            | 10.1.0       | connection sampling in image-prompt rewrite        |
 | slurp2            | 10.1.0       | connection sampling in image rewrite and schedules |
 | memory-nag        | 10.0.1       | comment only                                       |
@@ -68,7 +70,7 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 
 ### Catalog totals
 
-- **What:** 44 = 27 agents + 17 features + 0 rulesets in `catalog/catalog.json`, `v2` and `v3` (upstream 41 = 26 + 15). Preview lanes unchanged (2).
+- **What:** 44 = 27 agents + 17 features + 0 rulesets in `catalog/catalog.json`, `v2` and `v3` (upstream 41 = 26 + 15). Preview overlay: 3 staging-only packages (blackjack, modern-life-sim, ruleset-5e-2014).
 - **Files:** totals in `scripts/validate-catalog.mjs`, `expectedCategories` (`card-editor` = writer), README intro counts.
 - **Keep on conflict:** upstream's total + 3 (card-editor, pokedex, lorebook-editor).
 - **Note:** a catalog artifact block must match the manifest version, or Engine returns 500 on `/api/capability-packages/catalog` (`746ae6ea0`). Builders need `zip` (fallback `/tmp/marinara-merge-recovery/bin` on `PATH`).
@@ -129,11 +131,11 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 - **Pinned by:** `tests/modern-life-sim-{adult,cast-reading,family-romance,jobs-money,repeat-social,sampling,sex,world-lore}.regression.mjs` (import from `src/`).
 - **Commits:** ff8c77da9, 05b453962, c725a557f, e0b54df81, 02e8aa778, 34ca6a091, e132a9d76, 9bc6cfd23, d81ea0a6f, cf56f66fa, a9878e55e, 62cc21e86, 98bcde5e8, 63c5a27d4.
 
-## 5. hierarchical-maps / World Maps (10.0.1; upstream 1.5.2)
+## 5. hierarchical-maps / World Maps (10.1.0; upstream 1.6.0)
 
 - **What/why:** Movement Assessment (detects implied moves, moves the pin, stores the route as `<prior_arrival>`; settings `assessImpliedMovement`, `assessmentDiscovery`, `assessmentPersistTravel`, all on); Korean locale; parallel artwork fill sized by `connection.maxParallelJobs`. Depends on the Engine fork's `travel` column and `SpatialAssessedTravel` schema.
 - **Files:** `.../spatial-context/movement-assessment.ts`, `state-resolution.ts` (`exposePriorArrival`), `.../storage/spatial-context.storage.ts`, `.../routes/spatial-context.routes.ts`, `maps-shared/src/runtime-prompt.ts`, `SpatialContextSettingsSection.tsx`, `SpatialMapWorkspace.tsx`, `use-spatial-resources.ts`, `package-utils.ts`, `localization.tsx`, `locales/{en,ko}.json`, `agents.json`; builder `agent.defaultSettings` and the `hierarchical-maps:movement-assessment` service registration; `sources/engine/.../spatial-context.ts`.
-- **Keep on conflict:** ours for these hunks; a same-version collision publishes above upstream (now `10.1.0`).
+- **Keep on conflict:** ours for these hunks. `state-resolution.ts` keeps the fork's `materializeAssistantSpatialStateInTransaction` extraction; port upstream edits of the old inline transaction into it (upstream 1.6.0's `routed` multi-step move check sits beside `assessedDestination`). The fork's historic `artifacts/hierarchical-maps-1.6.0.zip` predates the 10.x renumber and collides with upstream's 1.6.0 artifact by name: keep ours. The CHANGELOG keeps the fork's own 1.6.0/1.5.2 history; upstream's same-numbered headings are folded into the fork top entry instead.
 - **Pinned by:** `tests/hierarchical-maps-lifecycle.regression.ts` (plain `npx tsx`), `world-maps-ui-contract.regression.mjs`, `map-location-limit.regression.ts`, `map-canvas-geometry.regression.ts`, `shared-world-refresh.regression.ts`.
 - **Commits:** 8d7134639, a6a85f1ce, 82ca87cb3, 4ab1daad9, 230fd7e35, 24a21b2b9, df8558970, 63c5a27d4, 153dd23e1, 5e8f6968c, af7cd9835.
 
@@ -152,9 +154,9 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 - **Pinned by:** `tests/lorebook-keeper-routing.regression.mjs`.
 - **Commit:** 45c276dba.
 
-## 8. long-term-memory (10.2.0)
+## 8. long-term-memory (10.3.0)
 
-- **What/why:** compact select uses fixed `h-9`; non-compact buttons get `minWidth: 2.75rem` (tap target).
+- **What/why:** compact select uses fixed `h-9` (upstream: `min-h-9`); non-compact buttons get `minWidth: 2.75rem` (tap target). Upstream's `position: relative` in `compactInputStyle` and `revealFocusUnderStickyBar` are taken as-is.
 - **Files:** `.../features/long-term-memory/shared-controls.tsx`.
 - **Pinned by:** `tests/long-term-memory-lifecycle.regression.ts` (fork runner: browser and installation lanes in separate tsx processes; keep it).
 - **Commit:** b1773ef3e (also deleted `tests/noodler-content-formats.regression.ts`; keep it deleted unless upstream revives it with new expectations).
@@ -183,7 +185,7 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 
 - No source delta. `tests/conversation-calls-summary.regression.mjs` pins `10.1.0` and raises `unzip` `maxBuffer` to 64 MiB. Commit 339662d36.
 
-## 13. gacha-forge (10.1.0)
+## 13. gacha-forge (10.2.0)
 
 - **What/why:** upstream ships pre-built bundles plus `bundle-patches.json` (hand edits since the last drop). The bundle's own version readout (`ds="1.8.15"`) and the newest client.js patch stay on the upstream release; only the manifest and CHANGELOG top move to 10.x.
 - **Files:** `packages/gacha-forge/{manifest.json,CHANGELOG.md}`; bundles and `bundle-patches.json` are upstream's, take theirs.
