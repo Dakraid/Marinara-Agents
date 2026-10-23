@@ -79,6 +79,7 @@ export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, strin
   enableImageInterpretation: "ui.slurp.settings.images.enhancePrompts",
   imagePromptConnectionId: "ui.slurp.settings.images.promptModel",
   imageGenerationUseAvatarReferences: "ui.slurp.settings.images.useAvatarReferences",
+  imageKeepOriginalFiles: "ui.slurp.settings.images.keepOriginal",
   appearanceProfileMode: "ui.slurp.appearance.mode",
   imageGenerationIncludeDescriptions: "ui.slurp.settings.images.includeDescriptions",
   imageAppearanceMode: "ui.slurp.settings.images.lookMode",

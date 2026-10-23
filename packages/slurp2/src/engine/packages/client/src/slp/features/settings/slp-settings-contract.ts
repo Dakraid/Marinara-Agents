@@ -95,6 +95,7 @@ export type SlurpSettings = {
   imagePromptInterpretation: string;
   enableImageInterpretation: boolean;
   imageGenerationUseAvatarReferences: boolean;
+  imageKeepOriginalFiles: boolean;
   imageGenerationIncludeDescriptions: boolean;
   /** How the look reaches the picture prompt: the prompt writer words it, Slurp inserts it, or both. */
   imageAppearanceMode: "writer" | "insert" | "both";

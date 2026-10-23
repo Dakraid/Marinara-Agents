@@ -31,6 +31,8 @@ export type SlurpDmParty = {
   us?: boolean;
   /** "he/him", from the page's gender (`slpPronouns`). */
   pronouns?: string;
+  /** The page's latest public posts, newest first, so the Creator can bring them up. */
+  recentPosts?: string[];
 };
 
 /** The message fields the transcript reads. A subset of `SlurpMessage`. */
@@ -165,6 +167,8 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
             : `${viewer} is a fan writing to you.`,
     );
     if (page?.relationship) lines.push(page.relationship);
+    if (page?.recentPosts?.length)
+      lines.push(`Latest posts on ${at(page)}: ${page.recentPosts.map((post) => `"${post}"`).join(" ")}`);
     // Her public side: she is a Creator, and the one she is with sees her page like everyone else.
     if (page?.partner)
       lines.push(

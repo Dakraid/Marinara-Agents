@@ -421,6 +421,13 @@ export function SlpImagesPanel(page: SlpBackstagePageProps) {
             onChange={(value: SlurpSettings["imageAppearanceMode"]) => void update("imageAppearanceMode", value)}
           />
         )}
+        <Toggle
+          settingKey="imageKeepOriginalFiles"
+          label={t("ui.slurp.settings.images.keepOriginal")}
+          detail={t("ui.slurp.settings.images.keepOriginalDetail")}
+          value={settings.imageKeepOriginalFiles}
+          onChange={(value) => update("imageKeepOriginalFiles", value)}
+        />
       </AdvancedGroup>
     </div>
   );
