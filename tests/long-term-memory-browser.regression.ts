@@ -569,6 +569,7 @@ async function main() {
         },
       ];
       let healthState: "healthy" | "degraded" = "healthy";
+      let statusFailure = false;
       let noteTotal = 5;
       let pendingDraftCount = 2;
       let failSecondReviewAccept = false;
@@ -605,6 +606,8 @@ async function main() {
         if (url.pathname === "/client.js") return send(200, artifactClient, "application/javascript");
         if (request.method === "GET" && url.pathname === "/api/connections") return send(200, []);
         if (!url.pathname.startsWith("/api/long-term-memory/")) return send(404, {});
+        if (request.method === "GET" && url.pathname.endsWith("/status") && statusFailure)
+          return send(500, { error: "status fixture down" });
         if (request.method === "GET" && url.pathname.endsWith("/status"))
           return send(200, {
             initialized: true,
@@ -5538,6 +5541,27 @@ async function main() {
       await page.locator('[data-ltm-surface="vault-health-pill"]').waitFor({ state: "detached" });
       assert.equal(await page.locator('[data-ltm-surface="vault-health-pill"]').count(), 0);
       assert.equal(await page.locator('[data-ltm-surface="vault-health-warning"]').count(), 0);
+      // #1611: the lexical-recall warning carries its own Reindex button, one Tab from its info trigger and
+      // outside the popover portal.
+      const semanticWarning = page.locator('[data-ltm-surface="semantic-recall-warning"]');
+      await semanticWarning.waitFor();
+      await semanticWarning.locator("[data-ltm-info]").focus();
+      await page.keyboard.press("Tab");
+      assert.equal(
+        await page.evaluate(() => {
+          const active = document.activeElement;
+          return (
+            active?.textContent?.trim() === "Reindex recall" &&
+            Boolean(active.closest('[data-ltm-surface="semantic-recall-warning"]')) &&
+            !active.closest("[data-ltm-info-panel]")
+          );
+        }),
+        true,
+      );
+      await page.route("**/api/long-term-memory/repair", (route) => route.fulfill({ json: { ok: true } }));
+      await page.keyboard.press("Enter");
+      await page.locator('[data-ltm-reindex-result="success"]').waitFor();
+      await page.unroute("**/api/long-term-memory/repair");
       await page.locator('[data-ltm-control="navigation"][data-ltm-destination="review"]').first().click();
       await page.locator("[data-ltm-rejected-suggestions]").waitFor();
       assert.equal(
@@ -7726,6 +7750,36 @@ async function main() {
         "complete",
       );
       await firstRunContext.close();
+      // #1611: a failed first status read still opens the guide, shows one Retry and no "Status unavailable" pill,
+      // and Retry recovers.
+      statusFailure = true;
+      noteTotal = 0;
+      const statusFailContext = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+      const statusFailPage = await statusFailContext.newPage();
+      await statusFailPage.goto(`http://127.0.0.1:${address.port}/`);
+      await statusFailPage.evaluate(() => customElements.whenDefined("marinara-capability-long-term-memory"));
+      await statusFailPage.evaluate((version) => {
+        const element = document.createElement("marinara-capability-long-term-memory") as HTMLElement & {
+          capabilityProps?: unknown;
+        };
+        element.setAttribute("view", "detail");
+        element.capabilityProps = {
+          agent: { name: "Long-Term Memory" },
+          package: { version },
+        };
+        document.body.append(element);
+      }, packageManifest.version);
+      const statusError = statusFailPage.locator("[data-ltm-status-error]");
+      await statusError.waitFor();
+      await statusFailPage.locator('[data-ltm-surface="onboarding"]').waitFor();
+      assert.equal(await statusFailPage.locator('[data-ltm-surface="vault-health-pill"]').count(), 0);
+      assert.equal(await statusFailPage.getByRole("button", { name: "Retry" }).count(), 1);
+      statusFailure = false;
+      noteTotal = 5;
+      await statusError.getByRole("button", { name: "Retry" }).click();
+      await statusError.waitFor({ state: "detached" });
+      await statusFailPage.locator('[data-ltm-surface="onboarding"]').waitFor();
+      await statusFailContext.close();
       noteTotal = 3;
       await mobileContext.close();
     },

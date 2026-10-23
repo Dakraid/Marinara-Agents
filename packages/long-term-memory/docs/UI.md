@@ -143,6 +143,8 @@ Keep these states distinct in UI changes:
 - blocked mutation versus failed mutation
 - unsaved changes versus saved navigation
 - index building, degraded, stale, corrupt, and failed health
+- status load failed (Retry beside the error, no health pill, setup guide opens as for an empty vault)
+- lexical-recall-only warning (its own Reindex recall button, reachable by keyboard)
 - source task running, cancelled, completed, and completed with failures
 
 Every failure state needs its existing retry or recovery path where one exists.

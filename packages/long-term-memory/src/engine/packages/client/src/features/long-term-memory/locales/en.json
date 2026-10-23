@@ -361,7 +361,6 @@
   "ui.longTermMemory.longtermmemorydetail.setupGuideBar": "Setup guide · step {{current}} of {{total}}",
   "ui.longTermMemory.longtermmemorydetail.resume": "Resume",
   "ui.longTermMemory.longtermmemorydetail.dismiss": "Dismiss",
-  "ui.longTermMemory.longtermmemorydetail.statusUnavailable": "Status unavailable",
   "ui.longTermMemory.longtermmemorydetail.stepProgress": "Step {{current}} of {{total}} · {{label}}",
   "ui.longTermMemory.longtermmemorydetail.thisChat": "this chat",
   "ui.longTermMemory.longtermmemorydetail.promptBlockPlacementOpenEditor": "Open Prompt Preset Editor.",
