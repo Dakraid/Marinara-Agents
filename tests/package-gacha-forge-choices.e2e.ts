@@ -58,7 +58,7 @@ const scene = {
   places: [],
 };
 
-async function openForge(page: Page, testInfo: TestInfo) {
+async function openForge(page: Page, testInfo: TestInfo, activeRun?: typeof run) {
   await page.setViewportSize(
     testInfo.project.name.includes("mobile") ? { width: 874, height: 402 } : { width: 1440, height: 900 },
   );
@@ -78,7 +78,16 @@ async function openForge(page: Page, testInfo: TestInfo) {
     );
   }, appVersion);
   await page.route("**/api/gacha-forge/state", (route) =>
-    route.fulfill({ json: { runs: [], guidesSeen: ["welcome"] } }),
+    route.fulfill({
+      json: activeRun
+        ? {
+            runs: [activeRun],
+            activeRunId: activeRun.runId,
+            activeRun,
+            guidesSeen: ["welcome", "home", "settings", "continuity"],
+          }
+        : { runs: [], guidesSeen: ["welcome"] },
+    }),
   );
   await page.route("**/api/gacha-forge/continuity", (route) => route.fulfill({ json: { ok: true, chapters: [] } }));
   await page.route("**/api/gacha-forge/preforge", (route) =>
@@ -87,7 +96,8 @@ async function openForge(page: Page, testInfo: TestInfo) {
   await page.goto("/");
   await page.getByRole("tab", { name: "Open Gacha Forge" }).click();
   const forge = page.locator("marinara-capability-gacha-forge");
-  await expect(forge.locator("textarea").first()).toBeVisible();
+  if (activeRun) await expect(forge.getByRole("button", { name: "Game settings", exact: true })).toBeVisible();
+  else await expect(forge.locator("textarea").first()).toBeVisible();
   return forge;
 }
 
@@ -309,6 +319,52 @@ test("Continuity choices default on and persist alongside pre-forging", async ({
     animations: "disabled",
     path: testInfo.outputPath(`choices-settings-${testInfo.project.name}.png`),
   });
+});
+
+test("Continuity restores saved choices off after reload and enables them with one click", async ({
+  page,
+}, testInfo) => {
+  const saved = {
+    ...run,
+    hasStandardBanner: true,
+    artPending: 0,
+    storyUnwritten: true,
+    storyDeferred: true,
+    story: { preforge: "art", choices: false },
+  };
+  const writes: unknown[] = [];
+  await page.route("**/api/gacha-forge/run/sources", async (route) => {
+    const sources = route.request().postDataJSON().sources;
+    writes.push(sources);
+    saved.story = { ...saved.story, ...(sources.story || {}) };
+    await route.fulfill({ json: { ok: true, run: saved } });
+  });
+  const forge = await openForge(page, testInfo, saved);
+  const openContinuity = async () => {
+    await forge.getByRole("button", { name: "Game settings", exact: true }).click();
+    await forge.locator('[role="tab"][data-view="continuity"]').click();
+  };
+  await openContinuity();
+  const toggle = forge.locator("[data-forge-allow-choices]");
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+
+  await page.reload();
+  await page.getByRole("tab", { name: "Open Gacha Forge" }).click();
+  await openContinuity();
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+  expect(writes).toEqual([]);
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  await expect.poll(() => saved.story.choices).toBe(true);
+  expect(writes).toEqual([{ story: { choices: true } }]);
+  expect(saved.story.preforge).toBe("art");
+
+  await page.reload();
+  await page.getByRole("tab", { name: "Open Gacha Forge" }).click();
+  await openContinuity();
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  expect(writes).toHaveLength(1);
 });
 
 test("Long choices remain reachable in every Forge theme and render labels as text", async ({ page }, testInfo) => {
