@@ -1,6 +1,6 @@
 # Spicy: more adult, more OnlyFans, more fun (concept, 2026-10-22)
 
-Status: approved 2026-10-22. Built: item 8 (kink packs, 0.3.61), item 1 (intimacy ladder, 0.3.62), item 2 (sexting sessions, 0.3.63).
+Status: approved 2026-10-22, order extended 2026-10-23. Built: item 8 (kink packs, 0.3.61), item 1 (intimacy ladder, 0.3.62), item 2 (sexting sessions, 0.3.63).
 
 Slurp is an OnlyFans simulator. The player is a fan of AI Creators (DMs, tips, PPV, customs) and can run a
 page with fans of their own. This update makes both sides spicier and gives the player more reasons to come
@@ -188,15 +188,32 @@ look reach the writer:
 Endings add a locked look (the set, the costume, the leather) or a Creator fact. Occasions were left out: the
 storylines already post, and pack occasions can come with "More packs".
 
-## Order (decided 2026-10-22)
+## Order (decided 2026-10-22, extended 2026-10-23)
 
-1. **Kink theme packs** – pure data on the storyline engine, fast fun, no new systems.
-2. **Intimacy ladder** (rapport opens doors) – the base the next ones read.
-3. **Paid sexting sessions** – uses the ladder.
-4. **Spicier fan types + top fans**.
-5. **Fan request board** – uses the new fan types.
-6. **Live shows** (Creators and the player) – the biggest new system.
-7. **Streaks and rewards**.
-8. **Creator charts**.
+1. **Kink theme packs** – pure data on the storyline engine, fast fun, no new systems. Built (0.3.61).
+2. **Intimacy ladder** (rapport opens doors) – the base the next ones read. Built (0.3.62).
+3. **Paid sexting sessions** – uses the ladder. Built (0.3.63, with Stir as a sheet).
+4. **Bug sweep** (new, before more features) – check the open high-priority reports against the current
+   build, fix the real ones, one bump: slow phones over HTTP, parallel generations overloading a local
+   backend, thinking models failing (LLM 400, empty image prompt when reasoning eats the output), Creators
+   replying to strangers' posts like friends, a mention copying the other Creator's look, the DM prompt
+   missing the persona's Creator bio, promised pictures that never come, valid storyline JSON from local
+   models rejected, wardrobe import and tag bugs. Also settle the doubled price defaults (unlock 3 or 1,
+   subscription 12 or 5, the 20% platform fee next to a 100% creator share).
+5. **Spicier fan types + top fans** – plus: fan comments look like a crowd, not like Creator comments; a
+   **wish list** on each Creator page (fans and the player buy her a gift, she posts with it); money drama
+   posts (a chargeback, a top tipper who ghosts).
+6. **Fan request board** – plus: fans pitch to the player in DMs ("I'd pay 30 for a pic of X": accept,
+   counter, ignore); a **vault** so a broadcast can carry a PPV ("12 of 40 unlocked"), and broadcasts cost a
+   little; scheduled posts for the player's own Creator; a short line of your own on a sexting tip.
+7. **Live shows** (Creators and the player) – the biggest new system. Plus: the player can tip into the
+   crowd's flow ("match the top tipper").
+8. **Streaks, rewards and sales** – plus: flash sales and bundles ("3 months for 2", 50% off for 24 h, on the
+   unused `SlpDiscountOffer` type); a free page reads "free to follow, pay for PPV"; a first good tip can
+   open one free teaser picture for a stranger.
+9. **Creator charts** – plus: coins by week on the dashboard (the ledger exists, the card shows likes only);
+   the home "Top creators" rail becomes this week's chart with up/down arrows; weekly **competitions** with
+   a winner and drama.
 
-One PR per item, `merge --no-ff` into slurpothon, one patch bump each (0.3.61 onwards).
+**Later.** Collab PPV (two tied Creators, one locked post, split price); merch on pictures; paid shout-outs
+between Creators; video posts.
