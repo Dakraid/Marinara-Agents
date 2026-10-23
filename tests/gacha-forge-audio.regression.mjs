@@ -372,10 +372,46 @@ try {
       );
       controller.dispose();
     }
-    globalThis.Ze = async (path) => generationConfig(path, { connectionId: "unrequested-default" });
+    const missingRequests = [];
+    // API 1.381 rejects unknown explicit IDs rather than borrowing its default connection.
+    globalThis.Ze = async (path, options) => {
+      missingRequests.push([path, options?.method || "GET"]);
+      return { ok: false, status: 409, json: async () => ({ error: "Selected source unavailable" }) };
+    };
     const { controller } = fixture();
     controller.configure({ generate: true, audioConnectionId: "missing" });
     assert.equal(await controller.generate("music", "home"), null, "an explicit selection cannot borrow the default");
+    assert.deepEqual(missingRequests, [["/api/audio/config?audioConnectionId=missing", "GET"]]);
+    controller.dispose();
+  });
+
+  await test("trusted legacy aliases retain the selected ID for requests and repeated effect cache reuse", async () => {
+    const posts = [];
+    const reads = [];
+    globalThis.Ze = async (path, options) => {
+      if (path.startsWith("/api/audio/config")) {
+        reads.push(path);
+        return generationConfig(path, { connectionId: "canonical-generation" });
+      }
+      posts.push(JSON.parse(options.body));
+      return { ok: true, json: async () => ({ tag: "sfx:legacy", path: "sfx/legacy.mp3" }) };
+    };
+    const { controller, events } = fixture();
+    controller.configure({ generate: true, audioConnectionId: "trusted-legacy" });
+    const generated = await controller.generate("sfx", "click");
+    assert.equal(generated?.tag, "sfx:legacy");
+    await controller.effect("click");
+    await tick();
+    await controller.effect("click");
+    await tick();
+    assert.deepEqual(reads, ["/api/audio/config?audioConnectionId=trusted-legacy"]);
+    assert.equal(posts.length, 1, "repeated effects reuse the approved explicit source without another POST");
+    assert.equal(posts[0].audioConnectionId, "trusted-legacy");
+    assert.equal(controller.settings.audioConnectionId, "trusted-legacy");
+    assert.deepEqual(
+      events.filter(([event]) => event === "playSfx").map(([, tag]) => tag),
+      ["sfx:legacy", "sfx:legacy"],
+    );
     controller.dispose();
   });
 
