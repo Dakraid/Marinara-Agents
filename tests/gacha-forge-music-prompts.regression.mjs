@@ -125,11 +125,10 @@ if (!source.includes("/* forge-audio-prompts-source:start */")) {
   assert.ok(patch);
   for (const edit of patch.edits) source = swapGachaBundleText(source, edit.find, edit.replace);
 }
-if (!source.includes("generate:({runId,run,messages,debugMode})")) {
-  const patch = ledger.files["server.mjs"].patches.find((entry) => entry.notes?.startsWith("Forward the music debug"));
-  assert.ok(patch);
-  for (const edit of patch.edits) source = swapGachaBundleText(source, edit.find, edit.replace);
-}
+assert.ok(
+  source.includes("generate:({runId,run,messages,debugMode})"),
+  "the rebuilt narration adapter forwards the music debug override",
+);
 const directory = await mkdtemp(join(tmpdir(), "marinara-forge-music-prompts-"));
 const originalFetch = globalThis.fetch;
 try {

@@ -601,7 +601,7 @@
         },
         {
           "version": "1.12.0",
-          "notes": "Count actual unit/relic levels and gained facets; restore proven lifetime lower bounds without changing claimed rewards or pass missions.",
+          "notes": "Count actual unit/relic levels and gained facets; restore proven lifetime lower bounds without changing claimed rewards or pass missions.  Forward the music debug override through the existing provider-completion API.",
           "edits": [
             {
               "find": "var rb=[",
@@ -627,12 +627,7 @@
             {
               "find": "U.facet=Q.facet,O.push({qty:1,material:l(F.name),kind:\"unit\",unitId:g,isNew:!1,facet:Q})",
               "replace": "U.facet=Q.facet,Q.gained&&Xt(S,o,\"facet\",1,Date.now()),O.push({qty:1,material:l(F.name),kind:\"unit\",unitId:g,isNew:!1,facet:Q})"
-            }
-          ]
-        },
-        {
-          "version": "1.12.0",
-          "edits": [
+            },
             {
               "find": "var rb=[",
               "replaceFrom": "src/audio-prompts.mjs",
@@ -646,13 +641,7 @@
             {
               "find": "s.post(\"/run/sources\",async p=>{",
               "replace": "s.post(\"/audio/prompt\",async p=>forgeMusicPrompts(p?.body||{})),s.post(\"/run/sources\",async p=>{"
-            }
-          ]
-        },
-        {
-          "version": "1.12.0",
-          "notes": "Forward the music debug override through the existing provider-completion API.",
-          "edits": [
+            },
             {
               "find": "generate:({runId,run,messages})=>_t({runtime:r,runId,run,job:\"narration\",messages,options:{temperature:.7,maxTokens:It(1024)},",
               "replace": "generate:({runId,run,messages,debugMode})=>_t({runtime:r,runId,run,job:\"narration\",messages,options:{temperature:.7,maxTokens:It(1024),debugMode:debugMode===!0||/^(1|true)$/i.test(process.env.DEBUG_AGENTS||\"\")},"
