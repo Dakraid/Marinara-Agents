@@ -6,6 +6,7 @@ import {
   ForgeAudioController,
   forgeExplicitVoice,
   forgeMusicContextKey,
+  loadForgeAudioConnections,
   saveForgeAudioSources,
 } from "../packages/gacha-forge/src/audio-client.mjs";
 import { createForgeVoiceLine, forgeVoiceCharacter } from "../packages/gacha-forge/src/audio-story.mjs";
@@ -16,6 +17,7 @@ const before = {
   forgeAudioFields: globalThis.forgeAudioFields,
   Ze: globalThis.Ze,
   fetch: globalThis.fetch,
+  Option: globalThis.Option,
 };
 globalThis.normalizeForgeAudio = normalizeForgeAudio;
 globalThis.forgeAudioEnglish = forgeAudioEnglish;
@@ -35,6 +37,69 @@ async function test(name, callback) {
 }
 
 try {
+  await test("audio connection lists accept stored flags and preserve missing or quarantined IDs on failure", async () => {
+    globalThis.Option = class {
+      constructor(text, value) {
+        Object.assign(this, { text, value, disabled: false });
+      }
+    };
+    const rows = [
+      { id: "stored", provider: "audio_generation", audioMusic: "true", profileImportReviewRequired: "false" },
+      { id: "boolean", provider: "audio_generation", audioSoundEffects: true },
+      { id: "quarantined", provider: "audio_generation", audioMusic: "true", profileImportReviewRequired: "true" },
+      { id: "quarantined-bool", provider: "audio_generation", audioMusic: true, profileImportReviewRequired: true },
+      { id: "off", provider: "audio_generation", audioMusic: "false", audioSoundEffects: false },
+      { id: "speech", provider: "audio", audioMusic: true },
+    ];
+    for (const selected of ["", "stored", "boolean", "missing", "quarantined", "quarantined-bool"]) {
+      const select = {
+        dataset: {},
+        options: [],
+        replaceChildren(...options) {
+          this.options = options;
+        },
+        add(option) {
+          this.options.push(option);
+        },
+      };
+      const response = deferred();
+      globalThis.Ze = () => response.promise;
+      const loaded = loadForgeAudioConnections(
+        { querySelector: () => select },
+        { "audio.audioConnectionId": selected },
+      );
+      assert.equal(select.value, selected, "restored setup form can read the explicit ID before HTTP completes");
+      assert.equal(select.disabled, true);
+      response.resolve({ ok: true, json: async () => rows });
+      await loaded;
+      assert.deepEqual(
+        select.options.filter((option) => !option.disabled).map((option) => option.value),
+        ["", "stored", "boolean"],
+      );
+      assert.equal(select.value, selected);
+      assert.equal(
+        select.options.find((option) => option.value === selected)?.disabled,
+        !["", "stored", "boolean"].includes(selected),
+      );
+      assert.equal(select.disabled, false);
+    }
+    const select = {
+      dataset: {},
+      options: [],
+      replaceChildren(...options) {
+        this.options = options;
+      },
+      add(option) {
+        this.options.push(option);
+      },
+    };
+    globalThis.Ze = () => Promise.reject(new Error("offline"));
+    await loadForgeAudioConnections({ querySelector: () => select }, { "audio.audioConnectionId": "missing" });
+    assert.equal(select.value, "missing");
+    assert.equal(select.options.find((option) => option.value === "missing").disabled, true);
+    assert.equal(select.options[0].text, forgeAudioEnglish["audio.connectionsFailed"]);
+  });
+
   await test("world audio defaults are opt-in and zero volumes survive normalization", () => {
     const defaults = normalizeForgeAudio();
     assert.equal(defaults.tts, false);

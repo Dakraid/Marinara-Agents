@@ -371,6 +371,10 @@
             {
               "find": "onPrefs:S=>this._saveCombatPrefs(S),onStart:",
               "replace": "onPrefs:S=>this._saveCombatPrefs(S),audio:this._forgeAudio,onStart:"
+            },
+            {
+              "find": "if(i){for(let F of it){if(F.type===\"custom\"||F.type===\"toggle\")continue;",
+              "replace": "loadForgeAudioConnections(t,i?.values||h);if(i){for(let F of it){if(F.type===\"custom\"||F.type===\"toggle\")continue;"
             }
           ]
         }

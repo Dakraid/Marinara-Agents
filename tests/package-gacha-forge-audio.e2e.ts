@@ -49,10 +49,17 @@ const scene = {
 async function openForge(
   page: Page,
   testInfo: TestInfo,
-  options: { voice?: boolean; empty?: boolean; realGeneration?: string } = {},
+  options: {
+    voice?: boolean;
+    empty?: boolean;
+    realGeneration?: string;
+    realConnections?: boolean;
+    selectedAudio?: string;
+  } = {},
 ) {
   const saved = structuredClone(baseRun);
   saved.audio.tts = options.voice === true;
+  if (options.selectedAudio) saved.audio.audioConnectionId = options.selectedAudio;
   if (options.realGeneration) {
     saved.scenario = "W".repeat(4000);
     saved.audio.generate = true;
@@ -84,7 +91,7 @@ async function openForge(
   await page.route("**/api/app-settings/ui", (route) =>
     route.fulfill({ json: route.request().method() === "GET" ? { value: null } : { success: true } }),
   );
-  if (!options.realGeneration)
+  if (!options.realGeneration && !options.realConnections)
     await page.route("**/api/connections", (route) =>
       route.fulfill({
         json: [
@@ -139,8 +146,8 @@ async function openForge(
       generated.push(body);
       await route.fulfill({
         json: {
-          tag: `music:package:${body.context.key}`,
-          path: `music/package/${body.context.key}.wav`,
+          tag: `music:package:${body.context?.key || "sfx"}`,
+          path: `music/package/${body.context?.key || "sfx"}.wav`,
           cached: false,
         },
       });
@@ -309,6 +316,7 @@ test("Audio settings persist, mute is compact and portrait frames retain a botto
   await expect.poll(() => saved.audio.generate).toBe(true);
   await expect.poll(() => generated.filter((request) => request.kind === "music").length).toBe(1);
   await expect(forge.locator('[data-input="audio.audioConnectionId"]')).toContainText("Audio fixture");
+  await page.screenshot({ path: testInfo.outputPath("audio-sources.png") });
   await forge.locator("[data-settings-back]").click();
   await forge.getByRole("button", { name: "Mute all audio", exact: true }).click();
   await expect(forge.getByRole("button", { name: "Unmute audio", exact: true })).toHaveAttribute(
@@ -332,6 +340,7 @@ test("Audio settings persist, mute is compact and portrait frames retain a botto
     }, theme);
     const home = await frameBottom(forge.locator(".hm-plate"), ".hm-art");
     expect(home.gap, `${theme} home ${JSON.stringify(home)}`).toBeGreaterThanOrEqual(home.edge - 0.1);
+    if (theme === "bloom") await page.screenshot({ path: testInfo.outputPath("audio-home-light.png") });
     await seedScene(forge, theme);
     const story = await frameBottom(forge.locator('.vn-plate[data-side="right"]'), ".vn-art");
     expect(story.gap, `${theme} story ${JSON.stringify(story)}`).toBeGreaterThanOrEqual(story.edge - 0.1);
@@ -378,6 +387,151 @@ test("Audio settings persist, mute is compact and portrait frames retain a botto
   await expect(forge.getByRole("checkbox", { name: "Read character dialogue", exact: true })).toBeVisible();
   await expect(forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("audio-world-setup.png") });
+});
+
+test("Audio selectors accept real stored flags and preserve unavailable choices through setup saves", async ({
+  page,
+}, testInfo) => {
+  const ids: string[] = [];
+  try {
+    for (const data of [
+      { name: "Text selection fixture", provider: "custom", model: "fixture" },
+      {
+        name: "Stored audio fixture",
+        provider: "audio_generation",
+        audioGenerationSource: "custom",
+        model: "fixture",
+        audioMusic: true,
+        audioSoundEffects: true,
+      },
+    ]) {
+      const response = await page.request.post("/api/connections", { data });
+      expect(response.ok(), await response.text()).toBe(true);
+      ids.push((await response.json()).id);
+    }
+    const storedRows = await (await page.request.get("/api/connections")).json();
+    const stored = storedRows.find((row: any) => row.id === ids[1]);
+    expect(stored.audioMusic).toBe("true");
+    expect(stored.profileImportReviewRequired).toBe("false");
+    // This first list is the actual, unintercepted Engine HTTP response.
+    const { forge, saved, writes, generated } = await openForge(page, testInfo, {
+      realConnections: true,
+      selectedAudio: ids[1],
+    });
+    await forge.getByRole("button", { name: "Game settings", exact: true }).click();
+    await forge.locator('[role="tab"][data-view="sources"]').click();
+    const picker = forge.locator('[data-input="audio.audioConnectionId"]');
+    await expect(picker.locator(`option[value="${ids[1]}"]`)).toHaveText("Stored audio fixture");
+    await expect(picker).toHaveValue(ids[1]);
+    await forge.getByRole("checkbox", { name: "Read character dialogue", exact: true }).click();
+    await expect.poll(() => saved.audio.audioConnectionId).toBe(ids[1]);
+
+    const drafts: any[] = [];
+    const presets: any[] = [];
+    const creations: any[] = [];
+    await page.route("**/api/characters/personas/list", (route) =>
+      route.fulfill({ json: [{ id: "fixture-persona", name: "Mari" }] }),
+    );
+    await page.route("**/api/characters/personas/active", (route) =>
+      route.fulfill({ json: { id: "fixture-persona", name: "Mari" } }),
+    );
+    await page.route("**/api/gacha-forge/setup/draft", (route) => {
+      if (route.request().method() === "POST") drafts.push(route.request().postDataJSON());
+      return route.fulfill({ json: { ok: true } });
+    });
+    await page.route("**/api/gacha-forge/setup/presets", (route) => route.fulfill({ json: { ok: true, presets: [] } }));
+    await page.route("**/api/gacha-forge/setup/preset/save", (route) => {
+      presets.push(route.request().postDataJSON());
+      return route.fulfill({ json: { ok: true, presets: [] } });
+    });
+    await page.route("**/api/gacha-forge/run", (route) => {
+      creations.push(route.request().postDataJSON());
+      return route.fulfill({ json: { ok: false, error: "Captured without generating a world." } });
+    });
+    // Quarantine is a response fixture over the real stored row; no user profile is modified.
+    let quarantined = false;
+    await page.route("**/api/connections", async (route) => {
+      const response = await route.fetch();
+      const rows = await response.json();
+      await route.fulfill({
+        response,
+        json: rows.map((row: any) =>
+          quarantined && row.id === ids[1] ? { ...row, profileImportReviewRequired: "true" } : row,
+        ),
+      });
+    });
+    for (const selected of ["missing-audio-fixture", ids[1]]) {
+      quarantined = selected === ids[1];
+      await forge.evaluate((node, id) => {
+        const game = node as any;
+        game._run.audio = { ...game._run.audio, generate: true, audioConnectionId: id };
+        game._settingsRev += 1;
+        game._renderKey = null;
+        game._openSettings("sources");
+      }, selected);
+      await expect(picker).toHaveValue(selected);
+      await expect(picker.locator(`option[value="${selected}"]`)).toBeDisabled();
+      await forge.getByRole("checkbox", { name: "Read character dialogue", exact: true }).click();
+      await expect.poll(() => writes.at(-1)?.audio.audioConnectionId).toBe(selected);
+      await forge.evaluate(
+        (node, fixture) => {
+          const game = node as any;
+          game._clearBeat();
+          game._run = null;
+          game._activeRunId = null;
+          game._boot = "ready";
+          game._creatingNew = false;
+          game._setupDraftAsked = true;
+          game._setupDraftSettled = true;
+          game._setupDraft = {
+            step: 4,
+            furthest: 7,
+            personaId: "fixture-persona",
+            values: {
+              scenario: "A synthetic world.",
+              connectionId: fixture.textId,
+              "audio.generate": true,
+              "audio.audioConnectionId": fixture.selected,
+            },
+          };
+          game._renderKey = null;
+          game._renderBrowser();
+        },
+        { textId: ids[0], selected },
+      );
+      await expect(picker).toHaveValue(selected);
+      await expect(picker.locator(`option[value="${selected}"]`)).toBeDisabled();
+      // A real eligible row also remains available in the setup list.
+      if (!quarantined) await expect(picker.locator(`option[value="${ids[1]}"]`)).toHaveText("Stored audio fixture");
+      await forge.locator("[data-next]").click();
+      await expect.poll(() => drafts.at(-1)?.snapshot.values["audio.audioConnectionId"]).toBe(selected);
+      await forge.locator("button[data-presets]").click();
+      await forge.locator("[data-preset-name]").fill("Selection proof");
+      await forge.locator("[data-preset-save]").click();
+      await expect.poll(() => presets.at(-1)?.snapshot.values["audio.audioConnectionId"]).toBe(selected);
+      await forge.locator("[data-preset-close]").click();
+      await forge.locator('[data-goto="7"]').click();
+      await forge.locator("[data-forge]").click();
+      await forge.locator("[data-forge-ask-yes]").click();
+      await forge.locator("[data-forge-ask-later]").click();
+      await expect.poll(() => creations.at(-1)?.audio.audioConnectionId).toBe(selected);
+      await expect.poll(() => generated.every((request) => !!request.audioConnectionId)).toBe(true);
+      // Restore the edited-world fixture before testing the second unavailable state.
+      await page.reload();
+      await page.getByRole("tab", { name: "Open Gacha Forge" }).click();
+      await showHome(forge);
+    }
+    await testInfo.attach("connection-selection-proof.json", {
+      body: JSON.stringify({ stored, drafts, presets, creations, generated }, null, 2),
+      contentType: "application/json",
+    });
+  } finally {
+    await page
+      .getByRole("tab", { name: "Home", exact: true })
+      .click()
+      .catch(() => {});
+    for (const id of ids) await page.request.delete(`/api/connections/${id}`).catch(() => {});
+  }
 });
 
 test("Shipped audio requests pass the real Engine route and reuse a local provider's cached MP3", async ({

@@ -9,6 +9,7 @@ export const forgeAudioEnglish = {
   "audio.settings.generateHint": "Optional provider requests. Otherwise, the game's existing music and effects play.",
   "audio.settings.connection": "Audio connection",
   "audio.settings.connectionEmpty": "Use the current audio connection",
+  "audio.settings.connectionUnavailable": "Selected connection unavailable — choose a replacement",
   "audio.settings.connectionHint": "Choose a music and sound-effects connection from Engine Settings.",
   "audio.settings.music": "Music volume",
   "audio.settings.dialogue": "Dialogue volume",

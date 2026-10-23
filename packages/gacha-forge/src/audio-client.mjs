@@ -383,19 +383,34 @@ export async function loadForgeAudioConnections(root, values) {
   if (!select || select.dataset.forgeAudioLoading) return;
   select.dataset.forgeAudioLoading = "true";
   const selected = values?.["audio.audioConnectionId"] || "";
+  const isTrue = (value) => value === true || value === "true";
+  const populate = (entries, emptyLabel = forgeAudioEnglish["audio.settings.connectionEmpty"]) => {
+    select.replaceChildren(new Option(emptyLabel, ""));
+    for (const connection of entries)
+      select.add(new Option(connection.name || connection.model || connection.id, connection.id));
+    if (selected && !entries.some((connection) => connection.id === selected)) {
+      const unavailable = new Option(forgeAudioEnglish["audio.settings.connectionUnavailable"], selected);
+      unavailable.disabled = true;
+      select.add(unavailable);
+    }
+    select.value = selected;
+  };
+  // Preserve restored setup values before its synchronous form reader runs, including during a failed fetch.
+  populate([]);
+  select.disabled = true;
   try {
     const response = await forgeAudioJson("/api/connections");
     const connections = Array.isArray(response) ? response : response?.connections || [];
     const entries = connections.filter(
       (connection) =>
         connection?.provider === "audio_generation" &&
-        (connection.audioMusic === true || connection.audioSoundEffects === true),
+        !isTrue(connection.profileImportReviewRequired) &&
+        (isTrue(connection.audioMusic) || isTrue(connection.audioSoundEffects)),
     );
-    select.replaceChildren(new Option(forgeAudioEnglish["audio.settings.connectionEmpty"], ""));
-    for (const connection of entries)
-      select.add(new Option(connection.name || connection.model || connection.id, connection.id));
-    select.value = entries.some((connection) => connection.id === selected) ? selected : "";
+    populate(entries);
   } catch {
-    select.replaceChildren(new Option(forgeAudioEnglish["audio.connectionsFailed"], ""));
+    populate([], forgeAudioEnglish["audio.connectionsFailed"]);
+  } finally {
+    select.disabled = false;
   }
 }
