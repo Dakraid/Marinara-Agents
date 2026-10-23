@@ -1,5 +1,9 @@
 # Slurp release notes
 
+## 0.3.65 — 2026-10-23
+
+- Release to staging: `staging` merged into the Slurp branch; no Slurp source change beyond the version.
+
 ## 0.3.64 — 2026-10-23
 
 - DM prompts list the player's open page's last three public posts with text (`slurpCoupleDmPage`, `recentPosts` in the role header).
