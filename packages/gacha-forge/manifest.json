@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "capabilityApi": {
     "major": 1,
-    "minor": 376
+    "minor": 381
   },
   "builtAgainst": {
     "engineVersion": "2.5.1",
@@ -10,7 +10,7 @@
   },
   "id": "gacha-forge",
   "name": "Gacha Forge",
-  "version": "1.10.2",
+  "version": "1.11.0",
   "description": "A complete gacha game mode. Describe a world and Gacha Forge builds the rest: banners to pull on, a cast the model writes and paints for you, story chapters told by a visual-novel narrator, and the battles, gear and events that grow around them. Install it, restart Marinara Engine when prompted, then open Home → Gacha Forge.",
   "engine": {
     "min": "2.5.1",
@@ -299,8 +299,8 @@
     },
     {
       "path": "client.js",
-      "sha256": "0fff4f79b0a011555498031430f8d4bbe5c6e50a29be5be0d266d6d4eee2d806",
-      "bytes": 1464965
+      "sha256": "b27fb181aea22b1706f69ce587864b9610e367492e6353564fc1cd1fefb95980",
+      "bytes": 1492427
     },
     {
       "path": "farm-asc.webp",
@@ -774,8 +774,8 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "0b15f1c57ad1ee0a6527533ce5b261d13837f4ab4493bc58760dae5413526ece",
-      "bytes": 526362
+      "sha256": "6ee10380284c59a5cdb35d4147feca692d7ab85d9749d25464deb9e7ad562b8a",
+      "bytes": 527995
     },
     {
       "path": "skill-aoe_damage-dark.webp",
