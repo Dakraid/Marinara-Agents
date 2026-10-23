@@ -483,6 +483,7 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
   await page.mouse.click(short.x, short.y);
   await expect.poll(() => forge.evaluate((node) => (node as HTMLElement).dataset.noticeTaps)).toBe("1");
 
+  await page.clock.install();
   const long = await forge.evaluate((node) => {
     const game = node as any;
     const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
@@ -503,6 +504,11 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
   await expect
     .poll(() => forge.locator("[data-forge-audio-status]").evaluate((node) => node.scrollTop))
     .toBeGreaterThan(0);
+  await page.clock.fastForward(6001);
+  await expect(forge.locator("[data-forge-audio-status]")).toBeFocused();
+  await forge.locator("[data-forge-audio-status]").evaluate((node) => (node as HTMLElement).blur());
+  await page.clock.fastForward(6001);
+  await expect(forge.locator("[data-forge-audio-status]")).toHaveCount(0);
 });
 
 test("Readiness recovers in the current world and single-channel selections keep the other channel on stock", async ({

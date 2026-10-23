@@ -3699,8 +3699,17 @@ class ForgeAudioController {
       status.style.pointerEvents = scrollable ? "auto" : "none";
       status.tabIndex = scrollable ? 0 : -1;
     }
-    clearTimeout(this.noticeTimer);
-    this.noticeTimer = setTimeout(() => status?.remove(), 6000);
+    const scheduleDismissal = () => {
+      clearTimeout(this.noticeTimer);
+      if (!this.disposed && this.host._root.activeElement !== status) {
+        this.noticeTimer = setTimeout(() => status?.remove(), 6000);
+      }
+    };
+    if (status) {
+      status.onfocus = () => clearTimeout(this.noticeTimer);
+      status.onblur = scheduleDismissal;
+    }
+    scheduleDismissal();
   }
 
   async generate(kind, cue) {

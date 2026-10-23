@@ -1,6 +1,6 @@
 # Gacha Forge
 
-In 1.12.1, short audio notices let taps reach the game stage. Long provider reasons can be scrolled and focused with a keyboard.
+In 1.12.1, short audio notices let taps reach the game stage. Long provider reasons can be scrolled and stay visible while focused with a keyboard.
 
 ## Soundtrack briefs and achievement repairs (1.12.0)
 
