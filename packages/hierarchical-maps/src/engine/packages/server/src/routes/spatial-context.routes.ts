@@ -44,6 +44,7 @@ import {
 } from "../services/spatial-context/game-map-binding.js";
 import { parseSpatialMetadata } from "../services/spatial-context/metadata.js";
 import {
+  assertPackageRuntimeAvailable,
   getPackageAgentConnectionId,
   getPackageAgentSettings,
   getPackageJson,
@@ -540,6 +541,23 @@ function sendPromptRequestError(reply: FastifyReply, error: unknown) {
 }
 
 export async function spatialContextRoutes(app: FastifyInstance) {
+  const registration = assertPackageRuntimeAvailable();
+  app.setErrorHandler((error, _request, reply) => sendPromptRequestError(reply, error));
+  app.addHook("onRequest", async () => {
+    assertPackageRuntimeAvailable(registration);
+  });
+  // onSend also covers an await completing successfully after unload, or an inner
+  // generation/connection catch that has already chosen its ordinary error response.
+  app.addHook("onSend", async (_request, reply, payload) => {
+    try {
+      assertPackageRuntimeAvailable(registration);
+    } catch (error) {
+      if (!(error instanceof SpatialPackageRuntimeError)) throw error;
+      reply.status(error.statusCode).type("application/json; charset=utf-8");
+      return JSON.stringify({ error: error.message, code: error.code });
+    }
+    return payload;
+  });
   const service = createSpatialContextService();
   const persistence = getPackagePersistence();
   const resources = getPackageResources();

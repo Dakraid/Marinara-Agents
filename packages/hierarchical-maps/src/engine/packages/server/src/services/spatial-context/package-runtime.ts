@@ -34,6 +34,18 @@ function getRuntimeHost(): CapabilityRuntimeHost {
   return runtimeHost;
 }
 
+export function assertPackageRuntimeAvailable(expectedRegistration?: number): number {
+  getRuntimeHost();
+  if (expectedRegistration !== undefined && expectedRegistration !== runtimeRegistration) {
+    throw new SpatialPackageRuntimeError(
+      503,
+      "spatial_runtime_unavailable",
+      "World Maps runtime is no longer available",
+    );
+  }
+  return runtimeRegistration;
+}
+
 export function configurePackageRuntime(
   host: CapabilityRuntimeHost,
   agentConfigResolver: (agentType: string) => Promise<unknown>,

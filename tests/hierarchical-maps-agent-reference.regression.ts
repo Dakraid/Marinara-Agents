@@ -337,6 +337,135 @@ async function main() {
       "global templates have no chat attachment",
     );
 
+    // Execute the exact ZIP entrypoint with held public-host operations. The request must
+    // retain its unavailable-runtime classification even when an inner catch relabels an error.
+    const packagedModule = await import(pathToFileURL(join(packageRoot, manifest.entrypoints.server)).href);
+    let heldCases = 0;
+    const stages = [
+      "reference",
+      "reference-generation",
+      "configuration",
+      "connection",
+      "generation",
+      "repair",
+    ] as const;
+    for (const stage of stages) {
+      for (const template of stage.startsWith("reference") ? [false] : [false, true]) {
+        for (const rejectHeld of stage.startsWith("reference") ? [false] : [false, true]) {
+          for (const teardown of [false, true]) {
+            let enter!: () => void;
+            let resume!: () => void;
+            const entered = new Promise<void>((resolve) => {
+              enter = resolve;
+            });
+            const released = new Promise<void>((resolve) => {
+              resume = resolve;
+            });
+            const hold = async () => {
+              enter();
+              await released;
+              if (rejectHeld) throw new Error("Held fixture operation failed");
+            };
+            const scopedApp = serverRequire("fastify")();
+            let configReads = 0;
+            let modelCalls = 0;
+            scopedApp.get("/api/agents", async () => {
+              configReads += 1;
+              if (stage === "configuration" && configReads === (template ? 2 : 1)) await hold();
+              return [];
+            });
+            const cleanup = await packagedModule.activate({
+              app: scopedApp,
+              api: {
+                registerService: () => () => {},
+                runtime: {
+                  isDebugAgentsEnabled: () => false,
+                  logger: { debug() {}, info() {}, warn() {}, error() {}, debugOverride() {} },
+                  persistence: createCapabilityPersistenceHost(db),
+                  resources: createCapabilityResourceHost(db),
+                  resolveAgentLorebookEntries: async () => {
+                    if (stage.startsWith("reference")) await hold();
+                    return [{ id: "held-reference", content: "HELD_REFERENCE" }];
+                  },
+                  languageModels: {
+                    resolve: async () => {
+                      if (stage === "connection") await hold();
+                      return {
+                        name: "Maps pending request fixture",
+                        model: "pending-request-fixture",
+                        maxContext: 32_768,
+                        fitContext: (messages: unknown[]) => ({ messages, trimmed: false }),
+                        chatComplete: async (messages: Array<{ content: string }>) => {
+                          modelCalls += 1;
+                          if (stage === "generation" || (stage === "repair" && modelCalls === 2)) await hold();
+                          const result = await OpenAIProvider.prototype.chatComplete(messages);
+                          return stage === "repair" && modelCalls === 1
+                            ? { ...result, content: "{invalid JSON}" }
+                            : result;
+                        },
+                      };
+                    },
+                  },
+                  json: { parseJsonish: JSON.parse },
+                },
+              },
+            });
+            try {
+              const suffix = stage === "reference" ? "generation-prompt/preview" : "generate";
+              const pending = scopedApp
+                .inject({
+                  method: "POST",
+                  url: template
+                    ? "/api/chats/spatial-context/templates/generate"
+                    : `/api/chats/${otherChat.id}/spatial-context/${suffix}`,
+                  payload: { ...body, groundingMode: "setup", sourceLorebookIds: [] },
+                })
+                .then((response: { statusCode: number; body: string; json(): Record<string, unknown> }) => response);
+              let timeout: ReturnType<typeof setTimeout> | undefined;
+              try {
+                await Promise.race([
+                  entered,
+                  new Promise<never>((_, reject) => {
+                    timeout = setTimeout(() => reject(new Error(`Request never reached held ${stage}`)), 5_000);
+                  }),
+                ]);
+              } finally {
+                clearTimeout(timeout);
+              }
+              const callsAtTeardown = modelCalls;
+              if (teardown) await cleanup();
+              resume();
+              const response = await pending;
+              const context = `${stage} template=${template} rejected=${rejectHeld} teardown=${teardown}: ${response.body}`;
+              if (teardown) {
+                assert.equal(response.statusCode, 503, context);
+                assert.equal(response.json().code, "spatial_runtime_unavailable", context);
+                assert.match(String(response.json().error), /runtime is not configured/, context);
+                assert.equal(modelCalls, callsAtTeardown, "teardown never starts another generation/repair call");
+              } else {
+                const expected =
+                  rejectHeld && (stage === "connection" || (stage === "configuration" && template))
+                    ? 400
+                    : rejectHeld && (stage === "generation" || stage === "repair")
+                      ? 502
+                      : 200;
+                assert.equal(response.statusCode, expected, context);
+              }
+              heldCases += 1;
+            } finally {
+              resume();
+              await cleanup();
+              await scopedApp.close();
+            }
+          }
+        }
+      }
+    }
+
+    process.stdout.write(
+      `World Maps exact ZIP: ${heldCases} held-await controls passed (preview, generation, configuration, connection, provider and JSON repair).\n`,
+    );
+
     // Exercise the real routes against valid public host variants, without bundling a private scanner.
     const esbuild = createRequire(join(engineRoot, "packages/client/package.json"))("esbuild");
     const adapterPath = join(directory, "maps-runtime-adapter.mjs");
