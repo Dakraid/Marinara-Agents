@@ -1,81 +1,14 @@
 # Slurp release notes
 
-## 0.3.65 — 2026-10-23
+## 0.4.0 — 2026-10-23
 
-- Release to staging: `staging` merged into the Slurp branch; no Slurp source change beyond the version.
+One release for everything built since 0.3.53 (unreleased 0.3.54 to 0.3.65 folded in):
 
-## 0.3.64 — 2026-10-23
-
-- DM prompts list the player's open page's last three public posts with text (`slurpCoupleDmPage`, `recentPosts` in the role header).
-- Images settings, Advanced: "Keep original picture files" (`imageKeepOriginalFiles`, off) skips the WebP re-encode, so ComfyUI PNG metadata stays.
-- A Creator tagged with @handle in the guide or post text joins the picture cast (`resolveSlurpMentionedCast`); a caption tag never casts a persona.
-- A tag-list look keeps its clothes (`TAG_LIST`), an arc wrapped in a one-item list still parses, and the picture prompt rewrite gets at least 8192 tokens.
-- Wardrobe tags parse on blur, so a comma can be typed. Neutral wording in UI strings that said "her/she" (en/de/ko/pl, `SlpMessageInsights`).
-
-## 0.3.63 — 2026-10-22
-
-- Paid sexting sessions (docs/SPICY.md, item 2): "Sext with me - 20 min" in an AI Creator's thread header (`SlpSextingBar`) costs three of her PPV pictures, 15% less from favourite. It is claimed on the thread before it is paid through the tip path.
-- During a session she answers at once at her full level, the prompt walks warm-up, heated, finish (`slurpSextingGuidance`), and the heated phase sends one PPV at her price (`markSextingPicture`). After it, the header asks for a tip.
-- A Story opens in Slurp's own layer (`SlpStoryLayer`), not the Engine modal, so it has one close button.
-- Stir opens as a sheet over the current page (`SlpStirDeck`). `SlpSheet` `base` mode lets its play, plan and Pulse sheets stack on top.
-
-## 0.3.62 — 2026-10-22
-
-- Intimacy ladder (docs/SPICY.md, item 1): rapport tiers open doors (`slurpRapportDoors`, `modules/messages/slp-rapport.ts`). Regular: her full DM level without a subscription. Favourite: one spicy chat picture in four is a free gift, customs 15% cheaper (quotes, the prompt's price range, counter floors; `commissionPricingFor`). Whale: free chat pictures at her full level.
-- The highest tier reached is kept per pair (`peak` in the thread's rapport JSON, seeded from the stored tier), so a quiet week never closes a door; an edited tier moves it. When the peak passes what she has said (`said`), the prompt asks her to say it once in her reply.
-- The tier sheet in a chat's Details lists the open doors (`SlurpTierDoors`, en/de/ko/pl).
-
-## 0.3.61 — 2026-10-22
-
-- Five kink theme packs, off by default (`slp-kink-packs.ts`): Lingerie, Cosplay, Feet, Dom/sub and Exhibition, two storylines each, pure pack data on the storyline engine. Fans vote between sets, costumes and dares; endings add a locked look or a Creator fact; the lingerie brand storyline makes a `brand-offer`.
-- Each storyline has a `fit` (level, hard-no words, topic words): Exhibition needs nudity, a hard-no or a "never" line rules a Creator out, turn-ons lean the lead pick. The spiciest stages wait on `minSpice` 2–3.
-
-## 0.3.60 — 2026-10-22
-
-- Family pack (`slurp-pack-family`, off by default): four pregnancy storylines (couple partner, collab partner, the player, a father she won't name), listed in Drama and switched by the pack.
-- New tie kind `collab` (from `creatorCollabs`), stage influences on the lead (`slpDramaStageMultiplier`), turn-ons lean the lead pick, choice options with `when` dials, and the `brand-offer` outcome.
-- The child never appears in a picture or a spicy post; the loss ending sits behind the `hard` dial.
-- The Basic setup demo post's teaser pictures (locked/unlocked) ship as package assets; the Engine never had them. Its Mari avatar is the Professor Mari the player picked in the Engine (appearance packs).
-
-## 0.3.59 — 2026-10-22
-
-- Pack topics switch: a topic chip off on an imported pack is a "never" for that pack's occasions and
-  storylines (`contentPacks["<pack>:<topic>"]`).
-- The player's tastes weigh the drama start pick and the occasion moment pick (`slurpTasteWeight`).
-- Story outcomes `add-look` and `remove-look`: a storyline gives a Creator a look (source `storyline`) or takes
-  back the one it gave.
-
-## 0.3.58 — 2026-10-22
-
-- One Packs list: imported packs get a record (name, version, topics, occasions) and a card next to the built-in
-  ones. Their switch (`contentPacks[id]`) is a gate: off stops new arcs, events, dramas and occasions of the pack;
-  each entry keeps its own switch. Remove (with a confirm) deletes the pack's entries, record and switch.
-- v2 packs take `occasions` (today's event shape plus beats and a JSON `fit`) and `topics`. Review lists an
-  occasion as an event; the planner runs its beats like a built-in pack's. Every built-in pack also reads as v2.
-
-## 0.3.57 — 2026-10-22
-
-- One JSON `fit` (level, hard noes, needed words, topic words) on storylines, stages, choice options and beats; the
-  built-in content packs use it instead of code patterns.
-- The drama runtime checks it: the lead pick, skipped stages, options not offered, dropped moments.
-
-## 0.3.56 — 2026-10-22
-
-- Story Packs import v2 files: their storylines land in the drama library and run as dramas or standing situations.
-- Drama stage moves write story state for the lead (conditions on, then off; ending outcomes), as arcs do.
-
-## 0.3.55 — 2026-10-21
-
-- Dramas and situations run on storylines: the drama library converts on load, runs keep their ids.
-  A start's `requires` and `lacks` and a stage's `when` ways read the lead's story tags; the ending
-  reached applies its ties and sends its beat. A Story Pack whose drama or situation does not convert
-  (a loop, a stage nobody reaches) is refused on import with the reason.
-
-## 0.3.54 — 2026-10-21
-
-- Arcs run on their own storyline copy (stage, the ways taken, the ending); the chapter fields are its view, so
-  screens and prompts read as before. Stage conditions and enter, leave and ending outcomes write story state
-  when Storylines is on. Records stored before convert on read and take their library type's outcomes again.
+- Storylines: arcs, dramas and situations run on one storyline engine; Story Packs import v2 files, one JSON `fit`, one Packs list with a gate and Remove, topic switches `<pack>:<topic>`.
+- Packs (off by default): Family pack and five kink packs (Lingerie, Cosplay, Feet, Dom/sub, Exhibition).
+- Intimacy ladder: rapport tiers open doors in DMs (`slurpRapportDoors`), the highest tier is kept.
+- Paid sexting sessions (`SlpSextingBar`); Stir as a slide-up sheet (`SlpStirDeck`); Stories in Slurp's own layer.
+- Fixes: DM prompts know the player's latest public posts, @tagged Creators join the picture cast, tag-list looks go over whole, picture prompt rewrite floor 8192, wardrobe tag commas, neutral wording; Images > Advanced "Keep original picture files".
 
 ## 0.3.53 — 2026-10-21
 

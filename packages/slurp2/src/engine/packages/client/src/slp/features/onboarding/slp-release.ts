@@ -1,7 +1,7 @@
 import { SLURP2_LEGACY_RELEASES } from "./slp-release-archive";
 
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.65";
+export const SLURP2_VERSION = "0.4.0";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -15,97 +15,12 @@ export interface Slurp2ReleaseEntry {
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
   {
-    version: "0.3.65",
-    date: "2026-10-23",
-    notes: ["Slurp is up to date with the latest Marinara Engine and Agents changes."],
-  },
-  {
-    version: "0.3.64",
+    version: "0.4.0",
     date: "2026-10-23",
     notes: [
-      "Creators you DM know your latest public posts, and Images settings can keep the original picture files.",
-      "A Creator tagged with @ in a post shows up in its picture, and tag-list looks keep their clothes.",
-      'Commas work in wardrobe tags, and Slurp\'s own words no longer call everyone "she".',
-    ],
-  },
-  {
-    version: "0.3.63",
-    date: "2026-10-22",
-    notes: [
-      "Sexting sessions: in a Creator's chat, buy 20 minutes of her for three of her PPV pictures (less for a favourite).",
-      "During a session she answers right away and heats up from warm-up to a finish, with one PPV picture of what she is doing right now. When it ends, the chat asks if you want to leave her a tip.",
-      "Stir slides up over the page you are on, and Stories have one close button again.",
-    ],
-  },
-  {
-    version: "0.3.62",
-    date: "2026-10-22",
-    notes: [
-      "Get closer to a Creator and more opens up: spicier chats as a regular, free spicy pictures and cheaper customs as a favourite.",
-      "What you unlock stays unlocked, even after a quiet week. See it in the chat's Details.",
-      "She tells you when you step up.",
-    ],
-  },
-  {
-    version: "0.3.61",
-    date: "2026-10-22",
-    notes: [
-      "Five new spicy packs (off until you switch them on): Lingerie, Cosplay, Feet, Dom/sub and Exhibition.",
-      "Fans vote on the set, the costume or the dare, and the winner ends up in her closet.",
-      "A pack only reaches Creators at its spice level who have no hard-no against it.",
-    ],
-  },
-  {
-    version: "0.3.60",
-    date: "2026-10-22",
-    notes: [
-      "New Family pack (off until you switch it on): a Creator can get pregnant by her partner, after a collab, by you, or by a father she won't name.",
-      "Announcing it brings new subscribers, better earnings and baby brand deals; keeping it secret costs a few fans for a while.",
-      "The baby stays off camera: never in a picture, never in a spicy post.",
-    ],
-  },
-  {
-    version: "0.3.59",
-    date: "2026-10-22",
-    notes: [
-      "Tap a topic on a pack you imported to switch just that topic off for the pack.",
-      "What you like shows: dramas and dated moments that match your tastes come up more often.",
-      "A storyline can now hand a Creator a new look for their closet, or take it back.",
-    ],
-  },
-  {
-    version: "0.3.58",
-    date: "2026-10-22",
-    notes: [
-      "Packs is one list now: the packs you imported sit next to Slurp's own, each with its own switch. Switch one off and nothing from it starts; Remove takes it out completely. Imported packs can bring their own dated moments, too.",
-    ],
-  },
-  {
-    version: "0.3.57",
-    date: "2026-10-22",
-    notes: [
-      "Storylines from Story Packs now check who they fit: a storyline, a stage, a choice or a small moment that does not suit a Creator's card, spice level or hard noes is left out for them.",
-    ],
-  },
-  {
-    version: "0.3.56",
-    date: "2026-10-22",
-    notes: [
-      "Story Packs can now hold storylines in the new format. They import into your dramas and situations, and a storyline's stages now leave their mark on the lead, like a pregnancy that shows.",
-    ],
-  },
-  {
-    version: "0.3.55",
-    date: "2026-10-21",
-    notes: [
-      "Dramas and situations now run on the same storyline engine as arcs, and play as before. A Story Pack drama that loops back or has a stage nobody reaches is refused on import, with the reason.",
-    ],
-  },
-  {
-    version: "0.3.54",
-    date: "2026-10-21",
-    notes: [
-      "Arcs now run on storylines: a fans' vote, the Director's moves and the arc's ending work as before, and with Storylines on, each chapter's life changes stay true while it runs.",
+      "Spicy packs: Lingerie, Cosplay, Feet, Dom/sub, Exhibition and a Family pack, each off until you switch it on, and every fan you grow closer to opens more in your chats.",
+      "Sexting sessions: buy 20 minutes in a Creator's chat; it heats up from warm-up to a finish, with a picture of the moment, and ends with a tip ask.",
+      "Storylines run on one engine and Story Packs import the new format, Stir slides up over the page you are on, and a long list of fixes.",
     ],
   },
   {
