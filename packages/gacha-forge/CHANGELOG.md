@@ -1,3 +1,13 @@
+## 1.12.0 — 2026-10-24
+
+### New
+- World-specific soundtrack briefs generated through the narration connection, cached for each music context and translated into original musical qualities.
+
+### Fixed
+- Audio failures show their HTTP status and, on newer Engine hosts, the provider's safe rejection reason while stock audio continues.
+- Unit and relic achievements count every gained level; capped duplicates do not count as gained facets, and Tower-shop facet gains count.
+- Existing worlds recover proven achievement progress without changing claimed rewards or pass progress.
+
 ## 1.11.1 — 2026-10-23
 - Fixed generated music and effects for worlds using migrated legacy audio connections.
 - Recorded the merged Engine audio connection baseline.

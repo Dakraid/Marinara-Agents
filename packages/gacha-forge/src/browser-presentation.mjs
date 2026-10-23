@@ -32,7 +32,8 @@ const forgeBrowserLayout = `
 .gf-audio-status {
   position: absolute; z-index: 8; inset: 3.5rem 0.75rem auto auto; max-width: min(36ch, calc(100% - 1.5rem)); padding: 0.5rem 0.75rem;
   background: var(--ink); color: var(--text); border: 1px solid var(--steel-dark);
-  font: max(12px, var(--t-xs))/1.4 var(--body); overflow-wrap: anywhere; pointer-events: none;
+  font: max(12px, var(--t-xs))/1.4 var(--body); overflow-wrap: anywhere;
+  max-height: calc(100% - 4.25rem); overflow: auto;
 }
 /* Chapter artwork keeps a small icon in its header fade, with a full touch target. */
 .vn-top:has(> .gf-fs-chapter) { min-height: 44px; }
