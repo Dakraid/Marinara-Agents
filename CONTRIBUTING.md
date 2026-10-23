@@ -23,7 +23,9 @@ git pull
 git checkout -b feature/short-description
 ```
 
-Open a draft PR against `staging` as soon as implementation starts, then mark it **Ready for review** after validation and self-review. Draft PRs cannot merge and are intentionally skipped by CodeRabbit. Every ready PR must pass the catalog check, CodeQL security analysis, native Code Quality analysis, and CodeRabbit review. Dependency changes must also pass the low-severity dependency audit. PRs from active Pasta-Devs organization members and owners do not require a separate human approval; organization members with repository merge permission may merge internal PRs into `staging` after those gates pass. Outside and first-time contributors require an approving review from repository owner `SpicyMarinara`. Approval from another Pasta-Devs member does not satisfy this gate. Only `SpicyMarinara` may promote this repository's `staging` branch into `main`.
+Open a draft PR against `staging` as soon as implementation starts, then mark it **Ready for review** after validation and self-review. Draft PRs cannot merge, and automatic Dottore review waits until they are ready. Every ready PR must pass the catalog check, CodeQL security analysis, native Code Quality analysis, and Dottore Review. Dependency changes must also pass the low-severity dependency audit. PRs from active Pasta-Devs organization members and owners do not require a separate human approval; organization members with repository merge permission may merge internal PRs into `staging` after those gates pass. Outside and first-time contributors require an approving review from repository owner `SpicyMarinara`. Approval from another Pasta-Devs member does not satisfy this gate. Only `SpicyMarinara` may promote this repository's `staging` branch into `main`.
+
+Dottore is this repository's automated reviewer. The wrapper pins shared Marinara-Engine tooling and uses this repository's model variables, API-key secrets, and base-branch review rules. Automatic reviews run on ready PRs and subsequent pushes. If a review does not start, an owner, organization member, or collaborator can comment `/dottore`; `/dottore full` requests a full examination. Before merging, verify a **Viable** or **Viable, With Notes** verdict for the current head and resolve all confirmed findings. See the [shared Dottore guide](https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/.github/dottore-review/README.md) for the commands, configuration, and trust boundaries. CodeRabbit's automatic reviews and automatic chat replies are disabled here.
 
 Marinara Engine automatically follows the matching Agent channel: Engine `staging` reads this repository's `staging` catalog and artifacts, while stable Engine builds read `main`. Test package installs and updates from an Engine staging checkout before promotion.
 
@@ -78,7 +80,14 @@ Since capability API 1.341, Marinara Engine hands every package the code it alre
 - **Never fall back to a copy.** When the Engine lacks a member, report the feature unavailable ("needs a newer Marinara Engine"). Only the UI and chat store adapters keep a read-only copy, and it never writes.
 - **Never write the Engine's browser storage.** `validate-catalog.mjs` refuses a client that writes `marinara-engine-ui`, the active chat, drafts, pending map moves or pinned gallery images, or opens the TTS audio cache.
 - **Gate on the capability API, not `engine.min`.** A package built this way declares `schemaVersion: 2` and the capability API it needs, so an older Engine never installs it and keeps the version it has.
-- **React majors.** Packages render with the Engine's React. A host React major upgrade (or any other host library major) requires a capability API major, so a package built against one major never runs against another.
+- **React majors.** Packages render with the Engine's React. Replacing a host slot with a new React major (or another library major) requires a capability API major, so a package built against one major never runs against another.
+- **Motion slots.** The existing `framer-motion` host slot stays on Motion 13. The Engine may run Motion 14 itself,
+  with the complete legacy namespace retained through its `framer-motion-v13` npm alias. Opt in to Motion 14 by
+  importing `motion/react` and declaring capability API 1.377 or newer. Pass the package's declared `capabilityApi`
+  to `hostModulesPlugin`; it rejects the new slot under an older declaration. Export inventories use
+  `MARINARA_HOST_MODULE_IMPORTS` from the Engine contract, so legacy builds probe the alias, not the primary 14
+  dependency. Engine-backed strict package typechecks apply the same mapping through TypeScript paths. Keep each animation tree on one slot: their presence, config and layout contexts are distinct.
+
 
 ## Building Packages
 
@@ -226,7 +235,7 @@ Also manually install or update affected packages through **Agents → Download 
 - Target `staging`; contributions to `main` are not accepted.
 - Keep the PR focused and explain the user-facing reason for the change.
 - Mark the PR ready for review only after local validation and self-review.
-- Let CodeRabbit review the ready PR and address actionable findings.
+- Let Dottore review the ready PR, address confirmed findings, and verify its viable verdict covers the final head.
 - Outside and first-time contributors must obtain an approving review from `SpicyMarinara`. Approval from another Pasta-Devs member does not satisfy this gate. Active organization members and owners do not require separate owner approval; those with repository merge permission may merge internal PRs after the required automated gates pass.
 - Update the README and linked Engine documentation when catalog membership, compatibility, setup, or user-visible behavior changes.
 - Include the generated package and catalog outputs when payloads change.

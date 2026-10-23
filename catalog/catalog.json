@@ -763,18 +763,18 @@
         "schemaVersion": 2,
         "capabilityApi": {
           "major": 1,
-          "minor": 10
+          "minor": 376
         },
         "builtAgainst": {
-          "engineVersion": "2.4.5",
-          "engineCommit": "c64efcb63fcca6504c0ef6a4f5d694e8b74f7ee8"
+          "engineVersion": "2.5.1",
+          "engineCommit": "1c8d6575af6d7c55a9c4ead54e5f1df6c2cc61cc"
         },
         "id": "gacha-forge",
         "name": "Gacha Forge",
-        "version": "1.8.13",
+        "version": "1.10.0",
         "description": "A complete gacha game mode. Describe a world and Gacha Forge builds the rest: banners to pull on, a cast the model writes and paints for you, story chapters told by a visual-novel narrator, and the battles, gear and events that grow around them. Install it, restart Marinara Engine when prompted, then open Home → Gacha Forge.",
         "engine": {
-          "min": "2.4.4",
+          "min": "2.5.1",
           "maxExclusive": "4.0.0"
         },
         "kind": [
@@ -1060,8 +1060,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "9fd81235021e9ddb5d3708f8b78130b83cfe45555a63d244b85aa31578810bd6",
-            "bytes": 1440464
+            "sha256": "265bbde3c71703cab0f15bffbc14e1f0ef36e53556123aabb9c83dac983b5301",
+            "bytes": 1464016
           },
           {
             "path": "farm-asc.webp",
@@ -1535,8 +1535,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "defce243452149ed999f24ca2c8ae6615ba9d743ea54a7987c7194b1ae0d3fec",
-            "bytes": 503199
+            "sha256": "f147406a0cae2401e3f380852fce3256e874a609208aad0f0cbb85267482aa47",
+            "bytes": 524534
           },
           {
             "path": "skill-aoe_damage-dark.webp",
@@ -2293,9 +2293,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/gacha-forge-1.8.13.zip",
-        "sha256": "aedf7cb6c12857f370f34d72f4555a71fa94f70f507b6d9df36607828b7cd622",
-        "bytes": 7843821
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/gacha-forge-1.10.0.zip",
+        "sha256": "d7f2ea8c98615b7667d5452ef6c954c42807d9bbb5ae8ef6eee37f014de6644a",
+        "bytes": 7888709
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
     },
@@ -2564,7 +2564,7 @@
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
-        "version": "1.4.79",
+        "version": "1.4.86",
         "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
         "engine": {
           "min": "2.4.1",
@@ -2596,13 +2596,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "bd341101fd618ee402ada74bdbb8d14e8cdd3f5600be5d75147b574e7d33d236",
-            "bytes": 482721
+            "sha256": "2a5a6b5aec812eefa196012a2ac1452d87e0d9bdcee805a21ddbc07d0b9692b8",
+            "bytes": 488930
           },
           {
             "path": "client.js",
-            "sha256": "68e6e8f4833985f4ce96b43604dc317de111834a6282073510b96c60aeef399a",
-            "bytes": 644079
+            "sha256": "26b27637c82ea5193ad192f0a9b4e9f9bdd01e184adf438239d6cfee4ec9cc16",
+            "bytes": 665698
           }
         ],
         "permissions": [
@@ -2618,9 +2618,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/long-term-memory-1.4.79.zip",
-        "sha256": "6300b0744b669af3dde930b556eee1452439d39d95003ddf6bf1b208b7dcfa01",
-        "bytes": 1129301
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/long-term-memory-1.4.86.zip",
+        "sha256": "97a7e0106ae1c306df7bfd78aeb2d3d25b8418e81fc7d5dd5cbf181091c73f9e",
+        "bytes": 1157129
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#long-term-memory"
     },
@@ -3879,7 +3879,7 @@
         },
         "id": "hierarchical-maps",
         "name": "World Maps",
-        "version": "1.5.2",
+        "version": "1.6.0",
         "description": "Adds world maps to Roleplay and Game, from whole regions down to single rooms, with art and travel between places. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay and Game modes.",
         "engine": {
           "min": "2.4.2",
@@ -3915,8 +3915,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "8876dc74e0a94dd8e0bef4ba6265fea0afc66f96bce8cdbf584f05ea94341704",
-            "bytes": 135497
+            "sha256": "c3d1c817c43072b506d7fe5904115a42cfb841ce8c86fe20941cc76d6ae164ff",
+            "bytes": 135565
           },
           {
             "path": "client.js",
@@ -3939,9 +3939,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/hierarchical-maps.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/hierarchical-maps-1.5.2.zip",
-        "sha256": "29d39e66b5bab79381def6c0e23b460618dbbbf6c2a7a1e7107f458487b8c78d",
-        "bytes": 574972
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/hierarchical-maps-1.6.0.zip",
+        "sha256": "cfa292247b8c874c152f55624915fc73b53f8da6998160fdb7229f7913b029f2",
+        "bytes": 575040
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
     },

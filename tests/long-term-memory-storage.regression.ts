@@ -86,9 +86,8 @@ async function main() {
   const { compileEvidenceUnitExtraction, sourceMetadataForEvidenceUnitDraft } = await import(
     `${source}/extraction/evidence-unit-extraction.ts`
   );
-  const { buildTrustedLtmSubjectCatalog, resolveLtmSubjectIdentities } = await import(
-    `${source}/identity/subject-identity.ts`
-  );
+  const { buildTrustedLtmSubjectCatalog } = await import(`${source}/identity/subject-catalog.ts`);
+  const { resolveLtmSubjectIdentities } = await import(`${source}/identity/subject-identity.ts`);
   const { extractionFingerprintForLtmSourceNote, isLtmSourceExtractionFingerprintCurrent, sourceHashForLtmSourceNote } =
     await import(`${source}/extraction/source-hash.ts`);
   const { projectLongTermMemoryDraftReview } = await import(`${source}/drafts/draft-review.ts`);
@@ -361,12 +360,14 @@ async function main() {
         false,
         "backup export must succeed and leave out fields this version does not know",
       );
-      await updateLtmExtractionConfig({ aiKeywordExtraction: true }, root);
+      assert.equal((await getLtmExtractionConfig(root)).finishCutOffAnswers, false, "finishCutOffAnswers defaults off");
+      await updateLtmExtractionConfig({ aiKeywordExtraction: true, finishCutOffAnswers: true }, root);
       assert.equal(
         JSON.parse(await readFile(ltmExtractionConfigPath(root), "utf8")).someNewExtractionSetting,
         true,
         "saving extraction settings must keep a newer field",
       );
+      assert.equal((await getLtmExtractionConfig(root)).finishCutOffAnswers, true, "finishCutOffAnswers saves");
       await writeFile(ltmSettingsPath(root), '{"version":1,"someNewSetting":true,"longTermMemoryBudgetTokens":"x"}\n');
       await assert.rejects(getLtmGlobalSettings(root), /expected number/i, "an invalid known field must still fail");
 

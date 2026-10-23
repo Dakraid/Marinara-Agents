@@ -1,5 +1,37 @@
 # Long-Term Memory changelog
 
+## 1.4.86 — 2026-10-23
+
+- Keyboard focus now moves somewhere sensible after you act in Review, the Memory Vault, Sources, the setup guide, Settings and Debug, and field errors sit under their fields and are read with them.
+- Results show beside the action that made them. Sources names a failed or partial import as such, and Review and Sources say why Accept or Import is off.
+- Long-Term Memory lays out by the width of its own panel, so a narrow side panel gets the phone layout. Batch bars stay in view while you scroll, and checkboxes, toggles, links and info buttons are easier to tap.
+- Long lists stay responsive: Sources searches once you pause typing and keeps the current rows meanwhile, and place pickers show 100 places at a time with a Show more row.
+- Warning notices show a warning icon and a stronger border instead of relying on color, and error notices show their border and have room inside.
+
+## 1.4.85 — 2026-10-22
+
+- Five keyboard and focus fixes. In Sources, Tab now reaches the name of each chat or character source in the list, and Enter or Space opens it, so Re-extract, Manage, Review and Open memory work without a mouse. Accepting a change in the Review Queue no longer hides the queue while the memories it shows reload: the list, your place in it and the keyboard position stay, a small spinner shows beside "Review Queue", and Accept waits until the memories have reloaded. On a narrow panel, the Memory Vault's "Rename details" and unsaved-changes dialogs now show instead of leaving the screen frozen. Arrow keys in the place picker keep the highlighted place in view. In Memory Settings, Tab after "Choose backup" goes straight to "Reset settings", and screen readers name "Choose backup" once.
+
+## 1.4.84 — 2026-10-22
+
+- Other Agents can now ask Long-Term Memory for memories about the characters they write as, ranked against what they are about to write. They get only memories available to that character everywhere: never memories limited to a chat or group, archived memories or suggestions, and they can't change anything. A new setting in Memory Settings, "Other Agents can read memories" (on by default), turns this off, also for Slurp's "What your other Agents know", and names the Agents that read memories lately. Each read shows in Activity as "Read by another Agent".
+
+## 1.4.83 — 2026-10-22
+
+- Other installed Agents can no longer reach the memory vault itself. The storage service Long-Term Memory shares with other packages now offers one read, the memories available to a character everywhere, which is what Slurp's flavour brief uses. Memories limited to a chat or group, imported sources, archived and game-only memories, suggestions and the vault folder stay private.
+
+## 1.4.82 — 2026-10-22
+
+- Once the debug log reaches its 2 MB limit, Long-Term Memory now trims it to the newest 1.5 MB instead of to just under 2 MB. Before, every new debug line rewrote the whole file from then on, and saves and recalls waited for each rewrite. Now the lines after a trim are added to the end of the file again. The log keeps between 1.5 and 2 MB of the newest lines.
+
+## 1.4.81 — 2026-10-22
+
+- Memory Settings has a new setting beside "Maximum output tokens", "Finish cut-off answers", off by default. With it on, when the model's extraction answer stops at the output limit, Long-Term Memory asks the model for the rest, with up to 3 extra requests for that source, each sending the source again. With it off, a source cut off this way now says that Retry will stop at the same place and names the setting.
+
+## 1.4.80 — 2026-10-22
+
+- No change in what Long-Term Memory does. Internally, the server file that matches names in chats and summaries to memories is split into four files.
+
 ## 1.4.79 — 2026-10-22
 
 - Extraction from a structured chat summary now reads a character name that starts with "Char", such as "Char Aznable", or a relationship pair whose first name starts with "Rel", as a name instead of an id when the summary writes the name out, as in "- Char Aznable | …", "character: Char Aznable", "- Rel Varga, Sayla Mass | …" or "characters: Rel Varga, Sayla Mass". The section the summary gives that character, such as Profile, now reaches their memory, those lines are saved instead of being dropped as not in the chat's roster, and a relationship that only the summary mentions is kept. The event made for a relationship's cause names the pair as the summary wrote it, as in "Rel Varga and Sayla Mass relationship changed after the hangar fire.", instead of splitting the names into words. A line that writes an id made from the name instead, such as "subject: char_aznable", is still read as an id.

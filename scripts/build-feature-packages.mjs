@@ -186,6 +186,16 @@ const conversationCallsOwnedSourcePaths = [
   // Replaces the vendored host shim, which rang nothing when registered as the [call] service.
   "packages/server/src/services/generation/conversation-call-command-runtime.ts",
 ];
+// Blackjack is the first turn game written here rather than extracted from the Engine: its engine, board, setup,
+// hook and store are package-owned and stack over the vendored turn-game framework (and Poker's deck and RNG).
+const blackjackSourceRoot = join(packagesDir, "blackjack/src/engine");
+const blackjackOwnedSourcePaths = [
+  "packages/shared/src/features/turn-games/blackjack",
+  "packages/client/src/components/chat/BlackjackBoard.tsx",
+  "packages/client/src/components/chat/BlackjackSetup.tsx",
+  "packages/client/src/hooks/use-blackjack.ts",
+  "packages/client/src/stores/blackjack-game.store.ts",
+];
 // Package clients use the Engine's stores, services and components through `__MARINARA_HOST__` (capability API 1.341):
 // every feature build stacks these adapters over the vendored modules, so no client bundles a copy that keeps its own
 // state (#1478: the UI store copy reset Engine settings; #1487). scripts/client-host-gates.mjs holds each bundle to it.
@@ -507,7 +517,7 @@ const features = [
   },
   {
     id: "long-term-memory",
-    version: "1.4.79",
+    version: "1.4.86",
     minEngineVersion: "2.4.1",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Long-Term Memory",
@@ -587,7 +597,7 @@ const features = [
   },
   {
     id: "hierarchical-maps",
-    version: "1.5.2",
+    version: "1.6.0",
     minEngineVersion: "2.4.2",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "World Maps",
@@ -684,6 +694,33 @@ const features = [
     playerLabel,
     commandType: id.replaceAll("-", "_"),
   })),
+  {
+    id: "blackjack",
+    name: "Blackjack",
+    version: "1.0.0",
+    maxEngineExclusive: "4.0.0",
+    capabilityApi: PACKAGE_CAPABILITY_API,
+    builtAgainst: PACKAGE_BUILT_AGAINST,
+    description: "Play Blackjack against the house with Conversation characters.",
+    agent: {
+      description: withPackageActivationGuidance(
+        "blackjack",
+        "Play Blackjack against the house with Conversation characters.",
+      ),
+    },
+    kind: ["agent", "turn-game"],
+    modes: ["conversation"],
+    permissions: ["agent-runtime", "chat-read", "chat-write", "storage", "ui"],
+    engineImport: "packages/shared/src/features/turn-games/blackjack/engine.ts",
+    engineExport: "blackjackEngine",
+    clientName: "Blackjack",
+    command: "/blackjack",
+    aliases: ["blackjack", "black jack", "twenty-one"],
+    playerLabel: "Table game",
+    commandType: "blackjack",
+    packageSourceRoot: blackjackSourceRoot,
+    ownedSourcePaths: blackjackOwnedSourcePaths,
+  },
 ];
 
 const requestedFeatureIds = new Set(process.argv.slice(2));
@@ -941,14 +978,26 @@ export async function selfCheck() {
 // Package clients bundle with the Engine's host: its libraries through hostModulesPlugin, its stores, services and
 // components through sources/host-client-overlay, and only the vendored shared modules they use. Both client gates
 // run on every bundle (scripts/client-host-gates.mjs).
-let hostModules = null;
 const sharedRoots = [
   join(sourcesRoot, "packages/shared/dist"),
   ...(process.env.MARINARA_ENGINE_SHARED_ROOT ? [dirname(sharedBundleEntry)] : []),
 ];
 
 async function bundleClientEntry(feature, entry, output, metafilePath, buildRoot) {
-  hostModules ??= hostModulesPlugin({ engineRoot });
+  const boundary =
+    feature.id === "hierarchical-maps"
+      ? hierarchicalMapsBoundary
+      : feature.id === "long-term-memory"
+        ? longTermMemoryBoundary
+        : feature.id === "memory-nag"
+          ? memoryNagBoundary
+          : null;
+  const hostModules = hostModulesPlugin({
+    engineRoot,
+    // Boundary packages emit this same validated API in their manifest below; a feature override
+    // must not unlock host imports that the installable manifest does not require.
+    capabilityApi: boundary?.capabilityApi ?? feature.capabilityApi ?? PACKAGE_CAPABILITY_API,
+  });
   // The other games reach UNO's query keys through the vendored game hooks, and with them UNO's game store, which only
   // UNO may carry (scripts/client-host-gates.mjs).
   const sharedTreeShaking = sharedTreeShakingPlugin({
