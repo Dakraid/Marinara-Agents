@@ -36,6 +36,8 @@ import type { SlurpAccount } from "../../modules/records/slp-storage-model.js";
 import { planSlurpBondBeat, planSlurpTieBeat } from "../projects/slp-projects-contract.js";
 import { planSlurpDramaBeat } from "../world/slp-world-contract.js";
 import { planSlurpTrendBeat } from "../discovery/slp-discovery-contract.js";
+import type { loadSlurpStoryState } from "../storylines/slp-storylines-contract.js";
+import { slurpConditionBeat } from "../../modules/storylines/slp-story-state.js";
 import { readSlurpCanonAnchorState, slurpCanonAnchorsFor } from "../../data/creators/slp-canon-anchor-storage.js";
 import {
   normalizeSlurpCanonAnchors,
@@ -58,6 +60,7 @@ import {
 } from "../../modules/creators/slp-creator-schedule-context.js";
 import type { SlpAccount, SlpCreatorManagedPost } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlpCreatorNudge, SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
+import { findSlpTextMentions } from "../../../../../shared/src/slp/slp-mentions.js";
 
 type SlurpBeatConnection = Parameters<typeof createSlurpPostProvider>[0]["connection"] & { model: string };
 
@@ -84,6 +87,8 @@ export type SlurpBeatContext = {
   steering?: SlpCreatorSteering | null;
   /** The player's next idea for this Creator. It is this post's beat, ahead of the arc. */
   nudge?: SlpCreatorNudge | null;
+  /** Standing conditions (docs/STORYLINES.md, "State"): their deck takes a share of ordinary slots. */
+  story?: Awaited<ReturnType<typeof loadSlurpStoryState>> | null;
   /** Day-to-day life moments: the account (for what really happened) and its tags (for what fits). */
   life?: {
     account: Pick<SlpAccount, "id" | "createdAt">;
@@ -231,6 +236,19 @@ export async function planSlurpBeat(
       at: input.at,
     });
     if (occasion) return occasion;
+    // A small moment of what is true right now (a bump, a new flat), at the condition's share.
+    const condition = input.context.story
+      ? slurpConditionBeat({
+          creatorAccountId: input.accountId,
+          sequence: input.sequence,
+          state: input.context.story.state,
+          history,
+          intents: input.intents,
+          partner: input.context.story.partner,
+          avoid: input.context.steering?.avoid,
+        })
+      : null;
+    if (condition) return condition;
     const steered = slurpSteeredBeat(input.accountId, input.sequence, input.context.steering, read, input.intents);
     if (steered) return steered;
     // Drama bonds: now and then a friend, roommate or coworker is in the post.
@@ -490,4 +508,19 @@ export async function resolveSlurpBeatCastContext(db: DB, castIds: readonly stri
     }),
   );
   return people.filter(Boolean).join("\n\n");
+}
+
+/** Creators a post tags by @handle (the player's idea or the written post). They join its cast, so the writer
+ * knows them and the picture draws them instead of a second copy of her. */
+/** `personas: false` for a caption: "thanks @you" there does not put the player in the picture. */
+export async function resolveSlurpMentionedCast(db: DB, selfId: string, text: string, personas = true) {
+  const handles = new Set(findSlpTextMentions(text).map((mention) => mention.handle));
+  if (!handles.size) return { ids: [] as string[], names: [] as string[] };
+  const accounts = (await createSlurpStorage(db).listNoodlerAccounts()).filter(
+    (account) =>
+      account.id !== selfId &&
+      handles.has(account.handle.toLowerCase()) &&
+      (personas || account.sourceKind !== "persona"),
+  );
+  return { ids: accounts.map((account) => account.id), names: accounts.map((account) => account.displayName) };
 }
