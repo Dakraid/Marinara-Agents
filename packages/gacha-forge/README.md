@@ -1,5 +1,7 @@
 # Gacha Forge
 
+Welcome Gift in 1.10.1 keeps its rewards above Claim on short mobile screens. Scroll the event when needed; the Claim button has a full touch target.
+
 ## In-app fullscreen and fluid screens (1.9.0)
 
 The fullscreen button beside Settings expands Gacha Forge inside the Engine. Outward arrows enter;
