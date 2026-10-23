@@ -4,6 +4,27 @@ const forgeBrowserLayout = `
 .gf-arena { padding: 0; align-items: stretch; }
 .gf-stage { width: 100%; height: 100%; aspect-ratio: auto; justify-self: stretch; }
 .ob-intake, .node-list, .sel-list, .vn-dock { width: 100%; max-width: none; }
+/* Chapter artwork keeps a small icon in its header fade, with a full touch target. */
+.vn-top:has(> .gf-fs-chapter) { min-height: 44px; }
+.gf-fs-exit.gf-fs-chapter {
+  top: 50%; right: 0; transform: translateY(-50%);
+  width: 44px; height: 44px; padding: 0;
+  background: transparent; border: 0; box-shadow: none; clip-path: none;
+}
+.gf-fs-chapter svg { width: 0.9rem; height: 0.9rem; }
+.gf-fs-chapter:focus-visible { outline: 2px solid var(--coral); outline-offset: -4px; }
+.cp-id-top .cp-fav, .cp-tabs > .sv-q {
+  appearance: none; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1;
+}
+.u-fav { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+.cp-fav svg, .cp-tabs > .sv-q svg, .u-fav svg { display: block; flex: none; margin: 0; }
+.u-type {
+  position: absolute; top: calc(var(--f) * 0.3); right: calc(var(--f) * 0.4); z-index: 1;
+  display: grid; place-items: center; width: 1em; height: 1em;
+  font-size: calc(var(--f) * 1.65); color: var(--text); pointer-events: none;
+  filter: drop-shadow(0 1px 2px var(--ink));
+}
+.u-type svg { display: block; width: 1em; height: 1em; }
 /* Rotating upright must not cover the only way out of in-app fullscreen. */
 .gf-rot .gf-fs-portrait {
   position: absolute; top: 0.55rem; right: 0.55rem;
@@ -18,6 +39,15 @@ const forgeFullscreenIcons = {
   exit: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 14h6v6m0-6-7 7M20 10h-6V4m0 6 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 const forgeFullscreenButtons = ".gf-fs, .gf-fs-exit, .gf-fs-bar";
+
+export function forgeUnitTypeBadge(unit, icons) {
+  const key = String(unit.affinity ?? "")
+    .trim()
+    .toLowerCase();
+  if (!Object.hasOwn(icons, key)) return "";
+  const name = key[0].toUpperCase() + key.slice(1);
+  return `<span class="u-type" role="img" aria-label="${name}" title="${name}">${icons[key]}</span>`;
+}
 
 export function syncForgeBrowserPresentation(host) {
   const control = host.capabilityProps?.browserFullscreen;
@@ -39,12 +69,35 @@ export function wireForgeBrowserFullscreen(host) {
     sheet.textContent = forgeBrowserLayout;
     root.append(sheet);
   }
+  // Only the visible roster page loads immediately; offscreen cards keep native lazy loading.
+  const roster = root.querySelector('[data-screen="roster"] .grid-scroll');
+  if (roster) {
+    const viewport = roster.getBoundingClientRect();
+    for (const image of roster.querySelectorAll(".u-photo")) {
+      const box = image.getBoundingClientRect();
+      if (
+        box.bottom > viewport.top &&
+        box.top < viewport.bottom &&
+        box.right > viewport.left &&
+        box.left < viewport.right
+      ) {
+        image.loading = "eager";
+        image.decoding = "sync";
+      }
+    }
+  }
   const rotationNotice = root.querySelector(".gf-rot");
   if (rotationNotice && !rotationNotice.querySelector(".gf-fs-portrait")) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "gf-fs-exit gf-fs-portrait";
     rotationNotice.append(button);
+  }
+  const chapterHeader = root.querySelector(".vn-top");
+  const chapterToggle = root.querySelector(".gf-stage > .gf-fs-exit, .vn-top > .gf-fs-chapter");
+  if (chapterHeader && chapterToggle) {
+    chapterToggle.classList.add("gf-fs-chapter");
+    if (chapterToggle.parentElement !== chapterHeader) chapterHeader.append(chapterToggle);
   }
   for (const button of root.querySelectorAll(forgeFullscreenButtons)) {
     button.onclick = () => {

@@ -3,8 +3,11 @@
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 
-const sourceStart = "/* forge-browser-source:start */\n";
-const sourceEnd = "/* forge-browser-source:end */\n";
+function sourceMarkers(edit) {
+  const id = edit.sourceId ?? "browser";
+  if (!/^[a-z][a-z0-9-]*$/u.test(id)) throw new Error(`Invalid Forge source id: ${id}`);
+  return { start: `/* forge-${id}-source:start */\n`, end: `/* forge-${id}-source:end */\n` };
+}
 
 export async function loadGachaBundlePatches(packageRoot) {
   const ledger = JSON.parse(await readFile(new URL("bundle-patches.json", packageRoot), "utf8"));
@@ -12,8 +15,10 @@ export async function loadGachaBundlePatches(packageRoot) {
     for (const { edits } of patches) {
       for (const edit of edits) {
         if (edit.replaceFrom) {
-          const source = await readFile(new URL(edit.replaceFrom, packageRoot), "utf8");
-          edit.replace = sourceStart + source.replace(/^export /gmu, "") + sourceEnd + edit.find;
+          const paths = Array.isArray(edit.replaceFrom) ? edit.replaceFrom : [edit.replaceFrom];
+          const sources = await Promise.all(paths.map((path) => readFile(new URL(path, packageRoot), "utf8")));
+          const { start, end } = sourceMarkers(edit);
+          edit.replace = start + sources.join("\n").replace(/^export /gmu, "") + end + edit.find;
         }
       }
     }
@@ -45,9 +50,10 @@ export async function rebuildGachaBundles(packageRoot) {
             let applied = edit.replace;
             if (edit.replaceFrom) {
               // Source edits can regenerate an already built payload without needing its old source file.
-              const start = candidate.indexOf(sourceStart);
-              const end = candidate.indexOf(sourceEnd, start);
-              if (start >= 0 && end >= start) applied = candidate.slice(start, end + sourceEnd.length) + edit.find;
+              const markers = sourceMarkers(edit);
+              const start = candidate.indexOf(markers.start);
+              const end = candidate.indexOf(markers.end, start);
+              if (start >= 0 && end >= start) applied = candidate.slice(start, end + markers.end.length) + edit.find;
             }
             candidate = swapGachaBundleText(candidate, applied, edit.find);
           }
