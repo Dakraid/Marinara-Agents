@@ -8,7 +8,16 @@ const appVersion = JSON.parse(readFileSync(resolve(engineRoot, "package.json"), 
 
 test("Welcome Gift rewards leave Claim reachable on short touch screens", async ({ page }, testInfo) => {
   const mobile = testInfo.project.name.includes("mobile");
-  await page.setViewportSize(mobile ? { width: 375, height: 667 } : { width: 1440, height: 900 });
+  const hybrid = testInfo.project.name === "hybrid-chromium";
+  await page.setViewportSize(
+    mobile ? { width: 375, height: 667 } : hybrid ? { width: 667, height: 320 } : { width: 1440, height: 900 },
+  );
+  const pointers = await page.evaluate(() => ({
+    primaryFine: matchMedia("(pointer: fine)").matches,
+    primaryCoarse: matchMedia("(pointer: coarse)").matches,
+    anyCoarse: matchMedia("(any-pointer: coarse)").matches,
+  }));
+  if (hybrid) expect(pointers).toEqual({ primaryFine: true, primaryCoarse: false, anyCoarse: true });
   await page.route("**/api/app-settings/ui", (route) =>
     route.fulfill({ json: route.request().method() === "GET" ? { value: null } : { success: true } }),
   );
@@ -82,6 +91,10 @@ test("Welcome Gift rewards leave Claim reachable on short touch screens", async 
       game._renderBrowser();
     }, scale);
     const claim = forge.getByRole("button", { name: "Claim today", exact: true });
+    await expect(
+      page.locator(".mari-home-browser-chrome"),
+      "ordinary Home mode, without entering fullscreen",
+    ).toBeVisible();
     await claim.scrollIntoViewIfNeeded();
     const layout = await claim.evaluate((button) => {
       const root = button.getRootNode() as ShadowRoot;
@@ -108,7 +121,11 @@ test("Welcome Gift rewards leave Claim reachable on short touch screens", async 
     expect(layout.bottom, "the full Claim button stays inside the scroll viewport").toBeLessThanOrEqual(
       layout.paneBottom,
     );
-    if (mobile) expect(layout.height, "Claim has a touch target").toBeGreaterThanOrEqual(44);
+    if (pointers.anyCoarse || pointers.primaryCoarse) {
+      expect(layout.height, "Claim has a touch target even when the primary pointer is fine").toBeGreaterThanOrEqual(
+        44,
+      );
+    }
     expect(layout.hit, "the Claim center is not covered").toBe(true);
     const before = claims;
     if (mobile) await claim.tap();
@@ -116,4 +133,16 @@ test("Welcome Gift rewards leave Claim reachable on short touch screens", async 
     await expect.poll(() => claims).toBe(before + 1);
     await expect(forge.locator(".ev-gained")).toContainText("1,600");
   }
+  await forge.evaluate((node) => {
+    const game = node as any;
+    game._hudView = "settings";
+    game._settingsCategory = "changelog";
+    game._renderBrowser();
+  });
+  await expect(
+    forge.getByText(
+      "Welcome Gift rewards no longer overlap Claim on short mobile screens; scroll when needed and use its full touch target.",
+      { exact: true },
+    ),
+  ).toBeVisible();
 });

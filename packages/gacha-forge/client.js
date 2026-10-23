@@ -9,7 +9,7 @@ const forgeBrowserLayout = `
 .ev-pane.nw { overflow-y: auto; }
 .ev-pane.nw .nw-track { flex-shrink: 0; min-height: min-content; }
 .ev-pane.nw .ev-week { flex-shrink: 0; grid-auto-rows: minmax(min-content, 1fr); }
-@media (pointer: coarse) {
+@media (any-pointer: coarse), (pointer: coarse) {
   .ev-pane.nw .ev-claim { min-height: 44px; }
 }
 /* Chapter artwork keeps a small icon in its header fade, with a full touch target. */

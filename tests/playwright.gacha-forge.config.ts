@@ -12,6 +12,16 @@ export default defineConfig({
   projects: [
     ...config.projects!,
     {
+      name: "hybrid-chromium",
+      testMatch: "package-gacha-forge-welcome-gift.e2e.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL: config.projects![0]!.use!.baseURL,
+        // Native Blink inputs: a fine primary pointer plus both fine and coarse available pointers.
+        launchOptions: { args: ["--blink-settings=primaryPointerType=4,availablePointerTypes=6"] },
+      },
+    },
+    {
       name: "mobile-webkit",
       use: {
         ...devices["iPhone 13"],
