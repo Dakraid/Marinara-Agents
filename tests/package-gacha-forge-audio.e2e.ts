@@ -504,7 +504,8 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
   await forge.locator("[data-forge-audio-status]").focus();
   await expect(forge.locator("[data-forge-audio-status]")).toBeFocused();
   await page.mouse.move(long.x, long.y);
-  await page.mouse.wheel(0, 80);
+  if (testInfo.project.name === "mobile-webkit") await page.keyboard.press("PageDown");
+  else await page.mouse.wheel(0, 80);
   await expect
     .poll(() => forge.locator("[data-forge-audio-status]").evaluate((node) => node.scrollTop))
     .toBeGreaterThan(0);
