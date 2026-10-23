@@ -145,11 +145,11 @@ export class ForgeAudioController {
       this.settings.audioConnectionId !== settings.audioConnectionId ||
       !config?.configured ||
       !config.connectionId ||
-      (settings.audioConnectionId && config.connectionId !== settings.audioConnectionId) ||
       config[kind === "music" ? "music" : "soundEffects"] !== true
     )
       return null;
-    const connectionId = config.connectionId;
+    // Readiness can canonicalize a trusted legacy ID; retain the saved request and cache identity.
+    const connectionId = settings.audioConnectionId || config.connectionId;
     this.generationConnection = connectionId;
     const cacheKey = `${connectionId}:${kind}:${cue}`;
     if (this.generated.has(cacheKey)) return this.generated.get(cacheKey);

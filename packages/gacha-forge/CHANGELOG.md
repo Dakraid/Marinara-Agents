@@ -1,3 +1,7 @@
+## 1.11.1 — 2026-10-23
+- Fixed generated music and effects for worlds using migrated legacy audio connections.
+- Recorded the merged Engine audio connection baseline.
+
 ## 1.11.0 — 2026-10-23
 
 ### New
