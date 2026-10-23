@@ -135,9 +135,15 @@ async function openForge(
     await route.fulfill({ contentType: "audio/wav", body: wav });
   });
   if (!options.realGeneration)
-    await page.route("**/api/audio/config", (route) =>
+    await page.route("**/api/audio/config*", (route) =>
       route.fulfill({
-        json: { configured: true, connectionId: "music-fixture", music: true, soundEffects: false, source: "custom" },
+        json: {
+          configured: true,
+          connectionId: new URL(route.request().url()).searchParams.get("audioConnectionId") || "music-fixture",
+          music: true,
+          soundEffects: false,
+          source: "custom",
+        },
       }),
     );
   if (!options.realGeneration)
@@ -388,6 +394,89 @@ test("Audio settings persist, mute is compact and portrait frames retain a botto
   await expect(forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true })).toBeVisible();
   await expect(forge.locator(".gf-mute")).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath("audio-world-setup.png") });
+});
+
+test("Readiness recovers in the current world and single-channel selections keep the other channel on stock", async ({
+  page,
+}, testInfo) => {
+  const { forge, generated } = await openForge(page, testInfo);
+  let configured = false;
+  const probes: string[] = [];
+  await page.route("**/api/audio/config*", (route) => {
+    const id = new URL(route.request().url()).searchParams.get("audioConnectionId") || "music-fixture";
+    probes.push(id);
+    return route.fulfill({
+      json: {
+        configured,
+        connectionId: configured ? id : null,
+        music: id !== "sfx-only",
+        soundEffects: id === "sfx-only",
+      },
+    });
+  });
+  await page.route("**/api/connections", (route) =>
+    route.fulfill({
+      json: [
+        { id: "fixture-model", name: "Text fixture", provider: "custom", model: "fixture" },
+        {
+          id: "music-only",
+          name: "Score",
+          provider: "audio_generation",
+          audioMusic: "true",
+          audioSoundEffects: "false",
+        },
+        {
+          id: "sfx-only",
+          name: "Effects",
+          provider: "audio_generation",
+          audioMusic: "false",
+          audioSoundEffects: "true",
+        },
+      ],
+    }),
+  );
+  const settings = forge.getByRole("button", { name: "Game settings", exact: true });
+  await settings.click();
+  await forge.locator('[role="tab"][data-view="sources"]').click();
+  const generation = forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true });
+  await generation.click();
+  await expect.poll(() => probes.length).toBe(1);
+  await forge.evaluate(async (node) => {
+    const audio = (node as any)._forgeAudio;
+    await audio.cue("home");
+    await audio.effect("click");
+  });
+  expect(probes).toHaveLength(1);
+  expect(generated).toHaveLength(0);
+  configured = true;
+  await generation.click();
+  await generation.click();
+  await expect.poll(() => generated.filter((request) => request.kind === "music").length).toBe(1);
+  expect(probes).toHaveLength(2);
+  const select = forge.locator('[data-input="audio.audioConnectionId"]');
+  await expect(select.locator('option[value="music-only"]')).toHaveText("Score (Music only)");
+  await expect(select.locator('option[value="sfx-only"]')).toHaveText("Effects (Sound effects only)");
+  for (const [id, supported, unsupported] of [
+    ["music-only", "music", "sfx"],
+    ["sfx-only", "sfx", "music"],
+  ]) {
+    await select.selectOption(id);
+    await expect.poll(() => probes.includes(id)).toBe(true);
+    await forge.evaluate(async (node) => {
+      const audio = (node as any)._forgeAudio;
+      await audio.cue("home");
+      await audio.effect("click");
+      await audio.generate("music", "boss");
+      await audio.generate("sfx", "hit");
+    });
+    await expect.poll(() => generated.filter((request) => request.audioConnectionId === id).length).toBe(2);
+    expect(
+      generated.filter((request) => request.audioConnectionId === id).every((request) => request.kind === supported),
+    ).toBe(true);
+    expect(generated.some((request) => request.audioConnectionId === id && request.kind === unsupported)).toBe(false);
+    await expect(forge.locator("[data-forge-audio-status]")).toHaveCount(0);
+  }
+  await page.screenshot({ path: testInfo.outputPath("audio-single-channel-readiness.png") });
 });
 
 test("Audio selectors accept real stored flags and preserve unavailable choices through setup saves", async ({

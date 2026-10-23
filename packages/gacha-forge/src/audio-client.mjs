@@ -29,6 +29,7 @@ const forgeMusicDescriptions = {
   bond: "a personal character story, reflective and intimate",
 };
 let forgeAudioSession = 0;
+const forgeAudioRetryMs = 60_000;
 
 export function forgeMusicContextKey(runId, connectionId, cue) {
   // A compact cache identity preserves full, case-sensitive IDs without requiring a secure-context WebCrypto API.
@@ -87,6 +88,13 @@ export class ForgeAudioController {
     this.settings = normalizeForgeAudio(value);
     if (
       previous &&
+      (previous.generate !== this.settings.generate || previous.audioConnectionId !== this.settings.audioConnectionId)
+    ) {
+      this.generationConfig = undefined;
+      this.musicRevision = undefined;
+    }
+    if (
+      previous &&
       ((!this.settings.generate && previous.generate) || previous.audioConnectionId !== this.settings.audioConnectionId)
     ) {
       for (const request of this.requests) request.abort();
@@ -117,26 +125,35 @@ export class ForgeAudioController {
   async generate(kind, cue) {
     const settings = this.settings;
     if (!settings.generate || this.disposed || settings.muted) return null;
-    let connectionId = settings.audioConnectionId;
-    if (!connectionId) {
-      this.defaultGeneration ??= forgeAudioJson("/api/audio/config").catch(() => null);
-      const config = await this.defaultGeneration;
-      if (this.disposed || !config?.configured || !config.connectionId) return null;
-      if (config[kind === "music" ? "music" : "soundEffects"] === false) return null;
-      connectionId = config.connectionId;
-      this.generationConnection = connectionId;
+    let probe = this.generationConfig;
+    if (!probe || Date.now() - probe.at >= forgeAudioRetryMs) {
+      const query = settings.audioConnectionId
+        ? `?audioConnectionId=${encodeURIComponent(settings.audioConnectionId)}`
+        : "";
+      probe = this.generationConfig = {
+        at: Date.now(),
+        promise: forgeAudioJson(`/api/audio/config${query}`).catch(() => null),
+      };
     }
+    const config = await probe.promise;
     if (
       this.disposed ||
+      probe !== this.generationConfig ||
       !this.settings.generate ||
       this.settings.muted ||
-      this.settings.audioConnectionId !== settings.audioConnectionId
+      this.settings.audioConnectionId !== settings.audioConnectionId ||
+      !config?.configured ||
+      !config.connectionId ||
+      (settings.audioConnectionId && config.connectionId !== settings.audioConnectionId) ||
+      config[kind === "music" ? "music" : "soundEffects"] !== true
     )
       return null;
+    const connectionId = config.connectionId;
+    this.generationConnection = connectionId;
     const cacheKey = `${connectionId}:${kind}:${cue}`;
     if (this.generated.has(cacheKey)) return this.generated.get(cacheKey);
     if (this.pending.has(cacheKey)) return this.pending.get(cacheKey);
-    if (Date.now() - (this.failures.get(cacheKey) ?? 0) < 60_000) return null;
+    if (Date.now() - (this.failures.get(cacheKey) ?? 0) < forgeAudioRetryMs) return null;
     const abort = new AbortController();
     this.requests.add(abort);
     const world = String(this.host._run?.scenario || "").slice(0, 2000);
@@ -189,8 +206,9 @@ export class ForgeAudioController {
     if (!this.player || this.disposed) return;
     const enabled = this.settings.generate && !this.settings.muted && this.settings.musicVolume > 0;
     const revision = `${cue}:${enabled}:${this.settings.audioConnectionId}`;
-    if (revision === this.musicRevision) return;
+    if (revision === this.musicRevision && (!enabled || Date.now() - this.musicAttemptAt < forgeAudioRetryMs)) return;
     this.musicRevision = revision;
+    this.musicAttemptAt = Date.now();
     const manifest = await this.manifest;
     if (this.disposed || revision !== this.musicRevision) return;
     if (
@@ -386,8 +404,14 @@ export async function loadForgeAudioConnections(root, values) {
   const isTrue = (value) => value === true || value === "true";
   const populate = (entries, emptyLabel = forgeAudioEnglish["audio.settings.connectionEmpty"]) => {
     select.replaceChildren(new Option(emptyLabel, ""));
-    for (const connection of entries)
-      select.add(new Option(connection.name || connection.model || connection.id, connection.id));
+    for (const connection of entries) {
+      const channels =
+        isTrue(connection.audioMusic) && isTrue(connection.audioSoundEffects)
+          ? ""
+          : forgeAudioEnglish[isTrue(connection.audioMusic) ? "audio.settings.musicOnly" : "audio.settings.sfxOnly"];
+      const name = connection.name || connection.model || connection.id;
+      select.add(new Option(channels ? `${name} (${channels})` : name, connection.id));
+    }
     if (selected && !entries.some((connection) => connection.id === selected)) {
       const unavailable = new Option(forgeAudioEnglish["audio.settings.connectionUnavailable"], selected);
       unavailable.disabled = true;

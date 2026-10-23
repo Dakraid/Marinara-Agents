@@ -30,6 +30,16 @@ const deferred = () => {
   });
   return { promise, resolve };
 };
+const generationConfig = (path, values = {}) => ({
+  ok: true,
+  json: async () => ({
+    configured: true,
+    connectionId: new URL(path, "https://fixture.invalid").searchParams.get("audioConnectionId") || "current",
+    music: true,
+    soundEffects: true,
+    ...values,
+  }),
+});
 let cases = 0;
 async function test(name, callback) {
   await callback();
@@ -82,6 +92,8 @@ try {
         !["", "stored", "boolean"].includes(selected),
       );
       assert.equal(select.disabled, false);
+      assert.equal(select.options.find((option) => option.value === "stored").text, "stored (Music only)");
+      assert.equal(select.options.find((option) => option.value === "boolean").text, "boolean (Sound effects only)");
     }
     const select = {
       dataset: {},
@@ -257,6 +269,116 @@ try {
     return { host, controller, events, voices };
   };
 
+  await test("readiness refreshes after failure or unconfigured state, without probing on each render", async () => {
+    const now = Date.now;
+    let clock = 1_000_000;
+    Date.now = () => clock;
+    try {
+      for (const initial of ["offline", "unconfigured"]) {
+        let ready = false;
+        let reads = 0;
+        let posts = 0;
+        globalThis.Ze = async (path) => {
+          if (path.startsWith("/api/audio/config")) {
+            reads += 1;
+            if (!ready && initial === "offline") throw new Error("offline");
+            return generationConfig(path, { configured: ready });
+          }
+          posts += 1;
+          return { ok: true, json: async () => ({ tag: "music:ready", path: "music/ready.mp3" }) };
+        };
+        const { controller, events } = fixture();
+        controller.configure({ generate: true });
+        await controller.cue("home");
+        ready = true;
+        await controller.cue("home");
+        await controller.generate("sfx", "click");
+        assert.equal(reads, 1, "all cues share the bounded readiness cache");
+        assert.equal(posts, 0);
+        clock += 60_000;
+        await controller.cue("home");
+        assert.equal(reads, 2, "the same scene retries readiness after the retry interval");
+        assert.equal(posts, 1);
+        assert.equal(events.filter(([event]) => event === "playMusic").at(-1)[1], "music:ready");
+        assert.equal(
+          events.some(([event]) => event === "notice"),
+          false,
+        );
+        controller.dispose();
+      }
+    } finally {
+      Date.now = now;
+    }
+  });
+
+  await test("generation toggles and connection changes invalidate readiness and fence stale probes", async () => {
+    const first = deferred();
+    let reads = 0;
+    const posts = [];
+    globalThis.Ze = async (path, options) => {
+      if (path.startsWith("/api/audio/config")) {
+        reads += 1;
+        return reads === 1 ? first.promise : generationConfig(path);
+      }
+      posts.push(JSON.parse(options.body));
+      return { ok: true, json: async () => ({ tag: "music:ready", path: "music/ready.mp3" }) };
+    };
+    const { controller } = fixture();
+    controller.configure({ generate: true, audioConnectionId: "first" });
+    const stale = controller.generate("music", "home");
+    controller.configure({ generate: false, audioConnectionId: "first" });
+    controller.configure({ generate: true, audioConnectionId: "first" });
+    await controller.generate("music", "home");
+    first.resolve(generationConfig("/api/audio/config?audioConnectionId=first"));
+    assert.equal(await stale, null, "an old successful probe cannot follow a disable/re-enable cycle");
+    controller.configure({ generate: true, audioConnectionId: "second" });
+    await controller.generate("music", "home");
+    assert.equal(reads, 3);
+    assert.deepEqual(
+      posts.map((body) => body.audioConnectionId),
+      ["first", "second"],
+    );
+    controller.dispose();
+  });
+
+  await test("explicit restored connections generate only their supported channel and retain stock fallback", async () => {
+    for (const supported of ["music", "sfx"]) {
+      const paths = [];
+      const posts = [];
+      const id = `${supported}-only`;
+      globalThis.Ze = async (path, options) => {
+        if (path.startsWith("/api/audio/config")) {
+          paths.push(path);
+          return generationConfig(path, { music: supported === "music", soundEffects: supported === "sfx" });
+        }
+        posts.push(JSON.parse(options.body));
+        return { ok: true, json: async () => ({ tag: `${supported}:ready`, path: `${supported}/ready.mp3` }) };
+      };
+      const { controller, events } = fixture();
+      controller.configure({ generate: true, audioConnectionId: id });
+      await controller.cue("home");
+      await controller.effect("click");
+      await tick();
+      await controller.generate("music", "boss");
+      await controller.generate("sfx", "hit");
+      assert.deepEqual(paths, [`/api/audio/config?audioConnectionId=${id}`]);
+      assert.equal(posts.length, 2);
+      assert.ok(posts.every((body) => body.kind === supported && body.audioConnectionId === id));
+      assert.ok(events.some(([event, tag]) => event === "playMusic" && tag === "stock:home"));
+      assert.ok(events.some(([event, tag]) => event === "playSfx" && tag === "sfx:ui:click"));
+      assert.equal(
+        events.some(([event]) => event === "notice"),
+        false,
+      );
+      controller.dispose();
+    }
+    globalThis.Ze = async (path) => generationConfig(path, { connectionId: "unrequested-default" });
+    const { controller } = fixture();
+    controller.configure({ generate: true, audioConnectionId: "missing" });
+    assert.equal(await controller.generate("music", "home"), null, "an explicit selection cannot borrow the default");
+    controller.dispose();
+  });
+
   await test("stock audio needs no generation and volume changes do not restart tracks", async () => {
     globalThis.Ze = () => {
       throw new Error("No HTTP expected for stock audio");
@@ -280,6 +402,7 @@ try {
   await test("generated cues dedupe, reuse and return to stock when disabled", async () => {
     const requests = [];
     globalThis.Ze = async (path, options) => {
+      if (path.startsWith("/api/audio/config")) return generationConfig(path);
       const body = JSON.parse(options.body);
       requests.push({ path, ...body });
       return {
@@ -313,7 +436,8 @@ try {
 
   await test("generation errors leave stock music playing and do not retry a cue on every render", async () => {
     let requests = 0;
-    globalThis.Ze = async () => {
+    globalThis.Ze = async (path) => {
+      if (path.startsWith("/api/audio/config")) return generationConfig(path);
       requests += 1;
       return { ok: false, status: 503 };
     };
@@ -333,7 +457,8 @@ try {
 
   await test("complete provider prompts are bounded and sound effects never use a music context", async () => {
     const requests = [];
-    globalThis.Ze = async (_path, options) => {
+    globalThis.Ze = async (path, options) => {
+      if (path.startsWith("/api/audio/config")) return generationConfig(path);
       const body = JSON.parse(options.body);
       requests.push(body);
       return { ok: true, json: async () => ({ tag: `${body.kind}:fixture`, path: `${body.kind}/fixture.mp3` }) };
