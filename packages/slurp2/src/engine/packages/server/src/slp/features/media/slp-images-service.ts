@@ -64,6 +64,7 @@ import {
   slurpImageNegativeWithCompany,
 } from "../../modules/feed/slp-image-brief.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
+import { withSlurpConditionLook } from "../storylines/slp-storylines-contract.js";
 
 /**
  * Apply Slurp's chosen style profile. The profile rides on the defaults, where the compiler reads
@@ -123,6 +124,7 @@ type CreatorPostImageInput = {
     | "imageGenerationPrompt"
     | "imagePromptInterpretation"
     | "imageGenerationUseAvatarReferences"
+    | "imageKeepOriginalFiles"
     | "imageGenerationIncludeDescriptions"
     | "imageAppearanceMode"
     | "appearanceProfileMode"
@@ -158,6 +160,8 @@ type CreatorPostImageInput = {
   admissionMode?: ConnectionAdmissionMode;
   /** The player asked for this picture: its prompt rewrite never spends the world's AI budget (0.3.6). */
   playerAsked?: boolean;
+  /** An avatar or banner outlives a condition, so it never shows one (STORYLINES.md). */
+  skipCondition?: boolean;
   width?: number;
   height?: number;
   /** A Story picture: drawn at the Story size unless the caller names its own size. */
@@ -419,6 +423,8 @@ async function generateCreatorPostImageRun(
     : "";
   run.appearance = { source: appearanceSource, text: redactIdentity(characterDescription) };
   run.referenceImages = referenceImages?.length ?? 0;
+  if (!input.skipCondition && !input.suppressCharacterContext)
+    characterImageInstructions = await withSlurpConditionLook(input.db, input.account.id, characterImageInstructions);
 
   const postPrompt = await loadPrompt(input.promptOverrides, NOODLE_IMAGE_POST, {
     authorName: input.suppressCreatorDetails ? "" : input.account.displayName,
@@ -771,7 +777,7 @@ async function generateCreatorPostImageRun(
       logger.warn(error, "[slurp] Could not charge image energy for %s", input.account.id);
     }
   }
-  const stored = await slpCompactGeneratedImage(image);
+  const stored = await slpCompactGeneratedImage(image, input.settings.imageKeepOriginalFiles);
   const file =
     stageSlurpImageWithHost(`${NOODLER_MEDIA_PREFIX}${input.account.id}`, stored.base64, stored.ext) ??
     stageImageToDisk(`${NOODLER_MEDIA_PREFIX}${input.account.id}`, stored.base64, stored.ext);

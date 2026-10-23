@@ -108,6 +108,7 @@ export async function generateCreatorArtwork(
     };
     const image = await generateSlpArtworkImage(db, input.kind, {
       account,
+      skipCondition: true,
       linkedPublicAccount,
       disclosureMode,
       postContent: options.creatorDetails ? account.bio : "",
@@ -226,6 +227,7 @@ async function backfillCreatorArtwork(
 
     const image = await generateSlpArtworkImage(db, kind, {
       account,
+      skipCondition: true,
       linkedPublicAccount,
       disclosureMode,
       postContent: account.bio,
