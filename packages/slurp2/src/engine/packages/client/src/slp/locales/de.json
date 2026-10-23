@@ -3035,6 +3035,7 @@
   "ui.slurp.opening.preview.manual": "Postet auf Wunsch",
   "ui.slurp.opening.preview.writtenBy": "Geschrieben von {{name}}",
   "ui.slurp.opening.preview.picturesBy": "Bilder von {{name}}",
+  "ui.slurp.opening.preview.noPictures": "Keine Bilder",
   "ui.slurp.opening.a.connection.later": "Später",
   "ui.slurp.opening.hint.signUp": "Support fragt eine Figur für ihre Seite aus",
   "ui.slurp.opening.hint.pickList": "Aus deinen Figuren wählen",

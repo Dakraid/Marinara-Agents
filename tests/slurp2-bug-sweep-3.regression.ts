@@ -2,6 +2,7 @@
  * Bug sweep 3 (0.3.64): reported Slurp bugs, each pinned where it was fixed.
  */
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { slurpDmRoleHeader } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-roles.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
@@ -63,6 +64,12 @@ assert.match(server("modules/settings/slp-settings.ts"), /imageKeepOriginalFiles
 assert.match(
   client("features/media/SlpImagesPanel.tsx"),
   /settingKey="imageKeepOriginalFiles"[\s\S]*?<\/AdvancedGroup>/u,
+);
+
+// The Engine's Modal panel is in the package style scope, so a fixed panel height applies and the window does not grow.
+assert.match(
+  readFileSync(new URL("../scripts/build-feature-packages.mjs", import.meta.url), "utf8"),
+  /@scope \(marinara-capability-\$\{capabilityId\}, \$\{scopeAttribute\}, \.mari-modal:has\(\$\{scopeAttribute\}\)\)/u,
 );
 
 console.log("slurp2 bug sweep 3: ok");

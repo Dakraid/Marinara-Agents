@@ -324,7 +324,7 @@ export function SlpBasicSetup({
       width="max-w-6xl"
       mobileFullscreen
       // The stage draws its own header (Support, the scene, the X), so the Modal's is hidden.
-      panelClassName="sm:h-[min(52rem,92dvh)] [&>div:first-child]:hidden"
+      panelClassName="overflow-hidden sm:h-[min(52rem,92dvh)] [&>div:first-child]:hidden"
       contentClassName="flex flex-col !overflow-hidden !p-0"
       panelStyle={getSlpAccentStyle(SLP_PINK)}
     >
@@ -427,7 +427,7 @@ function BasicPreview({
   const facts = [
     noText ? t(`${O}preview.manual`) : t(`${O}hint.pace.${answers.pace}`),
     t(`${O}preview.fans`, { fans: FANS[answers.crowd].toLocaleString() }),
-    pictures && imageName ? t(`${O}preview.picturesBy`, { name: imageName }) : t(`${O}a.pictures.no`),
+    pictures && imageName ? t(`${O}preview.picturesBy`, { name: imageName }) : t(`${O}preview.noPictures`),
     textName && !noText ? t(`${O}preview.writtenBy`, { name: textName }) : null,
   ].filter(Boolean);
   // The card is square media plus chrome, so it outgrows short stages (phones, 900 px desktops):

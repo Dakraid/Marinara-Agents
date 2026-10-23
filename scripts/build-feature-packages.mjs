@@ -1154,7 +1154,9 @@ export default defineConfig({
     .replaceAll(":root", ":scope")
     .replaceAll("[data-theme=dark]", ":scope:where([data-theme=dark] *)")
     .replaceAll("[data-theme=light]", ":scope:where([data-theme=light] *)");
-  return `@scope (marinara-capability-${capabilityId}, [data-marinara-capability-scope=${JSON.stringify(capabilityId)}]){${scopedStyles}}`;
+  // The Engine's Modal overlay wraps the package's scoped content, so panelClassName/contentClassName apply too (a scope root itself never matches).
+  const scopeAttribute = `[data-marinara-capability-scope=${JSON.stringify(capabilityId)}]`;
+  return `@scope (marinara-capability-${capabilityId}, ${scopeAttribute}, .mari-modal:has(${scopeAttribute})){${scopedStyles}}`;
 }
 
 async function bundleSpecialClient(feature, output) {

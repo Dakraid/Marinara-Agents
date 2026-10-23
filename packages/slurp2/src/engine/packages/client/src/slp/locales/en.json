@@ -6592,6 +6592,7 @@
   "ui.slurp.opening.preview.manual": "Posts when you ask",
   "ui.slurp.opening.preview.writtenBy": "Written by {{name}}",
   "ui.slurp.opening.preview.picturesBy": "Pictures by {{name}}",
+  "ui.slurp.opening.preview.noPictures": "No pictures",
   "ui.slurp.opening.a.connection.later": "Later",
   "ui.slurp.opening.hint.signUp": "Support interviews a character for their page",
   "ui.slurp.opening.hint.pickList": "Choose from your characters",

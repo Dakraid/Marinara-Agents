@@ -3849,6 +3849,7 @@
   "ui.slurp.opening.preview.manual": "요청하면 올려요",
   "ui.slurp.opening.preview.writtenBy": "글: {{name}}",
   "ui.slurp.opening.preview.picturesBy": "사진: {{name}}",
+  "ui.slurp.opening.preview.noPictures": "사진 없음",
   "ui.slurp.opening.a.connection.later": "나중에",
   "ui.slurp.opening.hint.signUp": "서포트가 캐릭터를 인터뷰해 페이지를 만들어요",
   "ui.slurp.opening.hint.pickList": "내 캐릭터 중에서 고르기",
