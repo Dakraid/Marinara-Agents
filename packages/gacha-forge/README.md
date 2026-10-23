@@ -1,5 +1,9 @@
 # Gacha Forge
 
+## Audio and pacing (1.11.0)
+
+Gacha Forge 1.11.0 adds optional dialogue using voices assigned in the Engine, stock Game music and sound effects, and optional generated audio through a dedicated audio connection. World Sources controls the opt-in features; Look → Visual has independent music, dialogue and effects levels and an autoplay pause (three seconds by default). The compact mute button silences all three channels. Autoplay waits for the revealed text and spoken line, and choices still wait for the player. Home and story portraits include their bottom frame edge. This version requires Engine Capability API 1.380 or newer.
+
 Welcome Gift in 1.10.1 keeps its rewards above Claim on short mobile screens. Scroll the event when needed; the Claim button has a full touch target.
 
 ## In-app fullscreen and fluid screens (1.9.0)

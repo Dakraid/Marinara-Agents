@@ -763,7 +763,7 @@
         "schemaVersion": 2,
         "capabilityApi": {
           "major": 1,
-          "minor": 376
+          "minor": 380
         },
         "builtAgainst": {
           "engineVersion": "2.5.1",
@@ -771,7 +771,7 @@
         },
         "id": "gacha-forge",
         "name": "Gacha Forge",
-        "version": "1.10.1",
+        "version": "1.11.0",
         "description": "A complete gacha game mode. Describe a world and Gacha Forge builds the rest: banners to pull on, a cast the model writes and paints for you, story chapters told by a visual-novel narrator, and the battles, gear and events that grow around them. Install it, restart Marinara Engine when prompted, then open Home → Gacha Forge.",
         "engine": {
           "min": "2.5.1",
@@ -1060,8 +1060,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "0a7313938cbe6a9a6f963664da13dbb1d902d74dfb1150b8e3f43d3f0e2a3606",
-            "bytes": 1464542
+            "sha256": "83c38b56bf0e0deb64d15ed3e04bf6dcbaa57442906cc6ce4d8090da788fee23",
+            "bytes": 1489397
           },
           {
             "path": "farm-asc.webp",
@@ -1535,8 +1535,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "f147406a0cae2401e3f380852fce3256e874a609208aad0f0cbb85267482aa47",
-            "bytes": 524534
+            "sha256": "f20280753d0752a5c08f2daadc7c4f65ac0f2c562805ccb6cfd58c72866226a4",
+            "bytes": 526167
           },
           {
             "path": "skill-aoe_damage-dark.webp",
@@ -2293,9 +2293,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/gacha-forge-1.10.1.zip",
-        "sha256": "61d6567a6e0d7c6dad0c34c6f79d22d4c93e356462878b0a5d3c742bf8e9762d",
-        "bytes": 7889235
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/gacha-forge-1.11.0.zip",
+        "sha256": "c7054b9c741f7348c7a06902edb8b4868b2ca4f01f60e03fd87b7482aaf99a4f",
+        "bytes": 7915723
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
     },
