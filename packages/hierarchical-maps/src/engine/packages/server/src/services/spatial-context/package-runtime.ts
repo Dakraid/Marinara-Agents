@@ -147,6 +147,20 @@ export function getPackageLanguageModels(): CapabilityLanguageModelHost {
   return getRuntimeHost().languageModels;
 }
 
+export async function resolvePackageAgentLorebookEntries(
+  chatId: string,
+  signal?: AbortSignal,
+): Promise<Array<{ id: string; name?: string; content: string }>> {
+  const host = getRuntimeHost();
+  if (typeof host.resolveAgentLorebookEntries !== "function") {
+    throw Object.assign(new Error("World Maps reference lorebooks require a newer Marinara Engine."), {
+      statusCode: 501,
+      code: "host_feature_unavailable",
+    });
+  }
+  return host.resolveAgentLorebookEntries({ chatId, signal });
+}
+
 export function getPackageJson(): CapabilityJsonHost {
   return getRuntimeHost().json;
 }
