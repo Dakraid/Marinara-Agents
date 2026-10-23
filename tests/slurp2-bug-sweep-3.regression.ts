@@ -59,10 +59,7 @@ assert.match(client("features/creators/SlpWardrobeManager.tsx"), /onBlur=/u);
 
 // "Keep original picture files" (Advanced, off by default) skips the WebP re-encode, so ComfyUI metadata stays.
 assert.match(server("base/media/slp-media.ts"), /if \(keepOriginal \|\| \(ext !== "png" && ext !== "bmp"\)\) return/u);
-assert.match(
-  slurp2Source("packages/slurp2/src/engine/packages/shared/src/slp/slp-social.schema.ts"),
-  /imageKeepOriginalFiles: false,/u,
-);
+assert.match(server("modules/settings/slp-settings.ts"), /imageKeepOriginalFiles: false,/u);
 assert.match(
   client("features/media/SlpImagesPanel.tsx"),
   /settingKey="imageKeepOriginalFiles"[\s\S]*?<\/AdvancedGroup>/u,

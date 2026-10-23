@@ -86,7 +86,6 @@ export const DEFAULT_SLP_SETTINGS = {
   imageGenerationPrompt:
     "Create a provider-ready image prompt for the supplied post. Preserve the post's subject, action, setting, mood, clothing, and established appearance. Use the Creator's personality to shape expression and presentation, not to invent a new event or sexualize an ordinary moment. Add nudity, explicit anatomy, or sexual activity only when the post or an explicit trusted instruction already requires it. Keep the image coherent and believable. Use only the visual details needed for this scene.",
   imageGenerationUseAvatarReferences: true,
-  imageKeepOriginalFiles: false,
   imageGenerationIncludeDescriptions: true,
   appearanceProfileMode: "high_confidence",
   allowGalleryImageAttachments: false,
@@ -140,7 +139,6 @@ export const slpSettingsSchema = z.object({
   imageGenerationConnectionId: z.string().min(1).nullable().default(DEFAULT_SLP_SETTINGS.imageGenerationConnectionId),
   imageGenerationPrompt: z.string().max(4000).default(DEFAULT_SLP_SETTINGS.imageGenerationPrompt),
   imageGenerationUseAvatarReferences: z.boolean().default(DEFAULT_SLP_SETTINGS.imageGenerationUseAvatarReferences),
-  imageKeepOriginalFiles: z.boolean().default(DEFAULT_SLP_SETTINGS.imageKeepOriginalFiles),
   imageGenerationIncludeDescriptions: z.boolean().default(DEFAULT_SLP_SETTINGS.imageGenerationIncludeDescriptions),
   appearanceProfileMode: z
     .enum(["ask", "high_confidence", "always"])
