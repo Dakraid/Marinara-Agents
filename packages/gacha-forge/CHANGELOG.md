@@ -1,3 +1,7 @@
+## 1.10.1 — 2026-10-23
+
+- Fixed: the Welcome Gift rewards no longer overlap Claim on short mobile screens. The event scrolls when needed, and Claim has a larger touch target.
+
 ## 1.10.0 — 2026-10-23
 
 - Choose your protagonist's dialogue or actions from two to four themed options above the dialogue box. Player choices are on by default in Settings > Story > Continuity.
