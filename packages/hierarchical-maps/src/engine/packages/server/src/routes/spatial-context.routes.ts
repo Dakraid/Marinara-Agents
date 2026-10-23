@@ -1525,6 +1525,7 @@ export async function spatialContextRoutes(app: FastifyInstance) {
       requiredLocationNames,
       groundingMode,
       loreCatalog,
+      hasReferenceEntries: referenceEntries.length > 0,
       prompt,
     };
   };
@@ -1868,6 +1869,17 @@ export async function spatialContextRoutes(app: FastifyInstance) {
         error: error instanceof Error ? error.message : "A language model connection is required.",
         code: "spatial_ai_connection_invalid",
       });
+    }
+
+    if (prepared.hasReferenceEntries) {
+      const fitted = resolved.fitContext(prompt.messages, { maxTokens: prompt.maxTokens });
+      if (fitted.trimmed || fitted.maxTokens !== prompt.maxTokens) {
+        return reply.status(400).send({
+          error:
+            "The complete map request does not fit the selected model's context. Reduce the reference lorebook or map sources, or choose a connection with a larger context.",
+          code: "spatial_ai_context_too_large",
+        });
+      }
     }
 
     const debugOverrideEnabled = parsed.debugMode || isDebugAgentsEnabled();

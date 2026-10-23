@@ -30,6 +30,9 @@ async function main() {
   const { createCapabilityPersistenceHost } = await engine(
     "packages/server/src/services/capability-packages/capability-persistence.service.ts",
   );
+  const { createCapabilityLanguageModelHost } = await engine(
+    "packages/server/src/services/capability-packages/capability-language-model.service.ts",
+  );
   const { createCapabilityResourceHost } = await engine(
     "packages/server/src/services/capability-packages/capability-resources.service.ts",
   );
@@ -218,7 +221,46 @@ async function main() {
     await books.update(reference.id, { enabled: false });
     assert.doesNotMatch((await preview(chat.id)).user, /MAPS_AGENT_ONLY_REFERENCE/);
     await books.update(reference.id, { enabled: true });
-    const created = await request(`/api/chats/${chat.id}/spatial-context/generate`);
+    const limitedConnection = await createConnectionsStorage(db).create({
+      name: "Maps finite-context fixture",
+      provider: "custom",
+      baseUrl: "http://127.0.0.1:1/v1",
+      model: "fixture",
+      apiKey: "fixture",
+      maxContext: 32_768,
+    });
+    assert(limitedConnection);
+    const limitedModel = await createCapabilityLanguageModelHost(db).resolve(limitedConnection.id);
+    const ordinaryFit = limitedModel.fitContext(
+      [
+        { role: "system", content: first.system },
+        { role: "user", content: first.user },
+      ],
+      { maxTokens: first.maxTokens },
+    );
+    assert.equal(ordinaryFit.trimmed, false, "the ordinary complete map prompt fits this connection");
+    assert.equal(ordinaryFit.maxTokens, first.maxTokens, "the ordinary map response reserve also fits");
+    await chats.patchMetadata(chat.id, { lorebookTokenBudget: 0 });
+    assert.match(
+      (await preview(chat.id)).user,
+      /OVERSIZED_REFERENCE/,
+      "explicit unlimited lorebook budget is preserved",
+    );
+    const callsBeforeOversized = prompts.length;
+    const oversizedResponse = await app.inject({
+      method: "POST",
+      url: `/api/chats/${chat.id}/spatial-context/generate`,
+      payload: { ...body, connectionId: limitedConnection.id },
+    });
+    assert.equal(oversizedResponse.statusCode, 400, oversizedResponse.body);
+    assert.equal(oversizedResponse.json().code, "spatial_ai_context_too_large");
+    assert.match(oversizedResponse.json().error, /complete map request.*context/i);
+    assert.equal(prompts.length, callsBeforeOversized, "an oversized complete prompt never calls the model");
+    await chats.patchMetadata(chat.id, { lorebookTokenBudget: null });
+    const created = await request(`/api/chats/${chat.id}/spatial-context/generate`, {
+      ...body,
+      connectionId: limitedConnection.id,
+    });
     assert.match(prompts.at(-1)!, /MAPS_AGENT_ONLY_REFERENCE/);
     assert.match(prompts.at(-1)!, /EXPLICIT_MAP_SOURCE/);
     assert.doesNotMatch(prompts.at(-1)!, /OTHER_CHAT_REFERENCE|UNMATCHED_REFERENCE/);
