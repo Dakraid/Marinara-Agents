@@ -1,5 +1,8 @@
 ## 1.12.1 — 2026-10-24
 
+- Chapters and Character Stories generate and play their own music cues instead of reusing the Home track. Loading scenes keep the current track until their cue is ready.
+- Small choices no longer block later shared narration or background pre-forging. Their alternatives remain generated together; playback, canon, replay and big-choice locks are preserved.
+- Completion and compression still wait for pending selections to preserve canonical story history.
 - Short audio notices no longer intercept taps on the game stage. Long reasons remain scrollable and stay visible while focused with a keyboard.
 - Recorded the actual merged Engine music-test baseline.
 

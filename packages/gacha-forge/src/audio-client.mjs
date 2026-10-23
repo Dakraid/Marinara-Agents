@@ -112,7 +112,14 @@ export class ForgeAudioController {
     }
     if (
       previous &&
-      ((!this.settings.generate && previous.generate) || previous.audioConnectionId !== this.settings.audioConnectionId)
+      (previous.muted !== this.settings.muted || (previous.musicVolume === 0) !== (this.settings.musicVolume === 0))
+    )
+      this.musicRevision = undefined;
+    if (
+      previous &&
+      ((!this.settings.generate && previous.generate) ||
+        (this.settings.muted && !previous.muted) ||
+        previous.audioConnectionId !== this.settings.audioConnectionId)
     ) {
       for (const request of this.requests) request.abort();
     }
@@ -155,7 +162,7 @@ export class ForgeAudioController {
     scheduleDismissal();
   }
 
-  async generate(kind, cue) {
+  async generate(kind, cue, musicRevision) {
     const settings = this.settings;
     if (!settings.generate || this.disposed || settings.muted) return null;
     let probe = this.generationConfig;
@@ -175,6 +182,7 @@ export class ForgeAudioController {
       !this.settings.generate ||
       this.settings.muted ||
       this.settings.audioConnectionId !== settings.audioConnectionId ||
+      (musicRevision !== undefined && musicRevision !== this.musicRevision) ||
       !config?.configured ||
       !config.connectionId ||
       config[kind === "music" ? "music" : "soundEffects"] !== true
@@ -206,6 +214,7 @@ export class ForgeAudioController {
             this.settings.muted ||
             this.settings.musicVolume === 0 ||
             this.settings.audioConnectionId !== settings.audioConnectionId ||
+            (musicRevision !== undefined && musicRevision !== this.musicRevision) ||
             this.host._run?.runId !== this.runId
           )
             abort.abort();
@@ -274,6 +283,10 @@ export class ForgeAudioController {
 
   async cue(cue) {
     if (!this.player || this.disposed) return;
+    if (!cue) {
+      this.musicRevision = null;
+      return;
+    }
     const enabled = this.settings.generate && !this.settings.muted && this.settings.musicVolume > 0;
     const revision = `${cue}:${enabled}:${this.settings.audioConnectionId}`;
     if (revision === this.musicRevision && (!enabled || Date.now() - this.musicAttemptAt < forgeAudioRetryMs)) return;
@@ -295,7 +308,7 @@ export class ForgeAudioController {
       }
     }
     if (!enabled) return;
-    const asset = await this.generate("music", cue);
+    const asset = await this.generate("music", cue, revision);
     if (asset && !this.disposed && revision === this.musicRevision && asset.tag !== this.currentTag) {
       this.currentTag = asset.tag;
       this.currentGenerated = true;
@@ -371,14 +384,26 @@ export class ForgeAudioController {
 }
 
 export function forgeAudioCue(host) {
-  if (host._hudView === "combat") {
+  const state = host._state?.();
+  if (
+    typeof state !== "string" ||
+    ["boot", "themes", "runs", "unreachable", "setup", "banner", "art", "forge"].includes(state)
+  )
+    return null;
+  if (state === "combat") {
+    if (!["prebattle", "battle"].includes(host._combatPhase) || !host._combat) return null;
     return host._combat?.enemies?.some(
       (enemy) => enemy.boss || enemy.tier === "boss" || (Array.isArray(enemy.mech) && enemy.mech.length > 0),
     )
       ? "boss"
       : "combat";
   }
-  if (host._hudView === "beat") return host._bondUnit ? "bond" : normalizeForgeMusicMood(host._forgeMusicMood);
+  if (state === "beat")
+    return host._beatState === "ready"
+      ? host._bondUnit
+        ? "bond"
+        : normalizeForgeMusicMood(host._forgeMusicMood)
+      : null;
   return "home";
 }
 

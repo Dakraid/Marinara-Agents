@@ -1,10 +1,12 @@
 // Exercise audio behavior with deterministic host boundaries; no provider is contacted.
 import assert from "node:assert/strict";
-import { normalizeForgeAudio } from "../packages/gacha-forge/src/audio-settings.mjs";
+import { readFile } from "node:fs/promises";
+import { normalizeForgeAudio, normalizeForgeMusicMood } from "../packages/gacha-forge/src/audio-settings.mjs";
 import { forgeAudioEnglish, forgeAudioFields } from "../packages/gacha-forge/src/audio-en.mjs";
 import {
   ForgeAudioController,
   forgeExplicitVoice,
+  forgeAudioCue,
   forgeMusicContextKey,
   loadForgeAudioConnections,
   saveForgeAudioSources,
@@ -13,6 +15,7 @@ import { createForgeVoiceLine, forgeVoiceCharacter } from "../packages/gacha-for
 
 const before = {
   normalizeForgeAudio: globalThis.normalizeForgeAudio,
+  normalizeForgeMusicMood: globalThis.normalizeForgeMusicMood,
   forgeAudioEnglish: globalThis.forgeAudioEnglish,
   forgeAudioFields: globalThis.forgeAudioFields,
   Ze: globalThis.Ze,
@@ -20,6 +23,7 @@ const before = {
   Option: globalThis.Option,
 };
 globalThis.normalizeForgeAudio = normalizeForgeAudio;
+globalThis.normalizeForgeMusicMood = normalizeForgeMusicMood;
 globalThis.forgeAudioEnglish = forgeAudioEnglish;
 globalThis.forgeAudioFields = forgeAudioFields;
 const tick = () => new Promise((resolve) => setImmediate(resolve));
@@ -272,6 +276,117 @@ try {
     controller.notice = (...message) => events.push(["notice", ...message]);
     return { host, controller, events, voices };
   };
+
+  const client = await readFile(new URL("../packages/gacha-forge/client.js", import.meta.url), "utf8");
+  const stateMethod = client.match(/_state\(\)\{return[^{}]+\}/u)?.[0];
+  assert(stateMethod, "extract the shipped string-valued state method, not an invented beat HUD view");
+  const actualState = new Function(`return ({${stateMethod}})._state;`)();
+  const readyWorld = {
+    _state: actualState,
+    _boot: "ready",
+    _bannerReady: true,
+    _artReady: true,
+    _hudView: "home",
+    _plan: { nodes: [] },
+    _beatState: "idle",
+    _storyWaits: () => false,
+  };
+
+  await test("shipped state routes ready story, bond and combat music without generating during loading", async () => {
+    const generated = [];
+    globalThis.Ze = async (path, options) => {
+      if (path.startsWith("/api/audio/config")) return generationConfig(path);
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
+      const body = JSON.parse(options.body);
+      generated.push(body);
+      return { ok: true, json: async () => ({ tag: `music:${body.context.key}`, path: `${body.context.key}.mp3` }) };
+    };
+    const { host, controller } = fixture();
+    Object.assign(host, readyWorld);
+    controller.configure({ generate: true, audioConnectionId: "cue-fixture" });
+    const step = async (changes, state, cue) => {
+      Object.assign(host, changes);
+      assert.equal(host._state(), state);
+      assert.equal(forgeAudioCue(host), cue);
+      await controller.cue(forgeAudioCue(host));
+    };
+    try {
+      await step({}, "hud", "home");
+      const homeTag = controller.currentTag;
+      await step({ _hudView: "chapter", _beatState: "loading", _forgeMusicMood: "sad" }, "beat", null);
+      assert.equal(generated.length, 1);
+      assert.equal(controller.currentTag, homeTag, "loading keeps the current track without composing a wrong cue");
+      for (const mood of ["happy", "tense", "sad"])
+        await step({ _beatState: "ready", _forgeMusicMood: mood }, "beat", mood);
+      await step({ _bondUnit: "arden" }, "beat", "bond");
+      await step({ _hudView: "combat", _combatPhase: "loading", _combat: null }, "combat", null);
+      assert.equal(generated.length, 5);
+      await step({ _combatPhase: "prebattle", _combat: { enemies: [{ tier: "common" }] } }, "combat", "combat");
+      await step({ _combatPhase: "battle", _combat: { enemies: [{ boss: true }] } }, "combat", "boss");
+      await step({ _hudView: "home", _beatState: "idle", _bondUnit: "" }, "hud", "home");
+      assert.equal(controller.currentTag, homeTag);
+      assert.deepEqual(
+        generated.map((body) => body.context.key),
+        ["home", "happy", "tense", "sad", "bond", "combat", "boss"].map((cue) =>
+          forgeMusicContextKey("audio-world", "cue-fixture", cue),
+        ),
+      );
+      for (const [changes, state] of [
+        [{ _boot: "loading" }, "boot"],
+        [{ _boot: "ready", _bannerReady: false }, "banner"],
+        [{ _bannerReady: true, _artReady: false, _artBlocking: true }, "art"],
+        [{ _artReady: true, _plan: null, _planEscaped: false }, "forge"],
+      ])
+        await step(changes, state, null);
+      assert.equal(generated.length, 7);
+    } finally {
+      controller.dispose();
+    }
+  });
+
+  await test("leaving a story or muting fences a late readiness result or music brief before composition", async () => {
+    for (const stage of ["readiness", "brief"]) {
+      for (const destination of ["home", "loading", "muted"]) {
+        const held = deferred();
+        const generated = [];
+        globalThis.Ze = async (path, options) => {
+          if (path.startsWith("/api/audio/config"))
+            return stage === "readiness" ? held.promise : generationConfig(path);
+          const body = JSON.parse(options.body);
+          if (path === "/api/gacha-forge/audio/prompt")
+            return stage === "brief" && body.cue === "sad" ? held.promise : musicBriefResponse();
+          generated.push(body);
+          return {
+            ok: true,
+            json: async () => ({ tag: `music:${body.context.key}`, path: `${body.context.key}.mp3` }),
+          };
+        };
+        const { host, controller } = fixture();
+        Object.assign(host, readyWorld, { _hudView: "chapter", _beatState: "ready", _forgeMusicMood: "sad" });
+        controller.configure({ generate: true });
+        try {
+          const old = controller.cue(forgeAudioCue(host));
+          await tick();
+          let current;
+          if (destination === "muted") controller.configure({ generate: true, muted: true });
+          else {
+            if (destination === "home") Object.assign(host, { _hudView: "home", _beatState: "idle" });
+            else host._beatState = "loading";
+            current = controller.cue(forgeAudioCue(host));
+          }
+          held.resolve(stage === "readiness" ? generationConfig("/api/audio/config") : musicBriefResponse());
+          await Promise.all([old, current]);
+          assert.deepEqual(
+            generated.map((body) => body.context.key),
+            destination === "home" ? [forgeMusicContextKey("audio-world", "current", "home")] : [],
+            `${stage}/${destination}: the old story cannot submit a paid composition after leaving`,
+          );
+        } finally {
+          controller.dispose();
+        }
+      }
+    }
+  });
 
   await test("readiness refreshes after failure or unconfigured state, without probing on each render", async () => {
     const now = Date.now;

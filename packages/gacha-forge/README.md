@@ -1,6 +1,6 @@
 # Gacha Forge
 
-In 1.12.1, short audio notices let taps reach the game stage. Long provider reasons can be scrolled and stay visible while focused with a keyboard.
+In 1.12.1, Home, story moods and Character Stories use their own music cues. Tracks are generated as those contexts are visited and reused within that world. Loading a scene keeps the current track until its music cue is ready. Short audio notices let taps reach the game stage; long provider reasons can be scrolled and stay visible while focused with a keyboard.
 
 ## Soundtrack briefs and achievement repairs (1.12.0)
 
@@ -31,7 +31,7 @@ In 1.10.2, newly generated dialogue options paraphrase intent, such as “Apolog
 
 Settings → Story → Continuity includes **Allow choices**, enabled by default. Newly written chapters and Character Stories can offer two to four dialogue or action intents for your protagonist above the dialogue box, using the current game theme.
 
-Small choices include every alternative branch in the same narration response. The selected branch plays for a few lines and rejoins the shared story. First-play selections are saved as canon; replay can show the other small branches without changing that history. Reloading or resuming restores the canonical selections.
+Narration is written in sections. Small choices include every alternative branch in the same response, followed by shared narration. Playback pauses for your selection, then plays the stored branch without another model call. In 1.12.1, later shared sections and optional pre-forging can continue before you select a small choice. First-play selections are saved as canon; replay can show the other small branches without changing that history. Reloading or resuming restores the canonical selections. Completion and compression still wait for pending selections so their records and summaries include the chosen branches.
 
 A chapter or Character Story may end with one optional big choice. It is always the final beat, and the model stops before its outcome. Selecting it permanently records your fate; replay cannot change it. Later chapters use the chosen outcome, even after story compression or summary folding, and generation remains locked until it is selected. Pre-forging pauses at unresolved decisions and lets you enter the chapter to choose.
 

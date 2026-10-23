@@ -302,6 +302,83 @@ async function frameBottom(frame: Locator, artSelector: string) {
   }, artSelector);
 }
 
+test("Real story navigation selects distinct home, story and bond music after each scene is ready", async ({
+  page,
+}, testInfo) => {
+  const { forge, generated, briefs } = await openForge(page, testInfo);
+  const plan = { title: "Audio chapter", nodes: [{ type: "story", title: "The garden", storyIndex: 0 }] };
+  const waiting: Array<() => Promise<void>> = [];
+  await page.route("**/api/gacha-forge/chapters", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        chapters: [{ chapter: 1, title: plan.title, normal: 0 }],
+        nextChapter: 2,
+        nextUnlocked: false,
+        bonds: [{ id: "arden", name: "Arden", part: 1, state: "open", beats: 0 }],
+      },
+    }),
+  );
+  for (const path of ["chapter-plan", "bond-chapter/plan"])
+    await page.route(`**/api/gacha-forge/${path}`, (route) =>
+      route.fulfill({ json: { ok: true, plan, progress: {}, beats: 0, name: "Arden" } }),
+    );
+  for (const path of ["story/start", "bond-chapter/start"])
+    await page.route(`**/api/gacha-forge/${path}`, (route) => route.fulfill({ json: { ok: true } }));
+  for (const path of ["beat", "bond-chapter/beat"])
+    await page.route(`**/api/gacha-forge/${path}`, (route) => {
+      waiting.push(() => route.fulfill({ json: scene }));
+    });
+  await page.route("**/api/gacha-forge/locations", (route) => route.fulfill({ json: { ok: true, places: [] } }));
+  await page.route("**/api/gacha-forge/preforge/start", (route) =>
+    route.fulfill({ json: { ok: true, allowed: false, preforge: { mode: "off", locked: false } } }),
+  );
+  await forge.getByRole("button", { name: "Game settings", exact: true }).click();
+  await forge.locator('[role="tab"][data-view="sources"]').click();
+  await forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true }).click();
+  await expect.poll(() => generated.filter((request) => request.kind === "music").length).toBe(1);
+  await forge.locator("[data-settings-back]").click();
+  const homeTag = `music:package:${generated[0].context.key}`;
+  await expect.poll(() => forge.evaluate((node) => (node as any)._forgeAudio.currentTag)).toBe(homeTag);
+
+  const openChapters = async () => {
+    await forge.evaluate((node) => {
+      const game = node as any;
+      game._clearBeat();
+      game._guidesSeen.add("chapters");
+      game._hudView = "chapters";
+      game._renderBrowser();
+    });
+    await expect(forge.locator('[data-open-chapter="1"]')).toBeVisible();
+  };
+  for (const [index, selector, cue] of [
+    [0, '[data-open-chapter="1"]', "sad"],
+    [1, "[data-open-bond]", "bond"],
+  ] as const) {
+    await openChapters();
+    await forge.locator(selector).click();
+    await forge.locator("[data-play]").click();
+    await expect.poll(() => waiting.length).toBe(index + 1);
+    expect(await forge.evaluate((node) => (node as any)._state())).toBe("beat");
+    expect(await forge.evaluate((node) => (node as any)._beatState)).toBe("loading");
+    expect(briefs.map((request) => request.cue)).toEqual(index === 0 ? ["home"] : ["home", "sad"]);
+    await waiting[index]();
+    await expect(forge.locator("[data-vn]")).toBeVisible();
+    await expect.poll(() => generated.filter((request) => request.kind === "music").length).toBe(index + 2);
+    expect(briefs.at(-1)).toMatchObject({ runId: baseRun.runId, cue });
+    await expect
+      .poll(() => forge.evaluate((node) => (node as any)._forgeAudio.currentTag))
+      .toBe(`music:package:${generated.at(-1)!.context.key}`);
+    await showHome(forge);
+    await expect.poll(() => forge.evaluate((node) => (node as any)._forgeAudio.currentTag)).toBe(homeTag);
+  }
+  expect(
+    new Set(generated.filter((request) => request.kind === "music").map((request) => request.context.key)).size,
+  ).toBe(3);
+  expect(briefs.map((request) => request.cue)).toEqual(["home", "sad", "bond"]);
+  await page.screenshot({ path: testInfo.outputPath("audio-distinct-story-cues.png") });
+});
+
 test("Audio settings persist, mute is compact and portrait frames retain a bottom stroke", async ({
   page,
 }, testInfo) => {
