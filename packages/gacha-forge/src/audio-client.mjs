@@ -91,6 +91,7 @@ export class ForgeAudioController {
       (previous.generate !== this.settings.generate || previous.audioConnectionId !== this.settings.audioConnectionId)
     ) {
       this.generationConfig = undefined;
+      this.generationConnection = undefined;
       this.musicRevision = undefined;
     }
     if (

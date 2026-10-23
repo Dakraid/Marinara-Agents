@@ -476,6 +476,26 @@ test("Readiness recovers in the current world and single-channel selections keep
     expect(generated.some((request) => request.audioConnectionId === id && request.kind === unsupported)).toBe(false);
     await expect(forge.locator("[data-forge-audio-status]")).toHaveCount(0);
   }
+  configured = false;
+  await select.selectOption("");
+  const played = await forge.evaluate(async (node) => {
+    const audio = (node as any)._forgeAudio;
+    const tags: string[] = [];
+    const play = audio.player.playSfx;
+    audio.player.playSfx = (tag: string, ...args: unknown[]) => {
+      tags.push(tag);
+      return play.call(audio.player, tag, ...args);
+    };
+    try {
+      await audio.effect("click");
+      return tags;
+    } finally {
+      audio.player.playSfx = play;
+    }
+  });
+  expect(played).toEqual(["sfx:ui:click"]);
+  await expect(forge.locator("[data-forge-audio-status]")).toHaveCount(0);
+  await select.selectOption("sfx-only");
   await page.screenshot({ path: testInfo.outputPath("audio-single-channel-readiness.png") });
 });
 

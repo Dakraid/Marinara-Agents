@@ -379,6 +379,29 @@ try {
     controller.dispose();
   });
 
+  await test("switching to an unavailable default cannot reuse the previous explicit connection's effects", async () => {
+    globalThis.Ze = async (path) =>
+      path.startsWith("/api/audio/config")
+        ? generationConfig(path, { configured: path.includes("?") })
+        : { ok: true, json: async () => ({ tag: "sfx:previous", path: "sfx/previous.mp3" }) };
+    const { controller, events } = fixture();
+    controller.configure({ generate: true, audioConnectionId: "explicit" });
+    await controller.generate("sfx", "click");
+    controller.configure({ generate: true, audioConnectionId: "" });
+    await controller.effect("click");
+    await tick();
+    await controller.effect("click");
+    assert.deepEqual(
+      events.filter(([event]) => event === "playSfx").map(([, tag]) => tag),
+      ["sfx:ui:click", "sfx:ui:click"],
+    );
+    assert.equal(
+      events.some(([event]) => event === "notice"),
+      false,
+    );
+    controller.dispose();
+  });
+
   await test("stock audio needs no generation and volume changes do not restart tracks", async () => {
     globalThis.Ze = () => {
       throw new Error("No HTTP expected for stock audio");
