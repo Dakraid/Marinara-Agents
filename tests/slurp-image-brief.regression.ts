@@ -233,8 +233,8 @@ assert.match(
 const generation = slurp2Source(
   "packages/slurp2/src/engine/packages/server/src/slp/features/feed/slp-generation-service.ts",
 );
-assert.match(generation, /companionIds: pictureCast \? beat\?\.castIds : undefined,/u);
-assert.match(generation, /pictureCast && beat\?\.castIds\?\.length \? \{ slurpPictureCast: beat\.castIds \}/u);
+assert.match(generation, /companionIds: pictureCast && pictureIds\.length \? pictureIds : undefined,/u);
+assert.match(generation, /pictureCast && pictureIds\.length \? \{ slurpPictureCast: pictureIds \}/u);
 for (const path of ["feed/reserve/slp-reserve-operation.ts", "media/slp-reviewed-images-service.ts"]) {
   assert.match(
     slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/features/${path}`),

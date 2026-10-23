@@ -1,5 +1,15 @@
 # Slurp release notes
 
+## 0.4.0 — 2026-10-23
+
+One release for everything built since 0.3.53 (unreleased 0.3.54 to 0.3.65 folded in):
+
+- Storylines: arcs, dramas and situations run on one storyline engine; Story Packs import v2 files, one JSON `fit`, one Packs list with a gate and Remove, topic switches `<pack>:<topic>`.
+- Packs (off by default): Family pack and five kink packs (Lingerie, Cosplay, Feet, Dom/sub, Exhibition).
+- Intimacy ladder: rapport tiers open doors in DMs (`slurpRapportDoors`), the highest tier is kept.
+- Paid sexting sessions (`SlpSextingBar`); Stir as a slide-up sheet (`SlpStirDeck`); Stories in Slurp's own layer.
+- Fixes: DM prompts know the player's latest public posts, @tagged Creators join the picture cast, tag-list looks go over whole, picture prompt rewrite floor 8192, wardrobe tag commas, neutral wording; Images > Advanced "Keep original picture files".
+
 ## 0.3.53 — 2026-10-21
 
 - Image failures marked nonretryable by the Engine no longer start automatic replacement requests. Slurp also stops later background retries for posts and Creator artwork, and keeps post prompts for a deliberate retry.
@@ -13,6 +23,12 @@
 
 - Changed: Slurp now uses Marinara Engine's own settings, dialogs, notifications, Local Model and connection queue instead of carrying copies of them. It no longer resets your Engine settings or starts a second Local Model, its background work waits while a chat on the same connection is replying, and its notifications appear where you put yours. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1478, #1487)
 - Changed: the sticker and emoji pickers no longer show the chat emoji-selection settings. Those belong to a chat, and Slurp has none.
+
+## 0.3.50 — 2026-10-19
+
+- Added: tapping an ad (the button, the picture or a wall tile) opens an ad sheet with the picture, brand, product, copy and price feel, and still records the tap. The old "Opening … promotion" toast is gone.
+- Added: Settings › Fans & money › Collect has a "Daily limit on Collect" switch (`walletPayoutDailyLimit`, on by default). Off, Collect moves every whole coin of your Creator earnings at once.
+- Added: Messaging › "What fans ask for" is an editable list for the wish in a commission request (`messagesCommissionAsks`); empty keeps the built-in asks.
 
 ## 0.3.49 — 2026-10-19
 
