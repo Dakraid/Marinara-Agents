@@ -147,6 +147,12 @@ Keep these states distinct in UI changes:
 - lexical-recall-only warning (its own Reindex recall button, reachable by keyboard)
 - source task running, cancelled, completed, and completed with failures
 
+A control that starts work stays focusable while the work runs: use `aria-disabled`,
+`opacity-50` and a ref guard that makes its handler return early (see
+`navigationBusyProps`, the activation switch, Reindex and Chat Settings). Native
+`disabled` is for permanent unavailability, such as a host that owns the setting,
+because it drops keyboard focus.
+
 Every failure state needs its existing retry or recovery path where one exists.
 Status and alert semantics, focus behavior, touch targets, labels, and reduced
 motion follow `DESIGN.md`; do not create a second UI policy here.

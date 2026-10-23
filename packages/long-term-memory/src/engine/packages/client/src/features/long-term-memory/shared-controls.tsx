@@ -255,6 +255,7 @@ export function NumberField({
   step = 1,
   onChange,
   disabled = false,
+  busy = false,
   help,
   compact = false,
 }: {
@@ -265,6 +266,8 @@ export function NumberField({
   step?: number;
   onChange: (value: number) => void;
   disabled?: boolean;
+  /** A save is in flight: stay focusable (aria-disabled, read-only) instead of dropping focus like `disabled`. */
+  busy?: boolean;
   help?: ReactNode;
   compact?: boolean;
 }) {
@@ -301,7 +304,7 @@ export function NumberField({
         id={id}
         aria-labelledby={`${id}-label`}
         data-ltm-control="number"
-        className={compact ? compactInputClass : inputClass}
+        className={`${compact ? compactInputClass : inputClass}${busy ? " opacity-50" : ""}`}
         style={compact ? compactInputStyle : undefined}
         type="number"
         value={text}
@@ -309,6 +312,8 @@ export function NumberField({
         max={max}
         step={step}
         disabled={disabled}
+        aria-disabled={busy || undefined}
+        readOnly={busy}
         onChange={(event) => setText(event.target.value)}
         onBlur={commit}
         onKeyDown={(event) => {

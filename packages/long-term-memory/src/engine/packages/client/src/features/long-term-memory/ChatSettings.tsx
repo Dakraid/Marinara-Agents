@@ -1,5 +1,5 @@
 import { Settings2 } from "lucide-react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type {
   LtmGlobalSettings,
@@ -16,6 +16,8 @@ export function ChatSettings({ props }: { props: CapabilityProps }) {
   const { t: localizeUi } = useLtmTranslation();
   const recallStyleLabelId = useId();
   const [pending, setPending] = useState(false);
+  // A pending save keeps its controls focusable (aria-disabled, not `disabled`), so this guard ignores input meanwhile.
+  const pendingRef = useRef(false);
   const [message, setMessage] = useState("");
   const globalSettings = useQuery({
     queryKey: queryKeys.chatDefaults,
@@ -27,6 +29,8 @@ export function ChatSettings({ props }: { props: CapabilityProps }) {
     queryFn: () => request<LtmLastInjectionResponse>(`/last-injection/${encodeURIComponent(props.chatId!)}`),
   });
   const runUpdate = async (operation: () => void | Promise<void>) => {
+    if (pendingRef.current) return;
+    pendingRef.current = true;
     setPending(true);
     setMessage("");
     try {
@@ -34,6 +38,7 @@ export function ChatSettings({ props }: { props: CapabilityProps }) {
     } catch (error) {
       setMessage(errorMessage(error, localizeUi("ui.longTermMemory.longtermmemorydetail.couldNotUpdateThisChat")));
     } finally {
+      pendingRef.current = false;
       setPending(false);
     }
   };
@@ -73,9 +78,10 @@ export function ChatSettings({ props }: { props: CapabilityProps }) {
           <select
             aria-labelledby={recallStyleLabelId}
             data-ltm-control="select"
-            className={compactInputClass}
+            className={`${compactInputClass}${pending ? " opacity-50" : ""}`}
             style={compactInputStyle}
-            disabled={pending || readOnly}
+            disabled={readOnly}
+            aria-disabled={pending || undefined}
             value={effectiveStyle}
             onChange={(event) => update({ longTermMemoryRecallStyle: event.target.value })}
           >
@@ -101,7 +107,8 @@ export function ChatSettings({ props }: { props: CapabilityProps }) {
             min={128}
             max={16384}
             step={128}
-            disabled={pending || readOnly}
+            disabled={readOnly}
+            busy={pending}
             onChange={(value) => update({ longTermMemoryBudgetTokens: value })}
             compact
           />
@@ -120,7 +127,8 @@ export function ChatSettings({ props }: { props: CapabilityProps }) {
             value={effectiveMaxChunks}
             min={1}
             max={100}
-            disabled={pending || readOnly}
+            disabled={readOnly}
+            busy={pending}
             onChange={(value) => update({ longTermMemoryMaxChunks: value })}
             compact
           />
