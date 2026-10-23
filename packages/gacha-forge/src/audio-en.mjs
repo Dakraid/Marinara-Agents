@@ -27,7 +27,7 @@ export const forgeAudioEnglish = {
   "audio.generationRejected":
     "Audio generation failed (HTTP {status}). Check the connection and provider account. Playing the existing soundtrack and effects.",
   "audio.generationReason":
-    "Audio generation failed (HTTP {status}): {reason} Playing the existing soundtrack and effects.",
+    "Audio generation failed (HTTP {status}). Playing the existing soundtrack and effects. Provider message: {reason}",
   "audio.promptFailed":
     "The music brief could not be generated. Check the world's narration connection. Playing the existing soundtrack.",
   "audio.voiceFailed": "This spoken line could not play. You can keep reading.",
