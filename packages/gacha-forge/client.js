@@ -3651,6 +3651,8 @@ class ForgeAudioController {
       this.host._root.querySelector(".gf-stage")?.append(status);
     }
     if (status) status.textContent = forgeAudioEnglish[key];
+    clearTimeout(this.noticeTimer);
+    this.noticeTimer = setTimeout(() => status?.remove(), 6000);
   }
 
   async generate(kind, cue) {
@@ -3759,7 +3761,9 @@ class ForgeAudioController {
     if (!this.player || this.disposed || this.settings.muted || this.settings.sfxVolume === 0) return;
     const manifest = await this.manifest;
     if (this.disposed || this.settings.muted || this.settings.sfxVolume === 0) return;
-    const asset = this.generated.get(`${this.settings.audioConnectionId || this.generationConnection}:sfx:${name}`);
+    const asset = this.settings.generate
+      ? this.generated.get(`${this.settings.audioConnectionId || this.generationConnection}:sfx:${name}`)
+      : null;
     const tag = asset?.tag || forgeStockSfx[name];
     if (tag) this.player.playSfx(tag, asset ? { [tag]: { path: asset.path } } : manifest?.assets);
     // The first action stays immediate; a generated replacement is reused by later actions.
@@ -3811,6 +3815,7 @@ class ForgeAudioController {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    clearTimeout(this.noticeTimer);
     this.voiceAbort?.abort();
     for (const request of this.requests) request.abort();
     this.host._root.removeEventListener("click", this.onClick);

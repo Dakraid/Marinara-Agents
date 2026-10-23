@@ -215,8 +215,12 @@ try {
   await test("generated cues dedupe, reuse and return to stock when disabled", async () => {
     const requests = [];
     globalThis.Ze = async (path, options) => {
-      requests.push({ path, ...JSON.parse(options.body) });
-      return { ok: true, json: async () => ({ tag: "music:package:one", path: "music/package/one.mp3" }) };
+      const body = JSON.parse(options.body);
+      requests.push({ path, ...body });
+      return {
+        ok: true,
+        json: async () => ({ tag: `${body.kind}:package:one`, path: `${body.kind}/package/one.mp3` }),
+      };
     };
     const { controller, events } = fixture();
     controller.configure({ generate: true, audioConnectionId: "dedicated" });
@@ -230,9 +234,15 @@ try {
     });
     assert.equal(requests[0].audioConnectionId, "dedicated");
     assert.equal(events.filter(([event]) => event === "playMusic").length, 2, "stock then generated");
-    controller.configure({ generate: false });
+    await controller.effect("hit");
+    await tick();
+    await controller.effect("hit");
+    assert.equal(events.filter(([event]) => event === "playSfx").at(-1)[1], "sfx:package:one");
+    controller.configure({ ...controller.settings, generate: false });
     await controller.cue("boss");
     assert.equal(events.filter(([event]) => event === "playMusic").at(-1)[1], "stock:boss");
+    await controller.effect("hit");
+    assert.equal(events.filter(([event]) => event === "playSfx").at(-1)[1], "sfx:combat:spell-hit");
     controller.dispose();
   });
 
