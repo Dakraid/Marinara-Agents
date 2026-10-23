@@ -1,5 +1,9 @@
 # Changelog
 
+## 10.0.2 — 2026-10-24
+
+- On phones, the Relationship Tracker icon in the chat's tracker strip no longer shows as a button that does nothing. The relationship web now opens from its own tracker window, which you can move like the other phone trackers (needs a matching Marinara Engine update).
+
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.

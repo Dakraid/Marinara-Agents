@@ -427,7 +427,8 @@
     // The desktop Trackers window wraps each tracker in a drawer that already shows its title and
     // collapse arrow, as it does for built-in trackers; only the Tracker Panel needs this header.
     hostProvidesHeader() {
-      return Boolean(this.closest?.(".mari-drawer__body"));
+      // A Tracker window drawer or the phone's tracker window already titles the web.
+      return Boolean(this.closest?.(".mari-drawer__body, [data-mobile-tracker-window]"));
     }
 
     async loadPortrait(characterId) {
@@ -1407,6 +1408,12 @@
     }
 
     renderToolbar() {
+      if (this._props?.mobileCompact === true) {
+        // The phone strip has no drawer to open, so a passive tile is a dead button; the Engine's tracker window opens the web.
+        this.replaceChildren?.();
+        this.shadowRoot.innerHTML = "";
+        return;
+      }
       const hostClass = typeof this._props?.toolbarButtonClass === "string" ? this._props.toolbarButtonClass.trim() : "";
       if (hostClass) {
         // Wear the host's chat-widget button class like other packages' controls. Host classes style only light
