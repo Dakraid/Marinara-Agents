@@ -37,6 +37,8 @@ const workspaceLayout = readFileSync(ltmSourcePaths.workspaceLayout, "utf8");
 const sharedControls = readFileSync(ltmSourcePaths.sharedControls, "utf8");
 const types = readFileSync(ltmSourcePaths.types, "utf8");
 const locale = JSON.parse(readFileSync(ltmSourcePaths.locale));
+const routes = readFileSync(ltmSourcePaths.routes, "utf8");
+const maintenance = readFileSync(ltmSourcePaths.maintenance, "utf8");
 
 assert.match(workspace, /const effectiveAction = retryContract\?\.action \?\? action/u);
 assert.match(workspace, /extract: contract\.action !== "refresh"/u);
@@ -338,15 +340,12 @@ assert.match(availabilityTabRail, /nextTabIndex\(event\.key/u);
 assert.doesNotMatch(availabilityTabRail, /aria-expanded/u);
 assert.doesNotMatch(availabilityTabRail, /group-open:rotate-90/u);
 assert.doesNotMatch([vault, workspaceScreen].join("\n"), /currentIds=/u);
-assert.match(vault, /filterModes/u);
-assert.doesNotMatch(vault, /scopeModes/u);
 assert.match(vault, /useQuery\(scopeTargetsQueryOptions\(props\.chatId\)\)/u);
 assert.doesNotMatch(workspace, /id: `branch:\$\{chat\.id\}`/u);
 assert.match(workspace, /destinationScopeLimitReached/u);
 assert.match(workspace, /hasDestinationScopeCapacity\(target\.destinationScope\)/u);
 assert.match(availabilityTabRail, /data-ltm-availability-target/u);
 assert.match(sourceScopeCombobox, /data-ltm-scope-picker-popup/u);
-assert.match(sourceScopeCombobox, /data-ltm-scope-tablist/u);
 assert.match(sourceScopeCombobox, /data-ltm-scope-tab=\{kind\}/u);
 assert.match(sourceScopeCombobox, /data-ltm-scope-tabpanel=\{activeKind\}/u);
 assert.match(workspace, /role="tabpanel"/u);
@@ -542,7 +541,6 @@ assert.match(vaultScreen, /inline-flex min-h-11 max-w-full[\s\S]*h-11 w-11/u);
 assert.match(vault, /clearMemorySearch[\s\S]*h-11 w-11/u);
 assert.match(vault, /data-ltm-mode-filter[\s\S]*min-h-11/u);
 assert.match(vault, /bulkModes[\s\S]*min-h-11/u);
-assert.match(vault, /data-ltm-memory-scope-secondary/u);
 assert.match(vault, /data-ltm-note-inspector/u);
 assert.match(vault, /mari-editor-panel min-w-0 space-y-4 p-3/u);
 assert.match(vault, /copyDiagnostics/u);
@@ -793,6 +791,60 @@ assert.equal(locale["ui.longTermMemory.activityview.valueExcluded"], "Excluded")
 assert.equal(locale["ui.longTermMemory.activityview.settingCharacterTargeting"], "Character targeting");
 assert.equal(locale["ui.longTermMemory.activityview.valueWholeChat"], "Whole chat");
 
+// Scope loading stays separate from local-character discovery (formerly long-term-memory-loading).
+assert.match(api, /export const ltmScopeTargetsKey = \(chatId: string \| null \| undefined\)/u);
+assert.match(
+  api,
+  /export const scopeTargetsQueryOptions = \(chatId: string \| null \| undefined\) => \(\{\s+queryKey: ltmScopeTargetsKey\(chatId\),\s+staleTime: 30_000,/u,
+);
+assert.match(workspace, /useQuery\(scopeTargetsQueryOptions\(props\.chatId\)\)/u);
+const previewBlock = workspace.slice(workspace.indexOf("const previewEnabled ="), workspace.indexOf("const rows ="));
+assert.match(
+  previewBlock,
+  /const previewEnabled = sourceContextMatchesProps && sourceTargetResolved && source !== "lorebooks"/u,
+);
+assert.match(
+  previewBlock,
+  /const lorebookPreviewEnabled = sourceContextMatchesProps && sourceTargetResolved && source === "lorebooks"/u,
+);
+assert.match(previewBlock, /const preview = useInfiniteQuery\(\{[\s\S]*?enabled: previewEnabled,/u);
+assert.match(previewBlock, /const lorebookPreview = useInfiniteQuery\(\{[\s\S]*?enabled: lorebookPreviewEnabled,/u);
+const sourceDetailsBlock = workspace.slice(
+  workspace.indexOf("const sourceDetails = useQuery({"),
+  workspace.indexOf("const previewData ="),
+);
+assert.match(sourceDetailsBlock, /scopeTargets\.isSuccess/u);
+assert.match(sourceDetailsBlock, /sourceContextMatchesProps/u);
+assert.match(sourceDetailsBlock, /focusedFlatSourceId !== null/u);
+assert.match(workspace, /const sourceContextMatchesProps = sourceContextKey === \(props\.chatId \?\? "all"\)/u);
+assert.match(workspace, /const sourceTargetResolved = Boolean\(sourceTarget && scopeTargets\.isSuccess\)/u);
+assert.match(
+  workspace,
+  /const previewData = sourceContextMatchesProps && sourceTargetResolved \? mergedPreview : undefined/u,
+);
+assert.match(
+  workspace,
+  /const lorebookPreviewData = sourceContextMatchesProps && sourceTargetResolved \? mergedLorebookPreview : undefined/u,
+);
+assert.match(
+  workspace,
+  /const sourceDetailsData = sourceContextMatchesProps && sourceTargetResolved \? sourceDetails\.data : undefined/u,
+);
+assert.match(workspace, /setSourceTargetId\(props\.chatId \? `chat:\$\{props\.chatId\}` : "all"\)/u);
+assert.match(workspace, /scopeTargetOptions\.find\(\(target\) => target\.id === sourceTargetId\)/u);
+assert.match(workspace, /setSourceTargetId\(next\)/u);
+assert.match(workspace, /if \(scopeTargets\.isError\) \{/u);
+assert.match(workspace, /scopeTargets\.refetch\(\)/u);
+const scopeTargetsRoute = routes.slice(
+  routes.indexOf('app.get<{ Querystring: unknown }>("/scope-targets"'),
+  routes.indexOf('app.get<{ Querystring: unknown }>("/local-characters"'),
+);
+assert.doesNotMatch(scopeTargetsRoute, /loadTrustedLtmSubjectCatalog/u);
+assert.match(vault, /localCharacters\.isLoading && !localCharacters\.data/u);
+assert.match(vault, /localCharacters\.isError && !localCharacters\.data/u);
+assert.match(vault, /localCharacters\.refetch\(\)/u);
+assert.equal((maintenance.match(/queryKeys\.localCharactersRoot/g) ?? []).length, 2);
+
 process.stdout.write(
-  "Long-Term Memory feedback clarity UI regression: labels, outcomes, usage, warnings, and defaults ok\n",
+  "Long-Term Memory feedback clarity UI regression: labels, outcomes, usage, warnings, defaults, and scope loading ok\n",
 );

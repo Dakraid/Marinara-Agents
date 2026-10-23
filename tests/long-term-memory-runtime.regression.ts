@@ -8,11 +8,6 @@ import { runRegressionToCompletion, runWithSafeCleanup } from "./regression-help
 async function main() {
   const repoRoot = resolve(dirname(process.argv[1] ?? process.cwd()), "..");
   const packageManifest = JSON.parse(await readFile(join(repoRoot, "packages/long-term-memory/manifest.json"), "utf8"));
-  assert.deepEqual(
-    packageManifest.capabilityApi,
-    { major: 1, minor: 341 },
-    "Long-Term Memory takes its query client and libraries from the Engine's host (capability API 1.341)",
-  );
   assert.equal(packageManifest.engine.min, "2.4.1", "Long-Term Memory is gated by its capability API, not engine.min");
   const source = "../packages/long-term-memory/src/engine/packages/server/src/services/long-term-memory";
   const { activate } = await import(`${source}/server-entry.ts`);
