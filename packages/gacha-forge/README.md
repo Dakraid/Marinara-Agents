@@ -11,6 +11,16 @@ remains; landscape phones gain the width previously left in the gutters.
 
 Chapter scenes in 1.9.1 use a small fullscreen icon in the top-right header fade, with a full touch target. Unit cards also show their affinity symbol; unit portrait decoding and favorite/help button alignment are improved.
 
+### Player choices (1.10.0)
+
+Settings → Story → Continuity includes **Allow choices**, enabled by default. Newly written chapters and Character Stories can offer two to four dialogue lines or actions for your protagonist above the dialogue box, using the current game theme.
+
+Small choices include every alternative branch in the same narration response. The selected branch plays for a few lines and rejoins the shared story. First-play selections are saved as canon; replay can show the other small branches without changing that history. Reloading or resuming restores the canonical selections.
+
+A chapter or Character Story may end with one optional big choice. It is always the final beat, and the model stops before its outcome. Selecting it permanently records your fate; replay cannot change it. Later chapters use the chosen outcome, even after story compression or summary folding, and generation remains locked until it is selected. Pre-forging pauses at unresolved decisions and lets you enter the chapter to choose.
+
+Turning choices off affects newly written scenes. Existing choice points and saved decisions remain intact. Previously written linear scenes stay playable.
+
 Requires Engine capability API 1.376. Earlier releases described below retain their historical behavior.
 
 Gacha Forge is a standalone gacha game mode: describe a world and it builds the rest — banners to pull on, a cast the model writes and paints for you, and the story, battles and events that grow around them. Lorebooks feed the forge when you have them; a hand-written scenario is enough.

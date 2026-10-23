@@ -3,7 +3,7 @@ import config from "./playwright.package.config.js";
 
 export default defineConfig({
   ...config,
-  testMatch: ["package-gacha-forge.e2e.ts", "package-gacha-forge-units.e2e.ts"],
+  testMatch: ["package-gacha-forge.e2e.ts", "package-gacha-forge-units.e2e.ts", "package-gacha-forge-choices.e2e.ts"],
   projects: [
     ...config.projects!,
     {

@@ -1,3 +1,10 @@
+## 1.10.0 — 2026-10-23
+
+- Choose your protagonist's dialogue or actions from two to four themed options above the dialogue box. Player choices are on by default in Settings > Story > Continuity.
+- Small choices include every alternative scene in the same generation and return to the shared story. Your first-play choices become canon; replaying another route does not rewrite them.
+- A chapter or Character Story can end with one optional big choice. That fate is permanent, and later story generation waits for it before continuing from the chosen outcome.
+- Choices survive reloads. Existing linear chapters still work; turning choices off affects newly written scenes and keeps existing decisions.
+
 ## 1.9.1 — 2026-10-23
 
 - Chapter fullscreen controls now use a small icon aligned with the top-right header fade, with a usable touch target and visible keyboard focus.
