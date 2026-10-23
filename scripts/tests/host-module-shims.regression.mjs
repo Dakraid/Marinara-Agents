@@ -126,6 +126,7 @@ assert.throws(() => hostModulesPlugin({ engineRoot: partial, exportMap }), /does
 const legacySpecifiers = HOST_MODULE_SPECIFIERS.filter((specifier) => specifier !== "motion/react");
 const legacyEngine = await fakeEngine("legacy-engine", legacySpecifiers);
 assert.equal(readHostModuleImports(legacyEngine, ["framer-motion"])["framer-motion"], "framer-motion");
+assert.deepEqual(readHostModuleTypePaths(legacyEngine), {});
 const legacyPlugin = hostModulesPlugin({ engineRoot: legacyEngine, exportMap });
 await build(`import { useState } from "react"; export { useState };`, [legacyPlugin]);
 await assert.rejects(
@@ -211,6 +212,108 @@ await writeFile(
 export const MARINARA_HOST_MODULE_IMPORTS = { "framer-motion": "../outside" };`,
 );
 assert.throws(() => readHostModuleExports(mappedEngine), /no valid dependency/u);
+
+// A declared mapping must never silently become the identity fallback for an older contract.
+const unparseableEngine = await fakeEngine("unparseable-engine", HOST_MODULE_SPECIFIERS);
+const unparseableContract = await readFile(join(unparseableEngine, HOST_CONTRACT_PATH), "utf8");
+for (const declaration of [
+  'export const MARINARA_HOST_MODULE_IMPORTS = Object.freeze({ "framer-motion": "framer-motion-v13" });',
+  'export const MARINARA_HOST_MODULE_IMPORTS: Record<string, string> = { "framer-motion": "framer-motion-v13" };',
+  "export const MARINARA_HOST_MODULE_IMPORTS = {};",
+]) {
+  await writeFile(join(unparseableEngine, HOST_CONTRACT_PATH), `${unparseableContract}\n${declaration}\n`);
+  for (const read of [
+    () => readHostModuleImports(unparseableEngine, HOST_MODULE_SPECIFIERS),
+    () => readHostModuleExports(unparseableEngine),
+    () => readHostModuleTypePaths(unparseableEngine),
+    () => hostModulesPlugin({ engineRoot: unparseableEngine }),
+  ]) {
+    assert.throws(read, /Cannot parse MARINARA_HOST_MODULE_IMPORTS|no valid dependency/u);
+  }
+}
+
+assert.deepEqual(readHostModuleImports(unparseableEngine, []), {});
+
+// Type paths follow Node's root-hoisted package and its exported subpath, not one node_modules directory.
+const hoistedEngine = await fakeEngine("hoisted-engine", ["framer-motion", "motion/react"]);
+await writeFile(
+  join(hoistedEngine, HOST_CONTRACT_PATH),
+  `export const MARINARA_HOST_MODULE_SPECIFIERS = ["framer-motion", "motion/react"];
+export const MARINARA_HOST_MODULE_IMPORTS = { "framer-motion": "legacy-motion", "motion/react": "modern-motion/animation" };`,
+);
+for (const [dependency, name, declaration] of [
+  ["legacy-motion", "observeTimeline", "legacy"],
+  ["modern-motion", "useScopeMotion", "animation"],
+]) {
+  const moduleRoot = join(hoistedEngine, "node_modules", dependency);
+  await mkdir(join(moduleRoot, "types"), { recursive: true });
+  await mkdir(join(moduleRoot, "runtime"), { recursive: true });
+  await writeFile(
+    join(moduleRoot, "package.json"),
+    JSON.stringify({
+      name: dependency,
+      type: "module",
+      exports: {
+        ".": { types: "./types/root.d.ts", import: "./runtime/root.mjs" },
+        ...(declaration === "animation"
+          ? { "./animation": { types: "./types/animation.d.ts", import: "./runtime/animation.mjs" } }
+          : {}),
+      },
+    }),
+  );
+  await writeFile(
+    join(moduleRoot, "types/root.d.ts"),
+    `export declare const ${declaration === "animation" ? "wrongRoot" : name}: number;`,
+  );
+  await writeFile(
+    join(moduleRoot, "runtime/root.mjs"),
+    `export const ${declaration === "animation" ? "wrongRoot" : name} = 1;`,
+  );
+  if (declaration === "animation") {
+    await writeFile(join(moduleRoot, "types/animation.d.ts"), `export declare const ${name}: number;`);
+    await writeFile(join(moduleRoot, "runtime/animation.mjs"), `export const ${name} = 14;`);
+  }
+}
+assert.deepEqual(readHostModuleExports(hoistedEngine), {
+  "framer-motion": ["observeTimeline"],
+  "motion/react": ["useScopeMotion"],
+});
+const ts = await import("typescript");
+const hoistedSource = join(temporary, "hoisted-types.ts");
+await writeFile(
+  hoistedSource,
+  `import { observeTimeline } from "framer-motion";
+import { useScopeMotion } from "motion/react";
+export { observeTimeline, useScopeMotion };`,
+);
+const hoistedDiagnostics = () =>
+  ts.getPreEmitDiagnostics(
+    ts.createProgram([hoistedSource], {
+      noEmit: true,
+      skipLibCheck: true,
+      strict: true,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      paths: readHostModuleTypePaths(hoistedEngine),
+    }),
+  );
+assert.deepEqual(
+  hoistedDiagnostics().map((diagnostic) => diagnostic.code),
+  [],
+);
+await writeFile(hoistedSource, `import { wrongRoot } from "motion/react"; export { wrongRoot };`);
+assert.deepEqual(
+  hoistedDiagnostics().map((diagnostic) => diagnostic.code),
+  [2305],
+);
+await writeFile(
+  join(hoistedEngine, HOST_CONTRACT_PATH),
+  (await readFile(join(hoistedEngine, HOST_CONTRACT_PATH), "utf8")).replace(
+    "modern-motion/animation",
+    "missing-motion/animation",
+  ),
+);
+assert.throws(() => readHostModuleTypePaths(hoistedEngine), /Cannot resolve the Engine host dependency/u);
 
 // The shared build is marked free of side effects, so modules a package does not use are dropped from the bundle.
 const shared = join(temporary, "shared-dist");

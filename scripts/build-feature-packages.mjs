@@ -987,6 +987,8 @@ async function bundleClientEntry(feature, entry, output, metafilePath, buildRoot
           : null;
   const hostModules = hostModulesPlugin({
     engineRoot,
+    // Boundary packages emit this same validated API in their manifest below; a feature override
+    // must not unlock host imports that the installable manifest does not require.
     capabilityApi: boundary?.capabilityApi ?? feature.capabilityApi ?? PACKAGE_CAPABILITY_API,
   });
   // The other games reach UNO's query keys through the vendored game hooks, and with them UNO's game store, which only

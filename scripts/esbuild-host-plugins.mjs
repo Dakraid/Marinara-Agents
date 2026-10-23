@@ -78,8 +78,12 @@ export function readHostContractSpecifiers(engineRoot) {
 /** Read the Engine's explicit public-slot to dependency mapping; old contracts map identically. */
 export function readHostModuleImports(engineRoot, specifiers) {
   const source = readFileSync(join(engineRoot, HOST_CONTRACT_PATH), "utf8");
-  const declaration = /MARINARA_HOST_MODULE_IMPORTS\s*=\s*\{([^}]+)\}/u.exec(source)?.[1];
-  if (declaration === undefined) return Object.fromEntries(specifiers.map((specifier) => [specifier, specifier]));
+  const declaration = /MARINARA_HOST_MODULE_IMPORTS\s*=\s*\{([^}]*)\}/u.exec(source)?.[1];
+  if (declaration === undefined) {
+    if (/\bMARINARA_HOST_MODULE_IMPORTS\b/u.test(source))
+      throw new Error("Cannot parse MARINARA_HOST_MODULE_IMPORTS; the Engine must declare a literal slot mapping");
+    return Object.fromEntries(specifiers.map((specifier) => [specifier, specifier]));
+  }
   const imports = Object.fromEntries(
     [...declaration.matchAll(/(?:"([^"]+)"|'([^']+)'|([A-Za-z_$][\w$]*))\s*:\s*["']([^"']+)["']/gu)].map((match) => [
       match[1] ?? match[2] ?? match[3],
@@ -97,13 +101,22 @@ export function readHostModuleImports(engineRoot, specifiers) {
 /** TypeScript paths for renamed slots; unchanged slots retain normal package/@types resolution. */
 export function readHostModuleTypePaths(engineRoot) {
   const imports = readHostModuleImports(engineRoot, readHostContractSpecifiers(engineRoot));
+  const aliases = Object.entries(imports).filter(([specifier, dependency]) => specifier !== dependency);
+  if (!aliases.length) return {};
+  // The strict lane already uses this compiler. Its resolver handles hoisting, package exports and declarations.
+  const ts = createRequire(import.meta.url)("typescript");
+  const containingFile = join(resolve(engineRoot), "packages/client/__marinara-host-types__.ts");
   return Object.fromEntries(
-    Object.entries(imports)
-      .filter(([specifier, dependency]) => specifier !== dependency)
-      .map(([specifier, dependency]) => [
-        specifier,
-        [join(resolve(engineRoot), "packages/client/node_modules", dependency)],
-      ]),
+    aliases.map(([specifier, dependency]) => {
+      const resolved = ts.resolveModuleName(
+        dependency,
+        containingFile,
+        { module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler },
+        ts.sys,
+      ).resolvedModule;
+      if (!resolved) throw new Error(`Cannot resolve the Engine host dependency ${dependency} for ${specifier}`);
+      return [specifier, [resolved.resolvedFileName]];
+    }),
   );
 }
 
