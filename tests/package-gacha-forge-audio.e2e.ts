@@ -481,16 +481,20 @@ test("Readiness recovers in the current world and single-channel selections keep
   const played = await forge.evaluate(async (node) => {
     const audio = (node as any)._forgeAudio;
     const tags: string[] = [];
-    const play = audio.player.playSfx;
-    audio.player.playSfx = (tag: string, ...args: unknown[]) => {
-      tags.push(tag);
-      return play.call(audio.player, tag, ...args);
+    const player = audio.player;
+    // The host player is frozen; observe calls through a delegating test wrapper.
+    audio.player = {
+      ...player,
+      playSfx: (tag: string, ...args: unknown[]) => {
+        tags.push(tag);
+        return player.playSfx(tag, ...args);
+      },
     };
     try {
       await audio.effect("click");
       return tags;
     } finally {
-      audio.player.playSfx = play;
+      audio.player = player;
     }
   });
   expect(played).toEqual(["sfx:ui:click"]);
