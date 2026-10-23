@@ -251,6 +251,19 @@
               "replace": "l&&l.addEventListener(\"change\",()=>{n[i.id]=typeof l.value==\"string\"?l.value.trim():\"\",r&&r(a===\"continuity\"?zs({[i.id]:n[i.id]},ka(e,n)):ki(e,a,n))})}}function rp("
             }
           ]
+        },
+        {
+          "version": "1.10.1",
+          "edits": [
+            {
+              "find": "ds=\"1.10.0\"",
+              "replace": "ds=\"1.10.1\""
+            },
+            {
+              "find": "oy=[{version:null,new:",
+              "replace": "oy=[{version:null,fixed:[\"Welcome Gift rewards no longer overlap Claim on short mobile screens; scroll when needed and use its full touch target.\"]},{version:\"1.10.0\",new:"
+            }
+          ]
         }
       ]
     },

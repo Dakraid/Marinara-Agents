@@ -4,6 +4,13 @@ const forgeBrowserLayout = `
 .gf-arena { padding: 0; align-items: stretch; }
 .gf-stage { width: 100%; height: 100%; aspect-ratio: auto; justify-self: stretch; }
 .ob-intake, .node-list, .sel-list, .vn-dock { width: 100%; max-width: none; }
+/* Keep reward cards out of the Claim footer when the welcome artwork leaves little height. */
+.ev-pane.nw { overflow-y: auto; }
+.ev-pane.nw .nw-track { flex-shrink: 0; min-height: min-content; }
+.ev-pane.nw .ev-week { flex-shrink: 0; grid-auto-rows: minmax(min-content, 1fr); }
+@media (any-pointer: coarse), (pointer: coarse) {
+  .ev-pane.nw .ev-claim { min-height: 44px; }
+}
 /* Chapter artwork keeps a small icon in its header fade, with a full touch target. */
 .vn-top:has(> .gf-fs-chapter) { min-height: 44px; }
 .gf-fs-exit.gf-fs-chapter {
