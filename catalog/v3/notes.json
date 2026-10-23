@@ -772,7 +772,7 @@
         {
           "version": "0.7.2",
           "date": "2026-10-23",
-          "notes": "- Korean, Japanese and Chinese now work. A name followed directly by a Korean particle (김민수는) or written without spaces in Japanese (アリスは) or Chinese (张三很信任李四) now counts as naming that character. Before, Update from History and automatic updates rejected these sentences, and Scene-only couldn't tell who was present.\n- A longer card name doesn't count as a shorter one: 김민수 isn't 김민, and アリス isn't リス. A one-character Chinese or Japanese name still needs a space or punctuation next to it, because single characters appear inside ordinary words.\n- When a persona perception is rejected, the message now says which name it expected.",
+          "notes": "- Korean, Japanese and Chinese now work. A name followed directly by a Korean particle (김민수는) or written without spaces in Japanese (アリスは) or Chinese (张三很信任李四) now counts as naming that character. Before, Update from History and automatic updates rejected these sentences, and Scene-only couldn't tell who was present.\n- A longer card name doesn't count as a shorter one: 김민수 isn't 김민, and アリス isn't リス. Single characters and syllables appear inside ordinary words, so a one-character Chinese or Japanese name still needs a space or punctuation next to it, and a one-syllable Korean name counts only before a particle (준은, but not 준비).\n- When a persona perception is rejected, the message now says which name it expected.",
           "highlight": true
         },
         {

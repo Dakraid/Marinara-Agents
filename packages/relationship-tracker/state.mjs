@@ -44,14 +44,19 @@ const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 
 // Name matching. Korean attaches particles to names (김민수는, Alice를), and Japanese and Chinese use no spaces
 // (アリスはボブを, 张三很信任李四), so those scripts may touch a name. Everything else still needs a space or
-// punctuation, so English is unaffected. A one-character Chinese or Japanese name keeps that strict rule because
-// single characters appear inside ordinary words (明 in 明天). A name inside another card's longer name never counts.
+// punctuation, so English is unaffected. Single characters and syllables appear inside ordinary words, so a
+// one-character Chinese or Japanese name keeps that strict rule (明 in 明天), and a one-syllable Korean name may be
+// followed only by a particle (준은, 준을, but not 준비). A name inside another card's longer name never counts.
 const UNSPACED = "\\p{scx=Han}\\p{scx=Hiragana}\\p{scx=Katakana}";
 const UNSPACED_CHARACTER = new RegExp(`[${UNSPACED}]`, "u");
 const TOUCHING_TEXT = new RegExp(`^[\\p{Script=Hangul}${UNSPACED}]`, "u");
 const WORD_CHARACTER = /^[\p{L}\p{N}_]$/u;
+const NAME_END = "$|[^\\p{L}\\p{N}_]";
+// A vocative 야/아 must end the word, so 이야기 doesn't count as 이.
+const KOREAN_PARTICLE = `[은는이가을를의에도와과로께랑만씨님였예]|으로|한테|하고|처럼|보다|까지|부터|마저|조차|밖에|라고|라는|[야아](?=${NAME_END})`;
 
 const isStrictName = (name) => [...name].length < 2 && UNSPACED_CHARACTER.test(name);
+const isOneSyllableKorean = (name) => [...name].length < 2 && /\p{Script=Hangul}/u.test(name);
 
 // True when text after a name continues with no space between, as in 김민수는 or アリスは.
 export const touchesName = (text) => TOUCHING_TEXT.test(text);
@@ -75,7 +80,11 @@ function longerNameGuard(name, otherNames) {
 }
 
 function nameSource(name, otherNames) {
-  const end = isStrictName(name) ? "(?=$|[^\\p{L}\\p{N}_])" : `(?=$|[^\\p{L}\\p{N}_]|[\\p{Script=Hangul}${UNSPACED}])`;
+  const end = isStrictName(name)
+    ? `(?=${NAME_END})`
+    : isOneSyllableKorean(name)
+      ? `(?=${NAME_END}|[${UNSPACED}]|${KOREAN_PARTICLE})`
+      : `(?=${NAME_END}|[\\p{Script=Hangul}${UNSPACED}])`;
   return `${longerNameGuard(name, otherNames)}${escapeRegex(name)}${end}`;
 }
 

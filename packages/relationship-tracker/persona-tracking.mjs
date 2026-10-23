@@ -52,6 +52,7 @@ export function normalizePersonaDelta(input, allowedCharacters, personaSnapshot,
   }
   const byAlias = new Map(allowedCharacters.map((entry) => [entry.alias, entry]));
   const baseline = new Map(personaSnapshot.perceptions.map((entry) => [entry.characterId, entry]));
+  const names = [...allowedCharacters.map((entry) => entry.name), personaSnapshot.persona.name];
   const seen = new Set();
   const updates = [];
   for (const [index, tuple] of input.entries()) {
@@ -76,7 +77,6 @@ export function normalizePersonaDelta(input, allowedCharacters, personaSnapshot,
       if (!label || label.length > MAX_RELATIONSHIP_LABEL_LENGTH || !description || description.length > MAX_RELATIONSHIP_DESCRIPTION_LENGTH || !COLORS.has(colorCategory)) {
         fail("Defined persona perception prose or color is invalid.");
       }
-      const names = [...allowedCharacters.map((entry) => entry.name), personaSnapshot.persona.name];
       if (!leadingNamePattern(character.name, names).test(description)) {
         fail(`Persona perception must begin with the character's name (${character.name}).`);
       }
