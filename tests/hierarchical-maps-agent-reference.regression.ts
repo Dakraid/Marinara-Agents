@@ -362,6 +362,10 @@ export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/h
     let publicOutputCap: number | null = null;
     let fittedReserve: number | undefined;
     let completedReserve: number | undefined;
+    const fitReserves: Array<number | undefined> = [];
+    const completionReserves: Array<number | undefined> = [];
+    let malformedNext = false;
+    let repairContent: string | null = null;
     const releasePublicHost = adapter.configurePackageRuntime(
       {
         isDebugAgentsEnabled: () => false,
@@ -379,17 +383,30 @@ export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/h
             maxOutputTokens: publicOutputCap,
             fitContext: (messages: Array<{ role: string; content: string }>, options: { maxTokens?: number }) => {
               fittedReserve = options.maxTokens;
+              fitReserves.push(options.maxTokens);
               return {
                 messages,
-                trimmed: false,
+                trimmed: publicOutputCap !== null && (options.maxTokens ?? 0) > publicOutputCap,
                 estimatedTokensBefore: 1,
                 estimatedTokensAfter: 1,
                 ...(budgetEcho === undefined ? {} : { maxTokens: budgetEcho }),
               };
             },
-            chatComplete: (messages: Array<{ content: string }>, options: { maxTokens?: number }) => {
+            chatComplete: async (messages: Array<{ content: string }>, options: { maxTokens?: number }) => {
               completedReserve = options.maxTokens;
-              return OpenAIProvider.prototype.chatComplete(messages);
+              completionReserves.push(options.maxTokens);
+              const result = await OpenAIProvider.prototype.chatComplete(messages);
+              if (malformedNext) {
+                malformedNext = false;
+                repairContent = result.content;
+                return { ...result, content: "{invalid JSON}" };
+              }
+              if (repairContent) {
+                const content = repairContent;
+                repairContent = null;
+                return { ...result, content };
+              }
+              return result;
             },
           }),
         },
@@ -429,6 +446,17 @@ export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/h
         assert.equal(response.statusCode, 200, response.body);
         assert.equal(fittedReserve, 2_048);
         assert.equal(completedReserve, fittedReserve, "the actual call requests the same output reserve proven to fit");
+      }
+      for (const sample of cases) {
+        malformedNext = true;
+        const response = await publicHostApp.inject({
+          method: "POST",
+          url: `/api/chats/${sample.id}/spatial-context/generate`,
+          payload: sample.payload,
+        });
+        assert.equal(response.statusCode, 200, response.body);
+        assert.deepEqual(fitReserves.slice(-2), [2_048, 2_048], "the formatting repair fits the same capped reserve");
+        assert.deepEqual(completionReserves.slice(-2), [2_048, 2_048], "both actual calls use that capped reserve");
       }
       const callsBeforeReducedEcho = prompts.length;
       for (budgetEcho of [0, 1]) {

@@ -1917,7 +1917,7 @@ export async function spatialContextRoutes(app: FastifyInstance) {
         raw,
         finishReason: result.finishReason,
         parse: json.parseJsonish,
-        repair: spatialMapJsonRepairRequest(resolved, prompt.maxTokens, debugOverrideEnabled),
+        repair: spatialMapJsonRepairRequest(resolved, maxTokens, debugOverrideEnabled),
       });
       if (!parsedResponse.ok) {
         const payload = spatialMapJsonErrorPayload(parsedResponse);
