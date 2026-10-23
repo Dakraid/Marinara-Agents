@@ -314,7 +314,7 @@ async function main() {
       "global templates have no chat attachment",
     );
 
-    // Exercise the actual package adapter on an older host without copying a scanner into the package.
+    // Exercise the real routes against valid public host variants, without bundling a private scanner.
     const esbuild = createRequire(join(engineRoot, "packages/client/package.json"))("esbuild");
     const adapterPath = join(directory, "maps-runtime-adapter.mjs");
     await esbuild.build({
@@ -332,6 +332,78 @@ export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/h
       alias: { "@marinara-engine/shared": join(engineRoot, "packages/shared/dist/index.js") },
     });
     const adapter = await import(pathToFileURL(adapterPath).href);
+    const { resolvePackageAgentLorebookEntries } = await engine(
+      "packages/server/src/services/capability-packages/capability-agent-lorebook.service.ts",
+    );
+    let budgetEcho: number | undefined;
+    const releasePublicHost = adapter.configurePackageRuntime(
+      {
+        isDebugAgentsEnabled: () => false,
+        logger: { debug() {}, info() {}, warn() {}, error() {}, debugOverride() {} },
+        persistence: createCapabilityPersistenceHost(db),
+        resources: createCapabilityResourceHost(db),
+        resolveAgentLorebookEntries: (options: { chatId: string; signal?: AbortSignal }) =>
+          resolvePackageAgentLorebookEntries(db, "hierarchical-maps", options),
+        languageModels: {
+          resolve: async () => ({
+            name: "Maps public contract fixture",
+            connectionId: connection.id,
+            model: "public-contract-fixture",
+            maxContext: 32_768,
+            maxOutputTokens: null,
+            fitContext: (messages: Array<{ role: string; content: string }>) => ({
+              messages,
+              trimmed: false,
+              estimatedTokensBefore: 1,
+              estimatedTokensAfter: 1,
+              ...(budgetEcho === undefined ? {} : { maxTokens: budgetEcho }),
+            }),
+            chatComplete: OpenAIProvider.prototype.chatComplete,
+          }),
+        },
+        json: { parseJsonish: JSON.parse },
+      },
+      async () => null,
+      async () => null,
+    );
+    const publicHostApp = serverRequire("fastify")();
+    try {
+      await publicHostApp.register(adapter.spatialContextRoutes, { prefix: "/api/chats" });
+      const cases = [
+        { id: otherChat.id, payload: body, reference: /OTHER_CHAT_REFERENCE/ },
+        {
+          id: chat.id,
+          payload: { ...body, operation: "expand", targetLocationId: created.definition.locations[0].id },
+          reference: /MAPS_AGENT_ONLY_REFERENCE/,
+        },
+      ];
+      for (const sample of cases) {
+        const response = await publicHostApp.inject({
+          method: "POST",
+          url: `/api/chats/${sample.id}/spatial-context/generate`,
+          payload: sample.payload,
+        });
+        assert.equal(response.statusCode, 200, response.body);
+        assert.match(prompts.at(-1)!, sample.reference, "an omitted budget echo preserves reference context");
+        assert.match(prompts.at(-1)!, /Design a navigable harbor\./);
+      }
+      const callsBeforeReducedEcho = prompts.length;
+      for (budgetEcho of [0, 1]) {
+        for (const sample of cases) {
+          const response = await publicHostApp.inject({
+            method: "POST",
+            url: `/api/chats/${sample.id}/spatial-context/generate`,
+            payload: sample.payload,
+          });
+          assert.equal(response.statusCode, 400, response.body);
+          assert.equal(response.json().code, "spatial_ai_context_too_large");
+        }
+      }
+      assert.equal(prompts.length, callsBeforeReducedEcho, "explicitly smaller reserves never call the model");
+    } finally {
+      await publicHostApp.close();
+      releasePublicHost();
+    }
     const release = adapter.configurePackageRuntime(
       {
         persistence: createCapabilityPersistenceHost(db),
