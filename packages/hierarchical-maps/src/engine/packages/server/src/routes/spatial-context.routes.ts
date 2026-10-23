@@ -1871,8 +1871,9 @@ export async function spatialContextRoutes(app: FastifyInstance) {
       });
     }
 
+    let maxTokens = prompt.maxTokens;
     if (prepared.hasReferenceEntries) {
-      const maxTokens = Math.min(prompt.maxTokens, resolved.maxOutputTokens ?? prompt.maxTokens);
+      maxTokens = Math.min(maxTokens, resolved.maxOutputTokens ?? maxTokens);
       const fitted = resolved.fitContext(prompt.messages, { maxTokens });
       if (fitted.trimmed || (typeof fitted.maxTokens === "number" && fitted.maxTokens < maxTokens)) {
         return reply.status(400).send({
@@ -1895,7 +1896,7 @@ export async function spatialContextRoutes(app: FastifyInstance) {
     try {
       const result = await resolved.chatComplete(prompt.messages, {
         temperature: 0.55,
-        maxTokens: prompt.maxTokens,
+        maxTokens,
         debugMode: debugOverrideEnabled,
       });
       const raw = result.content?.trim();

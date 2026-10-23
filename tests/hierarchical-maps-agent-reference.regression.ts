@@ -213,6 +213,29 @@ async function main() {
     assert.doesNotMatch((await preview(defaultChat.id)).user, /MAPS_AGENT_ONLY_REFERENCE|OTHER_CHAT_REFERENCE/);
     assert.match((await preview(otherChat.id)).user, /OTHER_CHAT_REFERENCE/);
     assert.doesNotMatch((await preview(otherChat.id)).user, /MAPS_AGENT_ONLY_REFERENCE/);
+    // Per-agent references supplement setup/context. They do not replace the explicit,
+    // cited catalog that the existing lore-grounded modes require as authoritative canon.
+    assert.match(
+      (await preview(chat.id, { ...body, groundingMode: "setup", sourceLorebookIds: [] })).user,
+      /MAPS_AGENT_ONLY_REFERENCE/,
+    );
+    for (const groundingMode of ["lore_expand", "lore_strict"]) {
+      for (const sourceLorebookIds of [[], ["missing-source"]]) {
+        for (const suffix of ["generation-prompt/preview", "generate"]) {
+          const response = await app.inject({
+            method: "POST",
+            url: `/api/chats/${chat.id}/spatial-context/${suffix}`,
+            payload: { ...body, groundingMode, sourceLorebookIds },
+          });
+          assert.equal(response.statusCode, 400, response.body);
+          assert.equal(
+            response.json().code,
+            sourceLorebookIds.length ? "spatial_ai_lore_sources_unavailable" : "spatial_ai_request_invalid",
+          );
+        }
+      }
+    }
+    assert.equal(prompts.length, 0, "reference data does not bypass authoritative catalog validation");
     await attach(chat.id, false, reference.id);
     assert.doesNotMatch((await preview(chat.id)).user, /MAPS_AGENT_ONLY_REFERENCE/);
     await attach(chat.id, true, "missing-book");
@@ -336,6 +359,9 @@ export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/h
       "packages/server/src/services/capability-packages/capability-agent-lorebook.service.ts",
     );
     let budgetEcho: number | undefined;
+    let publicOutputCap: number | null = null;
+    let fittedReserve: number | undefined;
+    let completedReserve: number | undefined;
     const releasePublicHost = adapter.configurePackageRuntime(
       {
         isDebugAgentsEnabled: () => false,
@@ -350,15 +376,21 @@ export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/h
             connectionId: connection.id,
             model: "public-contract-fixture",
             maxContext: 32_768,
-            maxOutputTokens: null,
-            fitContext: (messages: Array<{ role: string; content: string }>) => ({
-              messages,
-              trimmed: false,
-              estimatedTokensBefore: 1,
-              estimatedTokensAfter: 1,
-              ...(budgetEcho === undefined ? {} : { maxTokens: budgetEcho }),
-            }),
-            chatComplete: OpenAIProvider.prototype.chatComplete,
+            maxOutputTokens: publicOutputCap,
+            fitContext: (messages: Array<{ role: string; content: string }>, options: { maxTokens?: number }) => {
+              fittedReserve = options.maxTokens;
+              return {
+                messages,
+                trimmed: false,
+                estimatedTokensBefore: 1,
+                estimatedTokensAfter: 1,
+                ...(budgetEcho === undefined ? {} : { maxTokens: budgetEcho }),
+              };
+            },
+            chatComplete: (messages: Array<{ content: string }>, options: { maxTokens?: number }) => {
+              completedReserve = options.maxTokens;
+              return OpenAIProvider.prototype.chatComplete(messages);
+            },
           }),
         },
         json: { parseJsonish: JSON.parse },
@@ -386,6 +418,17 @@ export { spatialContextRoutes } from ${JSON.stringify(join(repoRoot, "packages/h
         assert.equal(response.statusCode, 200, response.body);
         assert.match(prompts.at(-1)!, sample.reference, "an omitted budget echo preserves reference context");
         assert.match(prompts.at(-1)!, /Design a navigable harbor\./);
+      }
+      publicOutputCap = 2_048;
+      for (const sample of cases) {
+        const response = await publicHostApp.inject({
+          method: "POST",
+          url: `/api/chats/${sample.id}/spatial-context/generate`,
+          payload: sample.payload,
+        });
+        assert.equal(response.statusCode, 200, response.body);
+        assert.equal(fittedReserve, 2_048);
+        assert.equal(completedReserve, fittedReserve, "the actual call requests the same output reserve proven to fit");
       }
       const callsBeforeReducedEcho = prompts.length;
       for (budgetEcho of [0, 1]) {
