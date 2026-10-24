@@ -96,6 +96,10 @@ default, opens by itself while either is set, and names what is active when
 closed. With memories checked, the bulk rail is Edit selected…, then Archive and
 Delete set apart; Edit selected… opens one sheet for status, modes and
 availability that previews the outcome per memory and applies as one request.
+Under "What Apply will do" a polite summary counts ready, unchanged and blocked
+memories; Apply changes the ready ones and skips the rest, which stay selected.
+Apply appears in the header and under the list, stays focusable when off
+(`aria-disabled`, guarded handler) and names the reason beside it.
 The workbench distinguishes read-only
 source notes from editable memories and keeps validation, evidence, freshness,
 confidence, subjects, links, keywords, and availability visible as applicable.

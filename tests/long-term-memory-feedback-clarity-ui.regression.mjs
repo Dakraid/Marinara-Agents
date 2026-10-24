@@ -363,7 +363,24 @@ assert.match(vault, /characterScopeTargets/u);
 assert.match(vault, /conversationScopeTargets/u);
 assert.doesNotMatch(vault, /branchScopeTargets|deriveScopeBranches\b/u);
 assert.match(vault, /bulkAvailabilityScope/u);
-assert.match(vaultScreen, /bulkAvailabilitySelected/u);
+assert.match(vaultScreen, /bulkAvailabilitySelectedOne/u);
+assert.match(vaultScreen, /bulkAvailabilitySelectedOther/u);
+assert.equal(locale["ui.longTermMemory.memoryvault.bulkAvailabilitySelectedOne"], "{{count}} memory selected");
+assert.equal(locale["ui.longTermMemory.memoryvault.bulkAvailabilitySelectedOther"], "{{count}} memories selected");
+// #1636: the Edit selected sheet says what Apply will do, and why it is off, beside both Apply buttons.
+assert.equal(
+  locale["ui.longTermMemory.memoryvault.bulkOutcomeSummary"],
+  "{{ready}} ready · {{unchanged}} unchanged · {{blocked}} blocked",
+);
+assert.match(bulkAvailability, /role="status"[^>]*data-ltm-bulk-outcome-summary/u);
+assert.match(bulkAvailability, /aria-disabled=\{canApply \? undefined : true\}/u);
+assert.doesNotMatch(bulkAvailability, /\sdisabled=\{/u);
+assert.match(bulkAvailability, /renderApply\("top"\)[\s\S]*renderApply\("bottom"\)/u);
+assert.match(bulkAvailability, /if \(canApply\) onApply\(\)/u);
+assert.match(bulkAvailability, /removedTargets\.length > 0 && remainingPlaces\.length === 0 && changes/u);
+assert.match(bulkAvailability, /pressedMark/u);
+assert.match(vault, /pending=\{Boolean\(busy\)\}/u);
+assert.match(vault, /if \(busy \|\| batchPendingRef\.current\) return;\s*setAvailabilityOpen\(null\);/u);
 assert.match(vaultScreen, /chat:all/u);
 assert.doesNotMatch(vaultScreen, /branch:all|"branch"/u);
 assert.doesNotMatch(vault, /chooseOneAvailabilityPlace/u);

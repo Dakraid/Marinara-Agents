@@ -2763,6 +2763,8 @@ export default function MemoryVault({
                 selectedTargets={bulkAvailabilityTargets}
                 modes={bulkAvailabilityModes}
                 availabilityTargets={availabilityTargets}
+                locale={locale}
+                pending={Boolean(busy)}
                 localizeUi={localizeUi}
                 modeLabel={modeLabel}
                 onActionChange={setBulkAvailabilityAction}
@@ -2773,6 +2775,7 @@ export default function MemoryVault({
                 statusLabel={statusLabel}
                 onStatusChange={setBulkEditStatus}
                 onApply={() => {
+                  if (busy || batchPendingRef.current) return;
                   setAvailabilityOpen(null);
                   void batch("edit");
                 }}

@@ -2250,6 +2250,11 @@ async function main() {
       await bulkBranchRemoval.getByRole("button", { name: "Remove availability", exact: true }).click();
       assert.equal(await bulkBranchRow.getAttribute("aria-pressed"), "false", "switching to Add drops the branch");
       await bulkBranchRow.click();
+      assert.equal(await bulkBranchRemoval.getByText("1 memory selected", { exact: true }).count(), 1);
+      assert.equal(
+        await bulkBranchRemoval.locator("[data-ltm-bulk-outcome-summary]").innerText(),
+        "1 ready · 0 unchanged · 0 blocked",
+      );
       const bulkBranchRequest = page.waitForRequest(
         (request) => request.method() === "POST" && request.url().includes("/api/long-term-memory/notes/batch"),
       );
@@ -2258,7 +2263,7 @@ async function main() {
         ...outsideChatNote,
         scope: { ...keptBranchScope, chatIds: [...(keptBranchScope.chatIds ?? []), "deleted-chat"] },
       };
-      await bulkBranchRemoval.getByRole("button", { name: "Apply", exact: true }).click();
+      await bulkBranchRemoval.locator('[data-ltm-bulk-apply="top"]').click();
       assert.deepEqual((await bulkBranchRequest).postDataJSON().removeScope, { chatIds: ["memory-chat"] });
       await bulkBranchRemoval.waitFor({ state: "detached" });
       // The open memory was part of the change, so it reloads: its summary now counts the deleted chat.
@@ -2308,7 +2313,7 @@ async function main() {
         },
         { times: 1 },
       );
-      await bulkBranchRemoval.getByRole("button", { name: "Apply", exact: true }).click();
+      await bulkBranchRemoval.locator('[data-ltm-bulk-apply="top"]').click();
       assert.deepEqual((await deletedChatRequest).postDataJSON().removeScope, {
         chatIds: ["deleted-chat", "memory-chat", "memory-conversation-branch"],
         groupIds: ["conversation-a"],
@@ -5976,6 +5981,61 @@ async function main() {
       assert.equal(await bulkAvailability.locator("[data-ltm-bulk-edit-status] option").count(), 4);
       assert.equal(await bulkAvailability.locator("[data-ltm-bulk-edit-status]").inputValue(), "");
       assert.equal(await bulkAvailability.locator("h3").filter({ hasText: "Available in" }).count(), 1);
+      // #1636: with nothing chosen both Apply buttons stay focusable, say why they are off, and do nothing.
+      assert.equal(await bulkAvailability.getByText("2 memories selected", { exact: true }).count(), 1);
+      assert.equal(await bulkAvailability.getByRole("heading", { name: "What Apply will do", exact: true }).count(), 1);
+      assert.equal(
+        await bulkAvailability.locator("[data-ltm-bulk-outcome-summary]").innerText(),
+        "0 ready · 2 unchanged · 0 blocked",
+      );
+      const bulkApplyButtons = bulkAvailability.locator("[data-ltm-bulk-apply]");
+      assert.equal(await bulkApplyButtons.count(), 2);
+      let bulkGuardRequests = 0;
+      const countBulkGuardRequests = (request: { method(): string; url(): string }) => {
+        if (request.method() === "POST" && request.url().includes("/api/long-term-memory/notes/batch"))
+          bulkGuardRequests += 1;
+      };
+      page.on("request", countBulkGuardRequests);
+      await bulkAvailability.locator('[data-ltm-bulk-apply="top"]').click({ force: true });
+      await page.waitForTimeout(150);
+      page.off("request", countBulkGuardRequests);
+      assert.equal(bulkGuardRequests, 0);
+      assert.equal(await bulkAvailability.count(), 1);
+      for (const placement of ["top", "bottom"]) {
+        const applyButton = bulkAvailability.locator(`[data-ltm-bulk-apply="${placement}"]`);
+        assert.equal(await applyButton.getAttribute("aria-disabled"), "true");
+        assert.equal(await applyButton.evaluate((button) => (button as HTMLButtonElement).disabled), false);
+        const reasonId = await applyButton.getAttribute("aria-describedby");
+        assert.match(
+          await page.locator(`[id="${reasonId}"]`).innerText(),
+          /^Nothing to apply yet\. Choose a status, a mode or a place\.$/u,
+        );
+      }
+      assert.equal(
+        await bulkAvailability.getByRole("button", { name: "Add availability" }).getAttribute("aria-pressed"),
+        "true",
+      );
+      assert.equal(
+        await bulkAvailability.getByRole("button", { name: "Remove availability" }).getAttribute("aria-pressed"),
+        "false",
+      );
+      assert.equal(await bulkAvailability.getByRole("button", { name: "Add availability" }).locator("svg").count(), 1);
+      // Removing every mode blocks each memory: Apply stays off and the reason names the blockage.
+      await bulkAvailability.getByRole("button", { name: "Remove availability" }).click();
+      const bulkModeBoxes = bulkAvailability.locator('input[type="checkbox"]');
+      for (let index = 0; index < (await bulkModeBoxes.count()); index += 1) await bulkModeBoxes.nth(index).check();
+      assert.equal(
+        await bulkAvailability.locator("[data-ltm-bulk-outcome-summary]").innerText(),
+        "0 ready · 0 unchanged · 2 blocked",
+      );
+      const blockedApply = bulkAvailability.locator('[data-ltm-bulk-apply="bottom"]');
+      assert.equal(await blockedApply.getAttribute("aria-disabled"), "true");
+      assert.match(
+        await page.locator(`[id="${await blockedApply.getAttribute("aria-describedby")}"]`).innerText(),
+        /^Nothing to apply: every selected memory is unchanged or would lose its last place or chat mode\.$/u,
+      );
+      for (let index = 0; index < (await bulkModeBoxes.count()); index += 1) await bulkModeBoxes.nth(index).uncheck();
+      await bulkAvailability.getByRole("button", { name: "Add availability" }).click();
       assert.equal(
         await bulkAvailability.getByText("Chat mode eligibility is set separately", { exact: false }).count(),
         1,
@@ -6015,7 +6075,12 @@ async function main() {
       const bulkAvailabilityRequest = page.waitForRequest(
         (request) => request.method() === "POST" && request.url().includes("/api/long-term-memory/notes/batch"),
       );
-      await bulkAvailability.getByRole("button", { name: "Apply" }).click();
+      assert.match(
+        await bulkAvailability.locator("[data-ltm-bulk-outcome-summary]").innerText(),
+        /^[1-2] ready · [0-1] unchanged · 0 blocked$/u,
+      );
+      assert.equal(await bulkAvailability.locator('[data-ltm-bulk-apply][aria-disabled="true"]').count(), 0);
+      await bulkAvailability.locator('[data-ltm-bulk-apply="bottom"]').click();
       const bulkAvailabilityPayload = (await bulkAvailabilityRequest).postDataJSON();
       assert.deepEqual(bulkAvailabilityPayload.addScope, {
         characterIds: ["character-a"],
