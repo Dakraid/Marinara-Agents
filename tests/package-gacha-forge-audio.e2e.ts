@@ -302,6 +302,83 @@ async function frameBottom(frame: Locator, artSelector: string) {
   }, artSelector);
 }
 
+test("Real story navigation selects distinct home, story and bond music after each scene is ready", async ({
+  page,
+}, testInfo) => {
+  const { forge, generated, briefs } = await openForge(page, testInfo);
+  const plan = { title: "Audio chapter", nodes: [{ type: "story", title: "The garden", storyIndex: 0 }] };
+  const waiting: Array<() => Promise<void>> = [];
+  await page.route("**/api/gacha-forge/chapters", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        chapters: [{ chapter: 1, title: plan.title, normal: 0 }],
+        nextChapter: 2,
+        nextUnlocked: false,
+        bonds: [{ id: "arden", name: "Arden", part: 1, state: "open", beats: 0 }],
+      },
+    }),
+  );
+  for (const path of ["chapter-plan", "bond-chapter/plan"])
+    await page.route(`**/api/gacha-forge/${path}`, (route) =>
+      route.fulfill({ json: { ok: true, plan, progress: {}, beats: 0, name: "Arden" } }),
+    );
+  for (const path of ["story/start", "bond-chapter/start"])
+    await page.route(`**/api/gacha-forge/${path}`, (route) => route.fulfill({ json: { ok: true } }));
+  for (const path of ["beat", "bond-chapter/beat"])
+    await page.route(`**/api/gacha-forge/${path}`, (route) => {
+      waiting.push(() => route.fulfill({ json: scene }));
+    });
+  await page.route("**/api/gacha-forge/locations", (route) => route.fulfill({ json: { ok: true, places: [] } }));
+  await page.route("**/api/gacha-forge/preforge/start", (route) =>
+    route.fulfill({ json: { ok: true, allowed: false, preforge: { mode: "off", locked: false } } }),
+  );
+  await forge.getByRole("button", { name: "Game settings", exact: true }).click();
+  await forge.locator('[role="tab"][data-view="sources"]').click();
+  await forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true }).click();
+  await expect.poll(() => generated.filter((request) => request.kind === "music").length).toBe(1);
+  await forge.locator("[data-settings-back]").click();
+  const homeTag = `music:package:${generated[0].context.key}`;
+  await expect.poll(() => forge.evaluate((node) => (node as any)._forgeAudio.currentTag)).toBe(homeTag);
+
+  const openChapters = async () => {
+    await forge.evaluate((node) => {
+      const game = node as any;
+      game._clearBeat();
+      game._guidesSeen.add("chapters");
+      game._hudView = "chapters";
+      game._renderBrowser();
+    });
+    await expect(forge.locator('[data-open-chapter="1"]')).toBeVisible();
+  };
+  for (const [index, selector, cue] of [
+    [0, '[data-open-chapter="1"]', "sad"],
+    [1, "[data-open-bond]", "bond"],
+  ] as const) {
+    await openChapters();
+    await forge.locator(selector).click();
+    await forge.locator("[data-play]").click();
+    await expect.poll(() => waiting.length).toBe(index + 1);
+    expect(await forge.evaluate((node) => (node as any)._state())).toBe("beat");
+    expect(await forge.evaluate((node) => (node as any)._beatState)).toBe("loading");
+    expect(briefs.map((request) => request.cue)).toEqual(index === 0 ? ["home"] : ["home", "sad"]);
+    await waiting[index]();
+    await expect(forge.locator("[data-vn]")).toBeVisible();
+    await expect.poll(() => generated.filter((request) => request.kind === "music").length).toBe(index + 2);
+    expect(briefs.at(-1)).toMatchObject({ runId: baseRun.runId, cue });
+    await expect
+      .poll(() => forge.evaluate((node) => (node as any)._forgeAudio.currentTag))
+      .toBe(`music:package:${generated.at(-1)!.context.key}`);
+    await showHome(forge);
+    await expect.poll(() => forge.evaluate((node) => (node as any)._forgeAudio.currentTag)).toBe(homeTag);
+  }
+  expect(
+    new Set(generated.filter((request) => request.kind === "music").map((request) => request.context.key)).size,
+  ).toBe(3);
+  expect(briefs.map((request) => request.cue)).toEqual(["home", "sad", "bond"]);
+  await page.screenshot({ path: testInfo.outputPath("audio-distinct-story-cues.png") });
+});
+
 test("Audio settings persist, mute is compact and portrait frames retain a bottom stroke", async ({
   page,
 }, testInfo) => {
@@ -459,6 +536,123 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
     expect(bounds.overflowX).toBeLessThanOrEqual(1);
     await page.screenshot({ path: testInfo.outputPath(`audio-provider-error-${theme}.png`) });
   }
+
+  const short = await forge.evaluate((node) => {
+    const game = node as any;
+    game._forgeAudio.notice("audio.voiceFailed");
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    const stage = notice.closest(".gf-stage")!;
+    const target = document.createElement("button");
+    target.style.cssText = `position:absolute;z-index:7;left:${notice.offsetLeft}px;top:${notice.offsetTop}px;width:${notice.offsetWidth}px;height:${notice.offsetHeight}px;opacity:0`;
+    target.addEventListener("click", (event) => {
+      event.stopPropagation();
+      (node as HTMLElement).dataset.noticeTaps = "1";
+    });
+    stage.append(target);
+    const box = notice.getBoundingClientRect();
+    return {
+      x: box.left + box.width / 2,
+      y: box.top + box.height / 2,
+      overflow: notice.scrollHeight - notice.clientHeight,
+    };
+  });
+  expect(short.overflow).toBeLessThanOrEqual(0);
+  await page.mouse.click(short.x, short.y);
+  await expect.poll(() => forge.evaluate((node) => (node as HTMLElement).dataset.noticeTaps)).toBe("1");
+
+  const hidden = await forge.evaluate((node) => {
+    const game = node as any;
+    const stage = game._root.querySelector(".gf-stage") as HTMLElement;
+    stage.style.display = "none";
+    game._forgeAudio.notice("audio.generationReason", 400, "A longer provider explanation. ".repeat(9));
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    notice.style.maxHeight = "3rem";
+    return { client: notice.clientHeight, scroll: notice.scrollHeight };
+  });
+  expect(hidden).toEqual({ client: 0, scroll: 0 });
+  await forge.evaluate((node) => {
+    ((node as any)._root.querySelector(".gf-stage") as HTMLElement).style.removeProperty("display");
+  });
+  const status = forge.locator("[data-forge-audio-status]");
+  await expect(status).toHaveAttribute("tabindex", "0");
+  await expect(status).toHaveCSS("pointer-events", "auto");
+  await status.focus();
+  await page.keyboard.press("PageDown");
+  await expect.poll(() => status.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+  await status.evaluate((node) => {
+    const notice = node as HTMLElement;
+    notice.style.maxHeight = "1000px";
+    notice.style.fontSize = "12px";
+  });
+  await expect(status).toHaveAttribute("tabindex", "-1");
+  await expect(status).toHaveCSS("pointer-events", "none");
+  await status.evaluate((node) => {
+    const notice = node as HTMLElement;
+    notice.style.maxHeight = "3rem";
+    notice.style.fontSize = "24px";
+  });
+  await expect(status).toHaveAttribute("tabindex", "0");
+  await expect(status).toHaveCSS("pointer-events", "auto");
+
+  await forge.locator("[data-forge-audio-status]").evaluate((node) => {
+    (node as HTMLElement).style.maxHeight = "3rem";
+    // Settle the fixture's size transition before freezing time for dismissal checks.
+    for (const animation of node.getAnimations()) animation.finish();
+  });
+  await page.clock.install();
+  const long = await forge.evaluate((node) => {
+    const game = node as any;
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    game._forgeAudio.notice("audio.generationReason", 400, "A longer provider explanation. ".repeat(9));
+    const box = notice.getBoundingClientRect();
+    return {
+      x: box.left + box.width / 2,
+      y: box.top + box.height / 2,
+      overflow: notice.scrollHeight - notice.clientHeight,
+    };
+  });
+  expect(long.overflow).toBeGreaterThan(0);
+  await forge.locator("[data-forge-audio-status]").focus();
+  await expect(forge.locator("[data-forge-audio-status]")).toBeFocused();
+  await page.mouse.move(long.x, long.y);
+  if (testInfo.project.name === "mobile-webkit") await page.keyboard.press("PageDown");
+  else await page.mouse.wheel(0, 80);
+  await expect
+    .poll(() => forge.locator("[data-forge-audio-status]").evaluate((node) => node.scrollTop))
+    .toBeGreaterThan(0);
+  await page.clock.fastForward(6001);
+  await expect(forge.locator("[data-forge-audio-status]")).toBeFocused();
+  await forge.locator("[data-forge-audio-status]").evaluate((node) => (node as HTMLElement).blur());
+  await page.clock.fastForward(6001);
+  await expect(forge.locator("[data-forge-audio-status]")).toHaveCount(0);
+
+  await forge.evaluate((node) => {
+    const game = node as any;
+    game._forgeAudio.notice("audio.generationReason", 400, "A longer provider explanation. ".repeat(9));
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    notice.style.maxHeight = "3rem";
+  });
+  await expect(status).toHaveAttribute("tabindex", "0");
+  await status.focus();
+  await forge.evaluate((node) => {
+    const game = node as any;
+    game._root.querySelector("[data-forge-audio-status]").style.removeProperty("max-height");
+    game._forgeAudio.notice("audio.voiceFailed");
+  });
+  await expect(status).toHaveAttribute("tabindex", "-1");
+  await expect(status).toBeFocused();
+  await page.clock.fastForward(6001);
+  await expect(status).toHaveCount(0);
+  const disposed = await forge.evaluate((node) => {
+    const game = node as any;
+    game._forgeAudio.notice("audio.voiceFailed");
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    game._forgeAudio.dispose();
+    return { connected: notice.isConnected, focus: notice.onfocus, blur: notice.onblur };
+  });
+  expect(disposed).toEqual({ connected: false, focus: null, blur: null });
+  await page.clock.fastForward(6001);
+  await expect(status).toHaveCount(0);
 });
 
 test("Readiness recovers in the current world and single-channel selections keep the other channel on stock", async ({

@@ -418,6 +418,20 @@
               "replace": "oy=[{version:null,new:[\"World-specific original soundtrack briefs through the narration connection.\"],fixed:[\"Audio failures show HTTP status and safe provider reasons on newer hosts.\",\"Achievements count gained levels and facets, with conservative existing-save repair.\"]},{version:\"1.11.1\",fixed:[\"Saved legacy audio connections keep generating after migration.\"]}"
             }
           ]
+        },
+        {
+          "version": "1.12.1",
+          "notes": "Route ready story music by the actual view and mood, keep small choices from blocking common narration, and preserve accessible audio notices.",
+          "edits": [
+            {
+              "find": "ds=\"1.12.0\"",
+              "replace": "ds=\"1.12.1\""
+            },
+            {
+              "find": "oy=[{version:null,new:[\"World-specific original soundtrack briefs through the narration connection.\"]",
+              "replace": "oy=[{version:null,fixed:[\"Story music follows the active scene and mood.\",\"Small choices no longer block shared story pre-generation.\",\"Audio notices preserve stage taps and keep long reasons readable.\"]},{version:\"1.12.0\",new:[\"World-specific original soundtrack briefs through the narration connection.\"]"
+            }
+          ]
         }
       ]
     },
@@ -645,6 +659,16 @@
             {
               "find": "generate:({runId,run,messages})=>_t({runtime:r,runId,run,job:\"narration\",messages,options:{temperature:.7,maxTokens:It(1024)},",
               "replace": "generate:({runId,run,messages,debugMode})=>_t({runtime:r,runId,run,job:\"narration\",messages,options:{temperature:.7,maxTokens:It(1024),debugMode:debugMode===!0||/^(1|true)$/i.test(process.env.DEBUG_AGENTS||\"\")},"
+            }
+          ]
+        },
+        {
+          "version": "1.12.1",
+          "notes": "Preserve uncommitted small-choice canon when compressing while allowing shared narration to pre-generate.",
+          "edits": [
+            {
+              "find": "let forgeBlock=await forgeChoices.guard(o,{chapter:m});if(forgeBlock)return forgeBlock;for(let ne=1;!g&&ne<m;ne+=1)",
+              "replace": "let forgeBlock=await forgeChoices.guard(o,{chapter:m,includeSmall:true});if(forgeBlock)return forgeBlock;for(let ne=1;!g&&ne<m;ne+=1)"
             }
           ]
         }

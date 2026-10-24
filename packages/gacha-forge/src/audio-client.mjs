@@ -112,7 +112,14 @@ export class ForgeAudioController {
     }
     if (
       previous &&
-      ((!this.settings.generate && previous.generate) || previous.audioConnectionId !== this.settings.audioConnectionId)
+      (previous.muted !== this.settings.muted || (previous.musicVolume === 0) !== (this.settings.musicVolume === 0))
+    )
+      this.musicRevision = undefined;
+    if (
+      previous &&
+      ((!this.settings.generate && previous.generate) ||
+        (this.settings.muted && !previous.muted) ||
+        previous.audioConnectionId !== this.settings.audioConnectionId)
     ) {
       for (const request of this.requests) request.abort();
     }
@@ -134,15 +141,41 @@ export class ForgeAudioController {
       status.className = "gf-audio-status";
       this.host._root.querySelector(".gf-stage")?.append(status);
     }
-    if (status)
-      status.textContent = forgeAudioEnglish[key]
-        .replace("{status}", String(httpStatus))
-        .replace("{reason}", () => reason);
-    clearTimeout(this.noticeTimer);
-    this.noticeTimer = setTimeout(() => status?.remove(), 6000);
+    this.noticeResize?.disconnect();
+    status.textContent = forgeAudioEnglish[key]
+      .replace("{status}", String(httpStatus))
+      .replace("{reason}", () => reason);
+    const dismiss = () => {
+      clearTimeout(this.noticeTimer);
+      this.noticeResize?.disconnect();
+      status.onfocus = null;
+      status.onblur = null;
+      status.remove();
+    };
+    this.dismissNotice = dismiss;
+    const scheduleDismissal = () => {
+      clearTimeout(this.noticeTimer);
+      if (!this.disposed && !(this.host._root.activeElement === status && status.tabIndex === 0)) {
+        this.noticeTimer = setTimeout(dismiss, 6000);
+      }
+    };
+    const measure = () => {
+      if (this.disposed || !status.isConnected) return dismiss();
+      const scrollable = status.clientHeight > 0 && status.scrollHeight > status.clientHeight;
+      const changed = scrollable !== (status.tabIndex === 0);
+      status.style.pointerEvents = scrollable ? "auto" : "none";
+      status.tabIndex = scrollable ? 0 : -1;
+      if (changed) scheduleDismissal();
+    };
+    status.onfocus = scheduleDismissal;
+    status.onblur = scheduleDismissal;
+    measure();
+    this.noticeResize = new ResizeObserver(measure);
+    this.noticeResize.observe(status);
+    scheduleDismissal();
   }
 
-  async generate(kind, cue) {
+  async generate(kind, cue, musicRevision) {
     const settings = this.settings;
     if (!settings.generate || this.disposed || settings.muted) return null;
     let probe = this.generationConfig;
@@ -162,6 +195,7 @@ export class ForgeAudioController {
       !this.settings.generate ||
       this.settings.muted ||
       this.settings.audioConnectionId !== settings.audioConnectionId ||
+      (musicRevision !== undefined && musicRevision !== this.musicRevision) ||
       !config?.configured ||
       !config.connectionId ||
       config[kind === "music" ? "music" : "soundEffects"] !== true
@@ -193,6 +227,7 @@ export class ForgeAudioController {
             this.settings.muted ||
             this.settings.musicVolume === 0 ||
             this.settings.audioConnectionId !== settings.audioConnectionId ||
+            (musicRevision !== undefined && musicRevision !== this.musicRevision) ||
             this.host._run?.runId !== this.runId
           )
             abort.abort();
@@ -261,6 +296,10 @@ export class ForgeAudioController {
 
   async cue(cue) {
     if (!this.player || this.disposed) return;
+    if (!cue) {
+      this.musicRevision = null;
+      return;
+    }
     const enabled = this.settings.generate && !this.settings.muted && this.settings.musicVolume > 0;
     const revision = `${cue}:${enabled}:${this.settings.audioConnectionId}`;
     if (revision === this.musicRevision && (!enabled || Date.now() - this.musicAttemptAt < forgeAudioRetryMs)) return;
@@ -282,7 +321,7 @@ export class ForgeAudioController {
       }
     }
     if (!enabled) return;
-    const asset = await this.generate("music", cue);
+    const asset = await this.generate("music", cue, revision);
     if (asset && !this.disposed && revision === this.musicRevision && asset.tag !== this.currentTag) {
       this.currentTag = asset.tag;
       this.currentGenerated = true;
@@ -350,6 +389,7 @@ export class ForgeAudioController {
     if (this.disposed) return;
     this.disposed = true;
     clearTimeout(this.noticeTimer);
+    this.dismissNotice?.();
     this.voiceAbort?.abort();
     for (const request of this.requests) request.abort();
     this.host._root.removeEventListener("click", this.onClick);
@@ -358,14 +398,26 @@ export class ForgeAudioController {
 }
 
 export function forgeAudioCue(host) {
-  if (host._hudView === "combat") {
+  const state = host._state?.();
+  if (
+    typeof state !== "string" ||
+    ["boot", "themes", "runs", "unreachable", "setup", "banner", "art", "forge"].includes(state)
+  )
+    return null;
+  if (state === "combat") {
+    if (!["prebattle", "battle"].includes(host._combatPhase) || !host._combat) return null;
     return host._combat?.enemies?.some(
       (enemy) => enemy.boss || enemy.tier === "boss" || (Array.isArray(enemy.mech) && enemy.mech.length > 0),
     )
       ? "boss"
       : "combat";
   }
-  if (host._hudView === "beat") return host._bondUnit ? "bond" : normalizeForgeMusicMood(host._forgeMusicMood);
+  if (state === "beat")
+    return host._beatState === "ready"
+      ? host._bondUnit
+        ? "bond"
+        : normalizeForgeMusicMood(host._forgeMusicMood)
+      : null;
   return "home";
 }
 
