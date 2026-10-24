@@ -139,10 +139,13 @@ test("Welcome Gift rewards leave Claim reachable on short touch screens", async 
     game._settingsCategory = "changelog";
     game._renderBrowser();
   });
-  await expect(
-    forge.getByText(
-      "Welcome Gift rewards no longer overlap Claim on short mobile screens; scroll when needed and use its full touch target.",
-      { exact: true },
-    ),
-  ).toBeVisible();
+  const welcomeNote = forge.getByText(
+    "Welcome Gift rewards no longer overlap Claim on short mobile screens; scroll when needed and use its full touch target.",
+    { exact: true },
+  );
+  const previousVersions = forge.getByRole("button", { name: "Show previous version changelog", exact: true });
+  while ((await welcomeNote.count()) === 0 && (await previousVersions.isVisible())) {
+    await previousVersions.click();
+  }
+  await expect(welcomeNote).toBeVisible();
 });

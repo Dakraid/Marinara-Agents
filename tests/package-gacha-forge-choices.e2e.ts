@@ -300,6 +300,98 @@ test("Choices pause playback, preserve resume canon and allow only small replay 
   });
 });
 
+for (const autoplay of [true, false]) {
+  test(
+    autoplay
+      ? "Autoplay resumes the selected branch after a choice and waits at the final big choice"
+      : "Turning autoplay off keeps the selected branch in manual playback",
+    async ({ page }, testInfo) => {
+      const canon: Record<string, string> = {};
+      let failNext = true;
+      let completeRequests = 0;
+      await page.route("**/api/gacha-forge/beat", (route) =>
+        route.fulfill({
+          json: {
+            ...scene,
+            segments: [{ speaker: "", text: "AUTOPLAY_OPENING" }, ...scene.segments],
+            choices: scene.choices.map((choice) => ({ ...choice, at: choice.at + 1 })),
+            choiceCanon: { ...canon },
+          },
+        }),
+      );
+      await page.route("**/api/gacha-forge/choice", async (route) => {
+        const body = route.request().postDataJSON();
+        if (failNext) {
+          failNext = false;
+          await route.fulfill({ json: { ok: false, error: "write-conflict" } });
+          return;
+        }
+        canon[body.choiceId] ??= body.optionId;
+        await route.fulfill({
+          json: { ok: true, optionId: body.optionId, choiceCanon: { ...canon }, canonical: true },
+        });
+      });
+      await page.route("**/api/gacha-forge/complete", (route) => {
+        completeRequests += 1;
+        return route.fulfill({ json: { ok: true } });
+      });
+      const forge = await openForge(page, testInfo);
+      const now = new Date("2026-10-24T12:00:00Z");
+      await page.clock.install({ time: now });
+      await page.clock.pauseAt(new Date(now.getTime() + 60_000));
+      await seedScene(forge);
+      const text = forge.locator("[data-text]");
+      const auto = forge.locator("[data-auto]");
+      const choices = forge.locator("[data-forge-choices]");
+      await expect(text).toHaveText("AUTOPLAY_OPENING");
+      await auto.click();
+      if (!autoplay) await auto.click();
+      await page.clock.runFor(3100);
+      if (!autoplay) {
+        await expect(text).toHaveText("AUTOPLAY_OPENING");
+        await expect(auto).not.toHaveAttribute("data-on");
+        await forge.locator("[data-box]").click();
+      }
+      await expect(choices).toHaveAttribute("data-choice-id", "choice-1");
+      await expect(auto).toBeDisabled();
+      await page.clock.runFor(10_000);
+      await expect(text).toHaveText(scene.segments[0].text);
+      const first = forge.locator('[data-forge-choice-option="option-1"]');
+      await first.click();
+      await expect(forge.locator("[data-forge-choice-error]")).toContainText("could not be saved");
+      await page.clock.runFor(10_000);
+      await expect(choices).toHaveAttribute("data-choice-id", "choice-1");
+      await expect(forge.locator("[data-continue]")).toBeHidden();
+      await first.click();
+      await expect(text).toHaveText(smallOptions[0].selection.text);
+      expect(canon["choice-1"]).toBe("option-1");
+      if (!autoplay) {
+        await page.clock.runFor(10_000);
+        await expect(text).toHaveText(smallOptions[0].selection.text);
+        await expect(auto).not.toHaveAttribute("data-on");
+        return;
+      }
+      await expect(auto).toHaveAttribute("data-on", "");
+      for (const next of ["ARDEN_SELECTED_BRANCH", scene.segments[1].text, scene.segments[2].text]) {
+        await page.clock.runFor(3100);
+        await expect(text).toHaveText(next);
+      }
+      await expect(choices).toHaveAttribute("data-choice-id", "choice-2");
+      await expect(auto).toBeDisabled();
+      await page.clock.runFor(10_000);
+      await expect(text).toHaveText(scene.segments[2].text);
+      await expect(forge.locator("[data-continue]")).toBeHidden();
+      await forge.locator('[data-forge-choice-option="option-2"]').click();
+      await expect(text).toHaveText("You choose to save the southern village.");
+      await expect(forge.locator("[data-continue]")).toBeVisible();
+      await page.clock.runFor(10_000);
+      await expect(text).toHaveText("You choose to save the southern village.");
+      expect(canon).toEqual({ "choice-1": "option-1", "choice-2": "option-2" });
+      expect(completeRequests).toBe(0);
+    },
+  );
+}
+
 test("Continuity choices default on and persist alongside pre-forging", async ({ page }, testInfo) => {
   let saved: { story: { preforge: string; choices: boolean } } = { story: { ...run.story, choices: true } };
   await page.route("**/api/gacha-forge/run/sources", async (route) => {

@@ -11,6 +11,7 @@ const baseRun = {
   runId: "audio-ui-proof",
   name: "Audio proof",
   scenario: "Synthetic garden audio.",
+  hudStyle: "vanguard",
   connectionId: "fixture-model",
   hasStandardBanner: true,
   protagonist: { name: "Mari" },
@@ -302,6 +303,190 @@ async function frameBottom(frame: Locator, artSelector: string) {
   }, artSelector);
 }
 
+test("Combat has one working mute beside its fullscreen control without overlapping the toolbar", async ({
+  page,
+}, testInfo) => {
+  const { forge, saved } = await openForge(page, testInfo);
+  for (const theme of ["aurora", "bloom"]) {
+    saved.hudStyle = theme;
+    await forge.evaluate((node, theme) => {
+      const game = node as any;
+      game._clearBeat();
+      game._run.hudStyle = theme;
+      game._guidesSeen.add("combat");
+      game._hudView = "combat";
+      game._combatPhase = "battle";
+      // Pause the simulation while exercising the shipped battle toolbar and its real handlers.
+      game._combat = { allies: [], enemies: [] };
+      game._combatRun = null;
+      game._combatNonce += 1;
+      game._renderBrowser();
+    }, theme);
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    const mute = forge.locator(".cbar .ctrls > .gf-mute");
+    await expect(mute).toBeVisible();
+    await expect(forge.locator(".gf-mute:visible")).toHaveCount(1);
+    const overlap = await mute.evaluate((button) => {
+      const box = button.getBoundingClientRect();
+      return [...button.parentElement!.querySelectorAll("button")].some((other) => {
+        if (other === button) return false;
+        const sibling = other.getBoundingClientRect();
+        return (
+          Math.min(box.right, sibling.right) - Math.max(box.left, sibling.left) > 1 &&
+          Math.min(box.bottom, sibling.bottom) - Math.max(box.top, sibling.top) > 1
+        );
+      });
+    });
+    expect(overlap, `${theme} mute does not cover another toolbar control`).toBe(false);
+    await mute.click();
+    await expect.poll(() => saved.audio.muted).toBe(true);
+    await expect(mute).toHaveAccessibleName("Unmute audio");
+    await mute.click();
+    await expect.poll(() => saved.audio.muted).toBe(false);
+    await forge.locator(".cbar .gf-fs-bar").click();
+    await expect(page.locator(".mari-home-browser-chrome")).toBeHidden();
+    await expect(page.locator('[data-component="TopBar"]')).toBeVisible();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await page.screenshot({ path: testInfo.outputPath(`combat-single-mute-${theme}.png`) });
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await forge.locator(".cbar .gf-fs-bar").click();
+    await expect(page.locator(".mari-home-browser-chrome")).toBeVisible();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+  }
+});
+
+for (const orientation of ["landscape", "portrait"]) {
+  test(`Letters composer can send above a simulated ${orientation} keyboard and restores its controls`, async ({
+    page,
+  }, testInfo) => {
+    // Browser emulation cannot open an iPhone keyboard. Exercise the real Engine viewport
+    // contract with controlled visualViewport geometry, not a claim of native Safari proof.
+    const iphone = testInfo.project.name === "mobile-webkit";
+    if (iphone)
+      await page.addInitScript(() => {
+        let keyboardTop: number | null = null;
+        const viewport = new EventTarget();
+        Object.defineProperties(viewport, {
+          height: { get: () => keyboardTop ?? window.innerHeight },
+          width: { get: () => window.innerWidth },
+          offsetTop: { get: () => 0 },
+          pageTop: { get: () => 0 },
+          offsetLeft: { get: () => 0 },
+          pageLeft: { get: () => 0 },
+          scale: { get: () => 1 },
+        });
+        Object.defineProperty(window, "visualViewport", { configurable: true, value: viewport });
+        Object.defineProperty(window, "__forgeKeyboardTop", {
+          value: (top: number | null) => {
+            keyboardTop = top;
+            viewport.dispatchEvent(new Event("resize"));
+          },
+        });
+      });
+    const { forge, saved } = await openForge(page, testInfo);
+    const theme = orientation === "landscape" ? "aurora" : "bloom";
+    saved.hudStyle = theme;
+    Object.assign(saved, { chatChannel: "Letters" });
+    await page.setViewportSize({ width: 874, height: 402 });
+    const unit = { id: "arden", name: "Arden", bond: 120, open: true, portrait };
+    const messages = [{ id: "letter-1", who: "unit", text: "A letter before the journey." }];
+    const sends: Record<string, unknown>[] = [];
+    await page.route("**/api/gacha-forge/chat/list", (route) =>
+      route.fulfill({ json: { ok: true, channel: "Letters", contacts: [unit] } }),
+    );
+    await page.route("**/api/gacha-forge/chat/open", (route) =>
+      route.fulfill({
+        json: { ok: true, channel: "Letters", unit, messages, cost: 1, max: 2400, photos: true, past: 1 },
+      }),
+    );
+    await page.route("**/api/gacha-forge/chat/send", async (route) => {
+      const body = route.request().postDataJSON();
+      sends.push(body);
+      messages.push({ id: "letter-2", who: "player", text: body.text });
+      await route.fulfill({ json: { ok: true } });
+    });
+    await forge.evaluate((node, theme) => {
+      const game = node as any;
+      game._run.hudStyle = theme;
+      game._run.chatChannel = "Letters";
+      game._guidesSeen.add("chat");
+      game._renderBrowser();
+    }, theme);
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await forge.locator(".gf-fs-bar").click();
+    await expect(page.locator(".mari-home-browser-chrome")).toBeHidden();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await forge.locator("[data-chat-open]").click();
+    await forge.locator('[data-chat-with="arden"]').click();
+    const field = forge.locator("[data-chat-text]");
+    await expect(field).toBeVisible();
+    const draft = `A ${orientation} letter that survives the keyboard resizing.`;
+    await field.fill(draft);
+    const phone = orientation === "portrait" ? { width: 390, height: 844 } : { width: 874, height: 402 };
+    const keyboardTop = orientation === "portrait" ? 300 : 190;
+    if (iphone) {
+      // Preserve the layout viewport, as iOS does; a portrait rotation happens with the letter open.
+      await page.evaluate((top) => (window as any).__forgeKeyboardTop(top), keyboardTop);
+      await page.setViewportSize(phone);
+    } else {
+      // Android's resizes-content path reduces the layout viewport itself.
+      await page.setViewportSize({ width: phone.width, height: keyboardTop });
+    }
+    await expect(field).toHaveValue(draft);
+    const send = forge.locator("[data-chat-send]");
+    for (const control of [field, send]) {
+      await expect(control).toBeVisible();
+      await expect
+        .poll(() =>
+          control.evaluate((node, bottom) => {
+            const box = node.getBoundingClientRect();
+            const panel = node.closest(".hm-pk.chat")!.getBoundingClientRect();
+            return box.top >= panel.top && box.bottom <= Math.min(panel.bottom, bottom) + 1;
+          }, keyboardTop),
+        )
+        .toBe(true);
+    }
+    // The host intentionally hides its own bars for a focused package on a short touch
+    // landscape screen (globals.css); the package must respect that keyboard policy.
+    const hostHidesChrome = await page.evaluate(
+      () =>
+        matchMedia(
+          "(orientation: landscape) and (max-height: 500px) and (min-width: 640px) and (hover: none) and (any-pointer: coarse)",
+        ).matches &&
+        document.documentElement.matches(
+          "[data-mari-software-keyboard-open]:has([data-home-package-view] :focus-within)",
+        ),
+    );
+    await expect(page.locator('[data-component="TopBar"]')).toBeVisible({ visible: !hostHidesChrome });
+    await expect(forge.locator(".gf-bar")).toBeHidden();
+    await field.fill(`${draft} Ready to send.`);
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await page.screenshot({ path: testInfo.outputPath(`letters-${orientation}-simulated-keyboard.png`) });
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    // A real pointer tap, without force or Enter, catches layout changes when the textarea blurs.
+    await send.click();
+    await expect
+      .poll(() => sends.at(-1))
+      .toMatchObject({
+        runId: baseRun.runId,
+        unitId: "arden",
+        text: `${draft} Ready to send.`,
+      });
+    await expect(forge.locator(".ch-msg.mine")).toContainText(`${draft} Ready to send.`);
+    if (iphone) await page.evaluate(() => (window as any).__forgeKeyboardTop(null));
+    await page.setViewportSize({ width: 874, height: 402 });
+    await field.blur();
+    await expect(page.locator('[data-component="TopBar"]')).toBeVisible();
+    await expect(forge.locator(".gf-bar")).toBeVisible();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await expect(forge.locator(".ch-list")).toBeVisible();
+    await expect(forge.locator("[data-chat-photo]")).toBeVisible();
+    await expect(forge.locator("[data-chat-past]")).toBeVisible();
+    await expect(forge.locator(".ch-who .nm")).toHaveText("Arden");
+    await expect(field).toHaveValue("");
+  });
+}
+
 test("Real story navigation selects distinct home, story and bond music after each scene is ready", async ({
   page,
 }, testInfo) => {
@@ -486,7 +671,7 @@ test("Audio settings persist, mute is compact and portrait frames retain a botto
 });
 
 test("Provider rejection reasons fit the game stage in dark and light themes", async ({ page }, testInfo) => {
-  const { forge } = await openForge(page, testInfo);
+  const { forge, saved } = await openForge(page, testInfo);
   await page.route("**/api/audio/generate", (route) =>
     route.fulfill({
       status: 502,
@@ -505,6 +690,8 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
     ["aurora", "home"],
     ["bloom", "boss"],
   ]) {
+    saved.hudStyle = theme;
+    saved.audio.generate = true;
     await forge.evaluate(
       async (node, { theme, cue }) => {
         const game = node as any;
@@ -517,6 +704,7 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
       },
       { theme, cue },
     );
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
     const notice = forge.locator("[data-forge-audio-status]");
     await expect(notice).toContainText("HTTP 400");
     await expect(notice).toContainText("Terms of Service");
@@ -535,6 +723,7 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
     for (const side of ["left", "right", "top", "bottom"] as const) expect(bounds[side]).toBeGreaterThanOrEqual(-1);
     expect(bounds.overflowX).toBeLessThanOrEqual(1);
     await page.screenshot({ path: testInfo.outputPath(`audio-provider-error-${theme}.png`) });
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
   }
 
   const short = await forge.evaluate((node) => {

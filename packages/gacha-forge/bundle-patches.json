@@ -432,6 +432,33 @@
               "replace": "oy=[{version:null,fixed:[\"Story music follows the active scene and mood.\",\"Small choices no longer block shared story pre-generation.\",\"Audio notices preserve stage taps and keep long reasons readable.\"]},{version:\"1.12.0\",new:[\"World-specific original soundtrack briefs through the narration connection.\"]"
             }
           ]
+        },
+        {
+          "version": "1.12.2",
+          "notes": "Preserve choice autoplay, add a Home affinity diagram from the combat rules, and retain the top of selected Home backgrounds.",
+          "edits": [
+            {
+              "find": "ce&&(P(),T=!1,v&&v.removeAttribute(\"data-on\")),v&&(v.disabled=ce),f&&(f.disabled=ce)",
+              "replace": "ce&&P(),v&&(v.disabled=ce),f&&(f.disabled=ce)"
+            },
+            {
+              "find": "ds=\"1.12.1\"",
+              "replace": "ds=\"1.12.2\""
+            },
+            {
+              "find": "oy=[{version:null,fixed:[",
+              "replace": "oy=[{version:null,fixed:[\"Combat keeps one mute control.\",\"Autoplay resumes after selecting a small choice.\",\"Character communication adapts to a mobile keyboard.\",\"Home artwork preserves the top of the selected background.\"],new:[\"Home shows an affinity matchup diagram.\"]},{version:\"1.12.1\",fixed:["
+            },
+            {
+              "find": "var ac=",
+              "replaceFrom": "src/home-presentation.mjs",
+              "sourceId": "home-presentation"
+            },
+            {
+              "find": "wireForgeBrowserFullscreen(this),wireForgeAudio(this),this._wireLandscape()",
+              "replace": "wireForgeBrowserFullscreen(this),wireForgeAudio(this),wireForgeHome(this,bt,ao),this._wireLandscape()"
+            }
+          ]
         }
       ]
     },

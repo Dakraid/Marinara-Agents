@@ -63,6 +63,27 @@ const forgeBrowserLayout = `
   background: var(--ink); color: var(--text); border: 1px solid var(--steel-dark);
   clip-path: none; border-radius: 0;
 }
+/* A phone keyboard can leave less room than the picker header and composer.
+   Query the package's actual height, which already follows the Engine viewport.
+   Keep this stable when Send takes focus; Safari may blur the textarea before its tap. */
+@container gfarena (max-height: 280px) {
+  .gf-stage:has(.hm-pk.chat .ch-box) > .gf-bar,
+  .gf-arena:has(.hm-pk.chat .ch-box) > .gf-rot { display: none; }
+  .hm-pk.chat:has(.ch-box) { width: 100%; height: 100%; clip-path: none; border-radius: 0; }
+  .hm-pk.chat:has(.ch-box) .hm-pk-head { padding: 4px 8px; gap: 8px; }
+  .hm-pk.chat:has(.ch-box) .hm-pk-head .ttl { font-size: var(--t-sm); }
+  .hm-pk.chat:has(.ch-box) :is(.hm-pk-head .cur, .ch-list, .ch-who) { display: none; }
+  .hm-pk.chat:has(.ch-box) .hm-pk-body { grid-template-columns: minmax(0, 1fr); }
+  .hm-pk.chat:has(.ch-box) .ch-col { grid-template-rows: minmax(0, 1fr) auto auto; overflow-y: auto; }
+  .hm-pk.chat:has(.ch-box) .ch-log { padding: 4px 8px; }
+  .hm-pk.chat:has(.ch-box) .ch-foot {
+    grid-template-columns: minmax(0, 1fr) auto; align-items: start; padding: 4px 8px; gap: 8px;
+  }
+  .hm-pk.chat:has(.ch-box) .ch-box { height: 44px; min-height: 44px; font-size: max(16px, var(--t-sm)); }
+  .hm-pk.chat:has(.ch-box) .ch-acts { align-items: stretch; }
+  .hm-pk.chat:has(.ch-box) .ch-btn:not(.go) { display: none; }
+  .hm-pk.chat:has(.ch-box) .ch-btn.go { min-height: 44px; margin: 0; white-space: nowrap; }
+}
 `;
 const forgeFullscreenIcons = {
   enter:
