@@ -494,8 +494,9 @@ export default function MemoryVault({
   // `batchPendingRef` blocks a second run before React re-renders. When one finishes, focus moves to
   // the result banner, which holds Undo, unless the user moved it elsewhere meanwhile.
   const batchPendingRef = useRef(false);
-  // Save keeps focus while it runs (`aria-disabled`); this blocks a second save, from the button or the shortcut.
-  const savePendingRef = useRef(false);
+  // Save keeps focus while it runs (`aria-disabled`). A second save, from the button, the shortcut or the unsaved-changes
+  // dialog, gets this run's result instead of starting another or reading "still running" as "failed".
+  const savePromiseRef = useRef<Promise<boolean> | null>(null);
   const feedbackTriggerRef = useRef<Element | null>(null);
   const [feedbackFocusRequest, setFeedbackFocusRequest] = useState(0);
   const focusFeedback = () => setFeedbackFocusRequest((count) => count + 1);
@@ -1623,8 +1624,16 @@ export default function MemoryVault({
     setNotice(localizeUi("ui.longTermMemory.memoryvault.availabilitySaved"));
     await invalidate();
   }
-  async function save(): Promise<boolean> {
-    if (!draft || savePendingRef.current) return false;
+  function save(): Promise<boolean> {
+    if (savePromiseRef.current) return savePromiseRef.current;
+    const running = runSave().finally(() => {
+      savePromiseRef.current = null;
+    });
+    savePromiseRef.current = running;
+    return running;
+  }
+  async function runSave(): Promise<boolean> {
+    if (!draft) return false;
     const errors: Array<{ message: string; focus: "title" | "details" | "subjects" | "links" | "availability" }> = [];
     if (!draft.title?.trim())
       errors.push({ message: localizeUi("ui.longTermMemory.memoryvault.memoryTitleRequired"), focus: "title" });
@@ -1669,7 +1678,6 @@ export default function MemoryVault({
     }
     const session = editorSession.current;
     const submittedFingerprint = fingerprint(draft);
-    savePendingRef.current = true;
     setBusy("save");
     setSaveState("saving");
     setError("");
@@ -1786,7 +1794,6 @@ export default function MemoryVault({
       if (session === editorSession.current)
         setError(errorMessage(cause, localizeUi("ui.longTermMemory.memoryvault.couldNotSaveMemory")));
     } finally {
-      savePendingRef.current = false;
       setBusy((current) => (current === "save" ? "" : current));
     }
     return succeeded;
@@ -2940,8 +2947,9 @@ export default function MemoryVault({
                           {localizeUi("ui.longTermMemory.memoryvault.memoryDetails")}
                         </Button>
                         {/* Save keeps its label and primary tone and stays focusable while off (UI.md: `aria-disabled`,
-                            guarded handler); the polite status beside it carries Saving and Saved. The region is always
-                            mounted so the change is announced, and only takes room (`ml-2`) while it has text. */}
+                            guarded handler); the polite status beside it carries Saving, and shows Saved for the eye while
+                            the vault banner's "Memory saved" notice announces it, so one save speaks once. The region is
+                            always mounted so the change is announced, and only takes room (`ml-2`) while it has text. */}
                         <span className="inline-flex items-center">
                           <Button
                             primary
@@ -2959,7 +2967,7 @@ export default function MemoryVault({
                             data-ltm-save-status
                             className={`text-xs text-[var(--muted-foreground)] ${saveStatus ? "ml-2" : ""}`}
                           >
-                            {saveStatus}
+                            {saveState === "saved" ? <span aria-hidden="true">{saveStatus}</span> : saveStatus}
                           </span>
                         </span>
                         <Button onClick={() => void closeDraft()}>

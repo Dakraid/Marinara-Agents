@@ -6103,7 +6103,7 @@ async function main() {
       assert.equal(await blockedApply.getAttribute("aria-disabled"), "true");
       assert.match(
         await page.locator(`[id="${await blockedApply.getAttribute("aria-describedby")}"]`).innerText(),
-        /^Nothing to apply: every selected memory is unchanged or would lose its last place or chat mode\.$/u,
+        /^Nothing to apply: every selected memory is unchanged or would be skipped\. Each row says why\.$/u,
       );
       for (let index = 0; index < (await bulkModeBoxes.count()); index += 1) await bulkModeBoxes.nth(index).uncheck();
       await bulkAvailability.getByRole("button", { name: "Add availability" }).click();

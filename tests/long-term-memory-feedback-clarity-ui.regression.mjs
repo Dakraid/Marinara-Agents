@@ -923,8 +923,18 @@ assert.equal((maintenance.match(/queryKeys\.localCharactersRoot/g) ?? []).length
 assert.match(vault, /aria-disabled=\{!dirty \|\| busy === "save" \? true : undefined\}/u);
 assert.doesNotMatch(vault, /primary\s+disabled=/u);
 assert.match(vault, /role="status"\s+data-ltm-save-status/u);
-assert.match(vault, /if \(!draft \|\| savePendingRef\.current\) return false;/u);
-assert.match(vault, /savePendingRef\.current = false;\s*setBusy\(\(current\) => \(current === "save"/u);
+// A save asked for during a save (the unsaved-changes dialog, the host shortcut) awaits that run's result, never a
+// synthetic `false` that `confirm()` reads as "did not save" and the host reads as "save failed".
+assert.match(vault, /if \(savePromiseRef\.current\) return savePromiseRef\.current;/u);
+assert.doesNotMatch(vault, /savePendingRef/u);
+// One save speaks once: the inline status announces Saving, and its Saved text is hidden from assistive technology
+// because the banner's "Memory saved" notice announces it.
+assert.match(vault, /saveState === "saved" \? <span aria-hidden="true">\{saveStatus\}<\/span> : saveStatus/u);
+// A memory that is already global is blocked under its own reason, not under a last place it never had.
+assert.match(vaultScreen, /alreadyEverywhere: removesLastPlace && !removesLastMode && places\.length === 0/u);
+assert.match(locale["ui.longTermMemory.memoryvault.applyReasonNothingToChange"], /would be skipped/u);
+assert.doesNotMatch(locale["ui.longTermMemory.memoryvault.applyReasonNothingToChange"], /last place/u);
+assert.ok(locale["ui.longTermMemory.memoryvault.alreadyAvailableEverywhere"]);
 assert.match(vault, /const setWarning = useCallback/u);
 assert.match(vault, /tone=\{noticeState\.warning \? "warning" : "success"\}/u);
 assert.doesNotMatch(vault, /setError\(\s*localizeUi\("ui\.longTermMemory\.memoryvault\.savedButRecallIsStale"/u);

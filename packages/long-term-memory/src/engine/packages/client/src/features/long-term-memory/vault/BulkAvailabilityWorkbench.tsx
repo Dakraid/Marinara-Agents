@@ -176,6 +176,8 @@ export function BulkAvailabilityWorkbench({
     return {
       note,
       state: removesLastPlace || removesLastMode ? "invalid" : changes ? "ready" : "unchanged",
+      // A global note holds no place to lose: name that cause, not a last place it never had.
+      alreadyEverywhere: removesLastPlace && !removesLastMode && places.length === 0,
     };
   });
   const countOf = (state: "ready" | "unchanged" | "invalid") =>
@@ -387,7 +389,7 @@ export function BulkAvailabilityWorkbench({
           </p>
         ) : null}
         <div className="divide-y divide-[var(--border)] border-y border-[var(--border)]">
-          {outcomes.map(({ note, state }) => (
+          {outcomes.map(({ note, state, alreadyEverywhere }) => (
             <div key={note.id} className="flex min-h-11 items-center justify-between gap-3 py-2 text-sm">
               <span className="min-w-0 truncate" title={note.title}>
                 {note.title}
@@ -401,7 +403,11 @@ export function BulkAvailabilityWorkbench({
                   ? localizeUi("ui.longTermMemory.memoryvault.ready")
                   : state === "unchanged"
                     ? localizeUi("ui.longTermMemory.memoryvault.unchanged")
-                    : localizeUi("ui.longTermMemory.memoryvault.wouldRemoveFinalAvailability")}
+                    : localizeUi(
+                        alreadyEverywhere
+                          ? "ui.longTermMemory.memoryvault.alreadyAvailableEverywhere"
+                          : "ui.longTermMemory.memoryvault.wouldRemoveFinalAvailability",
+                      )}
               </span>
             </div>
           ))}
