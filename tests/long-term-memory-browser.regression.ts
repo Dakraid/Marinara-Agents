@@ -2447,7 +2447,13 @@ async function main() {
       await page.waitForFunction(() => document.querySelector("[data-ltm-save-status]")?.textContent === "Saved");
       await otherRow.click();
       await page.waitForFunction(() => document.querySelector("[data-ltm-save-status]")?.textContent === "");
+      // #1636: the open row is marked beyond colour: aria-current on its button and a start-edge bar, on that row only.
+      assert.equal(await otherRow.getAttribute("aria-current"), "true");
+      assert.equal(await page.locator('[data-ltm-note-id] button[aria-current="true"]').count(), 1);
+      assert.equal(await page.locator("[data-ltm-note-open-bar]").count(), 1);
       await page.locator(`[data-ltm-note-id="${outsideChatNote.id}"] button`).first().click();
+      await page.locator(`[data-ltm-note-id="${outsideChatNote.id}"] [data-ltm-note-open-bar]`).waitFor();
+      assert.equal(await otherRow.getAttribute("aria-current"), null);
       await branchTitle.fill("Memory outside current chat, saved");
       await page.unroute(branchNoteRoute);
       // Escape keeps the Rename detail dialog open while the rename runs, as its disabled Cancel button does.

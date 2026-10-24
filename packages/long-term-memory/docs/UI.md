@@ -105,6 +105,8 @@ tone, stays focusable while off or running, and a polite status beside it says
 Saving or Saved until the next edit. A save whose recall index rebuild is
 deferred is a warning ("Saved. Recall will catch up…"), not a danger error,
 because the memory is saved.
+The open memory's row carries the primary wash, a left-edge bar and
+`aria-current="true"` on its button, so it is marked beyond colour.
 The workbench distinguishes read-only
 source notes from editable memories and keeps validation, evidence, freshness,
 confidence, subjects, links, keywords, and availability visible as applicable.

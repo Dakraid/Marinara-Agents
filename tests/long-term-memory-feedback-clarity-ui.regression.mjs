@@ -923,6 +923,11 @@ assert.equal(
   locale["ui.longTermMemory.memoryvault.savedButRecallIsStale"],
   "Saved. Recall will catch up once the index rebuild succeeds: {{error}}",
 );
+// #1636: the open row uses the documented primary wash plus a start-edge bar and aria-current, not an accent tint.
+assert.match(vaultRow, /selected \? "bg-\[var\(--primary\)\]\/10" : ""/u);
+assert.doesNotMatch(vaultRow, /bg-\[var\(--accent\)\]\/50/u);
+assert.match(vaultRow, /\{selected \? \(\s*<span\s+aria-hidden="true"\s+data-ltm-note-open-bar/u);
+assert.match(vaultRow, /aria-current=\{selected \? "true" : undefined\}/u);
 
 process.stdout.write(
   "Long-Term Memory feedback clarity UI regression: labels, outcomes, usage, warnings, defaults, and scope loading ok\n",
