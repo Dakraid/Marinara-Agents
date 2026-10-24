@@ -1,5 +1,15 @@
 # Gacha Forge
 
+## Story bosses and combat dialogue (1.13.0)
+
+Enemies now have a Soldier, Elite or Boss tier, separate from their combat role and affinity. Enemy cards and details identify that tier. Newly planned chapters reserve their final fight for a boss confrontation before the closing story scene. Story bosses use the existing boss health bar and mechanics, including warned strikes and phase changes.
+
+The encounter writer prepares contextual enemy dialogue alongside a significant fight. Lines can play at its introduction, during attacks or health transitions, and when the player wins or loses. Each line plays once per battle. Combat uses the saved lines without another model request on each turn. Continue advances a line manually; Auto waits for the line and its assigned voice, then resumes with the same combat preference. The pause follows Settings → Look → Visual's autoplay setting.
+
+Enemies matching a known world character can use that character's assigned Engine voice when world TTS is enabled. Muting silences combat dialogue alongside the existing music and effects. Enemies without an assigned voice still display their lines.
+
+Existing generated chapters and encounters keep their saved content and progress. An older ordinary enemy without a tier is shown as a Soldier; existing Tower boss mechanics still identify bosses. New tiers and dialogue appear as encounters are newly generated, without rewriting earlier fights.
+
 In 1.12.2, combat keeps one mute control, Auto resumes after you select a small choice, and character communication keeps its composer available when a mobile keyboard reduces the game height. Home adds a compact affinity matchup diagram below the communication button and frames selected background artwork from its top.
 
 In 1.12.1, Home, story moods and Character Stories use their own music cues. Tracks are generated as those contexts are visited and reused within that world. Loading a scene keeps the current track until its music cue is ready. Short audio notices let taps reach the game stage; long provider reasons can be scrolled and stay visible while focused with a keyboard.

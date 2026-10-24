@@ -459,6 +459,93 @@
               "replace": "wireForgeBrowserFullscreen(this),wireForgeAudio(this),wireForgeHome(this,bt,ao),this._wireLandscape()"
             }
           ]
+        },
+        {
+          "version": "1.13.0",
+          "notes": "Enemy tiers and one-shot prebuilt combat dialogue; render-only round metadata preserves the battle result and action log.",
+          "edits": [
+            {
+              "find": "ds=\"1.12.2\"",
+              "replace": "ds=\"1.13.0\""
+            },
+            {
+              "find": "oy=[{version:null,fixed:[",
+              "replace": "oy=[{version:null,new:[\"Soldier, Elite and Boss enemy tiers.\",\"Story chapter boss fights with contextual combat dialogue.\"]},{version:\"1.12.2\",fixed:["
+            },
+            {
+              "find": "function Ww(t){",
+              "replaceFrom": "src/enemy-encounters-client.mjs",
+              "sourceId": "enemy-encounters-client"
+            },
+            {
+              "find": "return'<div class=\"root\">'+Oo",
+              "replace": "return'<div class=\"root\"><style>'+forgeEnemyEncounterStyles+\"</style>\"+Oo"
+            },
+            {
+              "find": "(Array.isArray(t.mech)&&t.mech.length?'<span class=\"cb-crown-badge\" title=\"Boss\">'+Wu+\"</span>\":\"\")",
+              "replace": "(e?forgeEnemyTierBadge(t):\"\")"
+            },
+            {
+              "find": "find(m=>Array.isArray(m.mech)&&m.mech.length)",
+              "replace": "find(m=>forgeEnemyTier(m)===\"boss\")"
+            },
+            {
+              "find": "(h?\"Boss\":\"Enemy\")",
+              "replace": "forgeEnemyTierLabel(i)"
+            },
+            {
+              "find": "<div class=\"head-id\"><div class=\"eyebrow\">Combat</div><h2>",
+              "replace": "<div class=\"head-id\"><div class=\"eyebrow\">Combat'+(e?forgeEnemyTierBadge({tier:forgeEncounterTier(e)}):\"\")+'</div><h2>"
+            },
+            {
+              "find": "m=null,audio:forgeAudio=null",
+              "replace": "m=null,audio:forgeAudio=null,host:forgeHost=null"
+            },
+            {
+              "find": "audio:this._forgeAudio,onStart",
+              "replace": "audio:this._forgeAudio,host:this,onStart"
+            },
+            {
+              "find": "function St(y,O){O&&forgeCombatSound(forgeAudio,y);",
+              "replace": "function St(y,O){O&&(forgeCombatSound(forgeAudio,y),forgeDialogue.event(y));"
+            },
+            {
+              "find": "function R(){let y=H()[r.stepI++];",
+              "replace": "function R(){let y=H()[r.stepI++];forgeDialogue.frame(y);"
+            },
+            {
+              "find": "function ie(){if(clearTimeout(V),",
+              "replace": "function ie(){if(forgeDialogue.busy||Xe)return;if(clearTimeout(V),"
+            },
+            {
+              "find": "function ft(y){r.pending&&",
+              "replace": "function ft(y){if(forgeDialogue.busy||Xe)return;r.pending&&"
+            },
+            {
+              "find": "function ne(){if(r.done)return F(r.done.result);if(r.pending){",
+              "replace": "function ne(){if(r.done)return F(r.done.result);if(r.pending){forgeDialogue.frame({round:r.pending.round});if(forgeDialogue.busy)return;"
+            },
+            {
+              "find": "let Ra=!1;function F(y){Ra||(Ra=!0,i&&i(y===\"lose\"?\"lose\":\"win\",r.done&&r.done.log||[]))}",
+              "replace": "let Ra=!1;function F(y){Ra||(Ra=!0,forgeDialogue.finish(y,()=>i&&i(y===\"lose\"?\"lose\":\"win\",r.done&&r.done.log||[])))}"
+            },
+            {
+              "find": "let Xe=!1;return w.pause=()=>{Xe=V!==null||r.stepI<H().length||!!r.auto&&!r.done,clearTimeout(V),V=null},w.resume=()=>{Xe&&(Xe=!1,ie())},s?Y():ie(),()=>{clearTimeout(V)}}",
+              "replace": "let Xe=!1,forgeDialogue=createForgeCombatDialogue(t,{payload:a,run:r,host:forgeHost,audio:forgeAudio,isPaused:()=>Xe,resume:()=>{!Xe&&V===null&&ie()}});return w.pause=()=>{Xe=V!==null||r.stepI<H().length||!!r.auto&&!r.done||forgeDialogue.busy,clearTimeout(V),V=null,forgeDialogue.syncAuto()},w.resume=()=>{Xe&&(Xe=!1,forgeDialogue.syncAuto(),ie())},s?Y():ie(),()=>{clearTimeout(V),forgeDialogue.dispose()}}"
+            },
+            {
+              "find": "let B=[];function P(p,A){T();let E={d:p,events:A.filter(Boolean).concat(B)}",
+              "replace": "let B=[],forgeRound=1;function P(p,A){T();let E={d:p,round:forgeRound,events:A.filter(Boolean).concat(B)}"
+            },
+            {
+              "find": "dr+=1;let p=v(n)",
+              "replace": "dr+=1;forgeRound=dr;let p=v(n)"
+            },
+            {
+              "find": "h&&typeof h.auto==\"boolean\"&&!r.done&&(r.auto=h.auto)",
+              "replace": "h&&typeof h.auto==\"boolean\"&&!s&&(r.auto=h.auto)"
+            }
+          ]
         }
       ]
     },
@@ -696,6 +783,57 @@
             {
               "find": "let forgeBlock=await forgeChoices.guard(o,{chapter:m});if(forgeBlock)return forgeBlock;for(let ne=1;!g&&ne<m;ne+=1)",
               "replace": "let forgeBlock=await forgeChoices.guard(o,{chapter:m,includeSmall:true});if(forgeBlock)return forgeBlock;for(let ne=1;!g&&ne<m;ne+=1)"
+            }
+          ]
+        },
+        {
+          "version": "1.13.0",
+          "notes": "Retain planned enemy tiers and existing boss mechanics through story generation, cache validated one-shot enemy dialogue and preserve legacy encounters.",
+          "edits": [
+            {
+              "find": "var rb=[",
+              "replaceFrom": "src/enemy-encounters-server.mjs",
+              "sourceId": "enemy-encounters-server"
+            },
+            {
+              "find": "function gS(",
+              "replace": "function gS(...forgeArgs){return forgeEncounterPlanMessages(forgeLegacyEncounterPlanMessages(...forgeArgs))}function forgeLegacyEncounterPlanMessages("
+            },
+            {
+              "find": "function yS(e,t){",
+              "replace": "function yS(e,t){return forgeNormalizeEncounterPlan(e,t,forgeLegacyEncounterPlan)}function forgeLegacyEncounterPlan(e,t){"
+            },
+            {
+              "find": "function vS(",
+              "replace": "function vS(...forgeArgs){return forgeEncounterCombatMessages(forgeLegacyEncounterCombatMessages(...forgeArgs),forgeArgs[2])}function forgeLegacyEncounterCombatMessages("
+            },
+            {
+              "find": "function mw(e){",
+              "replace": "function mw(e){return forgeNormalizeEncounterEnemy(e,forgeLegacyEncounterEnemy)}function forgeLegacyEncounterEnemy(e){"
+            },
+            {
+              "find": "function ES(e,t=jc){",
+              "replace": "function ES(e,t=jc,forgeNode=null){return forgeNormalizeEncounterGuide(e,t,forgeLegacyEncounterGuide,forgeNode)}function forgeLegacyEncounterGuide(e,t=jc){"
+            },
+            {
+              "find": "ES(De,U0(d))",
+              "replace": "ES(De,U0(d),P)"
+            },
+            {
+              "find": "let b=H0(o),S=o<=Xc?0:yu(o,g)",
+              "replace": "let forgeEncounterCast=await dh(p,u),b=H0(o),S=o<=Xc?0:yu(o,g)"
+            },
+            {
+              "find": "power:1,skill:x.skill,passive:x.passive||null",
+              "replace": "power:1,skill:x.skill,passive:x.passive||null,...forgeEnemyCombatMetadata(x,forgeEncounterCast)"
+            },
+            {
+              "find": "enemies:ne,background:Y,opening:U.guide.opening",
+              "replace": "enemies:ne,...forgeEncounterPresentation(U.guide,ne),background:Y,opening:U.guide.opening"
+            },
+            {
+              "find": "stats:we.stats,skill:we.skill,...we.passive?",
+              "replace": "stats:we.stats,skill:we.skill,tier:forgeEnemyTier(we),...we.passive?"
             }
           ]
         }
