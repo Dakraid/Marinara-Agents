@@ -575,6 +575,46 @@ assert.match(detail, /finishNavigationPrompt\("save"\)/u);
 assert.match(detail, /aria-modal="true"/u);
 assert.match(detail, /event\.key !== "Tab"/u);
 
+// Pending controls keep keyboard focus: aria-disabled plus a ref guard, with native `disabled`
+// kept only for permanent unavailability.
+const chatSettings = readFileSync(join(dirname(ltmSourcePaths.detail), "ChatSettings.tsx"), "utf8");
+assert.match(detail, /activationBusyRef\.current\) return;/u);
+assert.match(detail, /repairBusyRef\.current\) return;/u);
+assert.match(
+  detail,
+  /disabled=\{!props\.onEnabledForChatChange\}\s+aria-disabled=\{activationPending \|\| undefined\}/u,
+);
+assert.doesNotMatch(detail, /(?<!aria-)disabled=\{activationPending/u);
+assert.doesNotMatch(detail, /(?<!aria-)disabled=\{repairPending/u);
+assert.match(detail, /\[data-ltm-control="activation"\]\[aria-disabled="true"\]/u);
+assert.match(chatSettings, /pendingRef\.current\) return;/u);
+assert.match(chatSettings, /disabled=\{readOnly\}\s+aria-disabled=\{pending \|\| undefined\}/u);
+assert.equal(chatSettings.match(/busy=\{pending\}/gu)?.length, 2);
+assert.doesNotMatch(chatSettings, /(?<!aria-)disabled=\{pending/u);
+assert.match(sharedControls, /aria-disabled=\{busy \|\| undefined\}\s+readOnly=\{busy\}/u);
+
+// #1617: the Detail dialog names its destination, the shared MemoryVault wording is untouched, and Chat Settings
+// no longer invents values or names a label that does not exist.
+assert.match(locale["ui.longTermMemory.longtermmemorydetail.unsavedNavigationDescription"], /\{\{action\}\}/u);
+assert.match(detail, /longtermmemorydetail\.unsavedNavigationDescription", \{\s*action: navigationPrompt/u);
+assert.doesNotMatch(detail, /memoryvault\.unsavedNavigationDescription/u);
+assert.match(locale["ui.longTermMemory.longtermmemorydetail.unsavedChangesLostBeforeOpening"], /\{\{destination\}\}/u);
+assert.match(detail, /unsavedChangesLostBeforeOpening[\s\S]*memoryvault\.discardAndContinue/u);
+assert.equal("ui.longTermMemory.chatsettings.lastInjectionSummaryGuidance" in locale, false);
+assert.equal("ui.longTermMemory.chatsettings.openLongTermMemorySettings" in locale, false);
+assert.deepEqual(
+  Object.entries(locale).filter(
+    ([key, value]) => key.includes(".chatsettings.") && /Last Injection Summary/u.test(value),
+  ),
+  [],
+);
+assert.match(chatSettings, /recallStyles\.map\(\(style\)/u);
+assert.match(chatSettings, /chatsettings\.openLongTermMemory"/u);
+assert.match(chatSettings, /defaults \? \(defaults\.longTermMemoryBudgetTokens \?\? 4096\) : null/u);
+assert.match(chatSettings, /placeholder=\{effectiveBudget === null \? unknownValueLabel : undefined\}/u);
+assert.match(chatSettings, /placeholder=\{effectiveMaxChunks === null \? unknownValueLabel : undefined\}/u);
+assert.match(sharedControls, /value: number \| null/u);
+
 const localeRoot = ltmClientRoot;
 const sourceFiles = [];
 const usedKeys = new Set();

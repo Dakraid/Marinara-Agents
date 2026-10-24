@@ -1960,6 +1960,16 @@ async function main() {
         .first()
         .click();
       await page.locator('[data-ltm-field="title"]').fill("Second mobile review memory, edited");
+      // #1617: leaving the dirty Vault editor for another destination says where it leads.
+      const reviewDestination = page.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="review"]');
+      await reviewDestination.click();
+      const destinationDescription = page.locator("#ltm-destination-unsaved-description");
+      await destinationDescription.waitFor();
+      const destinationText = (await destinationDescription.innerText()).trim();
+      assert.match(destinationText, /^Save your changes before opening .+, or discard them\.$/u);
+      assert.doesNotMatch(destinationText, /this memory/u);
+      await page.locator("[data-ltm-destination-stay]").click();
+      await destinationDescription.waitFor({ state: "detached" });
       const focusedPlaceButton = memoryScope.locator("[data-ltm-scope-picker-trigger]:focus");
       await choosePlaceByKeyboard("vault", "character", "character:character-a");
       await page.locator("[data-ltm-unsaved-stay]:focus").waitFor();
@@ -2637,13 +2647,17 @@ async function main() {
       // #1611: Help leaves the Review Queue for the Vault, so the unsaved-state guard asks first; Stay keeps
       // the screen and opens neither the guide nor the bar.
       const helpPrompts: string[] = [];
+      const helpMessages: string[] = [];
       page.once("dialog", (dialog) => {
         helpPrompts.push(dialog.type());
+        helpMessages.push(dialog.message());
         void dialog.dismiss();
       });
       await setupGuide.click();
       await page.waitForFunction(() => document.querySelector('[data-ltm-surface="onboarding"]') === null);
       assert.deepEqual(helpPrompts, ["confirm"]);
+      // #1617: the confirm fallback names where the user is going, like the in-page dialog does.
+      assert.match(helpMessages[0], /Your changes are not saved\. Discard them to open .+\./u);
       assert.equal(await page.locator('[data-ltm-surface="review-queue"]').count(), 1);
       assert.equal(
         await page.locator('[data-ltm-surface="onboarding"], [data-ltm-surface="onboarding-bar"]').count(),
@@ -4494,6 +4508,73 @@ async function main() {
         "inside",
       );
       assert.equal(await touchTargetSize(chatSettings.locator('[data-ltm-info="Recall style"] > span')), "fits");
+      // #1617: the Recall style popover lists every style and marks the one in use.
+      await chatSettings.locator('[data-ltm-info="Recall style"]').click();
+      const styleOptions = page.locator('[data-ltm-info-panel="Recall style"] [data-ltm-recall-style-option]');
+      await styleOptions.nth(4).waitFor();
+      assert.deepEqual(
+        await styleOptions.evaluateAll((items) =>
+          items.map((item) => item.getAttribute("data-ltm-recall-style-option")),
+        ),
+        ["balanced", "exact", "broad", "story", "custom"],
+      );
+      await page
+        .locator('[data-ltm-info-panel="Recall style"] [data-ltm-recall-style-option="balanced"]')
+        .getByText("Current", { exact: true })
+        .waitFor();
+      assert.equal(
+        await page.locator('[data-ltm-info-panel="Recall style"]').getByText("Current", { exact: true }).count(),
+        1,
+      );
+      await page.keyboard.press("Escape");
+      await page.locator('[data-ltm-info-panel="Recall style"]').waitFor({ state: "detached" });
+      // #1617: until the global defaults arrive, an inherited value shows a neutral placeholder, not 4096 / 20 / balanced.
+      {
+        const loadingPage = await browserContext.newPage();
+        let releaseDefaults = () => {};
+        const defaultsGate = new Promise<void>((resolve) => {
+          releaseDefaults = resolve;
+        });
+        // The last-injection counter below belongs to the main page, so this page never reaches that route.
+        await loadingPage.route("**/api/long-term-memory/last-injection/**", (route) => route.abort());
+        await loadingPage.route("**/api/long-term-memory/settings", async (route) => {
+          if (route.request().method() === "GET") await defaultsGate;
+          await route.continue();
+        });
+        await loadingPage.goto(`http://127.0.0.1:${address.port}/`);
+        await loadingPage.evaluate(() => customElements.whenDefined("marinara-capability-long-term-memory"));
+        await loadingPage.evaluate(`(() => {
+          const element = document.createElement("marinara-capability-long-term-memory");
+          element.setAttribute("view", "settings");
+          element.capabilityProps = { chatId: "chat-artifact", onChatSettingsChange: () => undefined };
+          document.body.append(element);
+        })()`);
+        const loadingSettings = loadingPage.locator('[data-ltm-surface="chat-settings"]');
+        await loadingSettings.waitFor();
+        const loadingStyle = loadingSettings.locator('select[data-ltm-control="select"]');
+        const loadingBudget = loadingSettings.getByRole("spinbutton", { name: "Recall context budget" });
+        const loadingMaxChunks = loadingSettings.getByRole("spinbutton", { name: "Maximum memories" });
+        assert.equal(
+          await loadingStyle.evaluate((select: HTMLSelectElement) => select.selectedOptions[0]?.textContent),
+          "Loading default…",
+        );
+        for (const field of [loadingBudget, loadingMaxChunks]) {
+          assert.equal(await field.inputValue(), "");
+          assert.equal(await field.getAttribute("placeholder"), "Loading default…");
+        }
+        assert.equal(await loadingSettings.getByText("Global default").count(), 0);
+        releaseDefaults();
+        await loadingPage.waitForFunction(
+          () => document.querySelector('[data-ltm-surface="chat-settings"] select')?.value === "balanced",
+        );
+        assert.equal(await loadingBudget.inputValue(), "4096");
+        assert.equal(await loadingMaxChunks.inputValue(), "20");
+        // A settled load leaves no placeholder behind, so clearing a field to retype it never announces a load.
+        for (const field of [loadingBudget, loadingMaxChunks]) {
+          assert.equal(await field.getAttribute("placeholder"), null);
+        }
+        await loadingPage.close();
+      }
       const lastInjection = chatSettings.locator("[data-ltm-last-injection]");
       await lastInjection.getByText(/1 saved memory included in the latest model context/u).waitFor();
       await lastInjection.click();
@@ -4681,11 +4762,13 @@ async function main() {
       await page.locator("body").dispatchEvent("pointerdown");
       await healthInfoPanel.waitFor({ state: "detached" });
       let failReindex = true;
+      let reindexRequests = 0;
       let releaseReindex: (() => void) | null = null;
       const reindexHeld = new Promise<void>((resolve) => {
         releaseReindex = resolve;
       });
       await page.route("**/api/long-term-memory/repair", async (route) => {
+        reindexRequests += 1;
         if (failReindex) {
           failReindex = false;
           return route.fulfill({
@@ -4726,6 +4809,16 @@ async function main() {
         inPopover: false,
         afterBanner: true,
       });
+      // Pending keeps keyboard focus: the button stays focused and named, is aria-disabled instead of `disabled`,
+      // and a second Enter or click starts no second reindex.
+      assert.equal(await reindexButton.getAttribute("aria-disabled"), "true");
+      assert.equal(await reindexButton.evaluate((button) => button.matches(":disabled")), false);
+      assert.equal(await reindexButton.evaluate((button) => button === document.activeElement), true);
+      await page.keyboard.press("Enter");
+      await reindexButton.dispatchEvent("click");
+      await page.waitForTimeout(150);
+      assert.equal(reindexRequests, 2);
+      assert.equal(await reindexButton.evaluate((button) => button === document.activeElement), true);
       releaseReindex?.();
       await page.locator('[data-ltm-reindex-result="success"]').waitFor();
       assert.deepEqual(await reindexResult("success"), {
@@ -4763,7 +4856,7 @@ async function main() {
       releaseLateReindex();
       await page.waitForFunction(() =>
         [...document.querySelectorAll<HTMLButtonElement>('[data-ltm-surface="vault-health-warning"] button')].some(
-          (button) => button.textContent?.includes("Reindex recall") && !button.disabled,
+          (button) => button.textContent?.includes("Reindex recall") && button.getAttribute("aria-disabled") !== "true",
         ),
       );
       assert.equal(await page.locator("[data-ltm-reindex-result]").count(), 0);
@@ -7222,8 +7315,10 @@ async function main() {
       });
       const mobilePage = await mobileContext.newPage();
       const activationChanges: boolean[] = [];
-      await mobilePage.exposeFunction("onMobileActivationChange", (enabled: boolean) => {
+      let holdActivation: Promise<void> | null = null;
+      await mobilePage.exposeFunction("onMobileActivationChange", async (enabled: boolean) => {
         activationChanges.push(enabled);
+        await holdActivation;
       });
       await mobilePage.exposeFunction("onMobileManagePackage", () => {});
       await mobilePage.goto(`http://127.0.0.1:${address.port}/`);
@@ -7342,8 +7437,98 @@ async function main() {
         await mobilePage.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
         true,
       );
+      // Pending keeps keyboard focus: while the change is held, the switch stays focused and named, is
+      // aria-disabled instead of `disabled`, and a second Enter or click makes no second change.
+      let releaseActivation = () => {};
+      holdActivation = new Promise<void>((resolve) => {
+        releaseActivation = resolve;
+      });
       await activation.click();
+      await mobilePage.waitForFunction(
+        () => document.querySelector('[data-ltm-control="activation"]')?.getAttribute("aria-disabled") === "true",
+      );
+      const activationIsFocused = () => activation.evaluate((element) => element === document.activeElement);
+      assert.equal(await activation.evaluate((element) => element.matches(":disabled")), false);
+      assert.equal(await activation.getAttribute("aria-label"), "Active in kirei");
+      assert.equal(await activationIsFocused(), true);
+      await mobilePage.keyboard.press("Enter");
+      await activation.dispatchEvent("click");
+      await mobilePage.waitForTimeout(150);
       assert.deepEqual(activationChanges, [false]);
+      assert.equal(await activationIsFocused(), true);
+      releaseActivation();
+      await mobilePage.waitForFunction(
+        () => document.querySelector('[data-ltm-control="activation"]')?.getAttribute("aria-disabled") === null,
+      );
+      assert.equal(await activationIsFocused(), true);
+      assert.deepEqual(activationChanges, [false]);
+      // Chat Settings pending keeps keyboard focus too: committing one field on blur starts the save while
+      // the next field is already focused, and that field must stay focused, named and read-only.
+      const chatSettingChanges: unknown[] = [];
+      let releaseChatSettings = () => {};
+      const chatSettingsHeld = new Promise<void>((resolve) => {
+        releaseChatSettings = resolve;
+      });
+      await mobilePage.exposeFunction("onMobileChatSettingsChange", async (patch: unknown) => {
+        chatSettingChanges.push(patch);
+        await chatSettingsHeld;
+      });
+      await mobilePage.evaluate((version) => {
+        const element = document.createElement("marinara-capability-long-term-memory") as HTMLElement & {
+          capabilityProps?: unknown;
+        };
+        element.setAttribute("view", "settings");
+        element.capabilityProps = {
+          chatId: "chat-artifact",
+          onChatSettingsChange: (
+            window as Window & {
+              onMobileChatSettingsChange: (patch: unknown) => Promise<void>;
+            }
+          ).onMobileChatSettingsChange,
+          package: { version },
+        };
+        document.body.append(element);
+      }, packageManifest.version);
+      const heldChatSettings = mobilePage.locator('[data-ltm-surface="chat-settings"]');
+      await heldChatSettings.waitFor();
+      const heldStyle = heldChatSettings.locator('select[data-ltm-control="select"]');
+      const heldBudget = heldChatSettings.getByRole("spinbutton", { name: "Recall context budget" });
+      const heldMaxChunks = heldChatSettings.getByRole("spinbutton", { name: "Maximum memories" });
+      const isFocused = (target: typeof heldBudget) => target.evaluate((element) => element === document.activeElement);
+      await heldBudget.fill("256");
+      await heldMaxChunks.click();
+      await heldMaxChunks.waitFor();
+      await mobilePage.waitForFunction(() =>
+        [...document.querySelectorAll('[data-ltm-surface="chat-settings"] input[type="number"]')].every(
+          (input) => input.getAttribute("aria-disabled") === "true",
+        ),
+      );
+      assert.deepEqual(chatSettingChanges, [{ longTermMemoryBudgetTokens: 256 }]);
+      assert.equal(await heldMaxChunks.evaluate((input) => input.matches(":disabled")), false);
+      assert.equal(await isFocused(heldMaxChunks), true);
+      await mobilePage.keyboard.type("5");
+      assert.equal(await heldMaxChunks.inputValue(), "20");
+      // An ignored change on the aria-disabled select snaps the controlled value back and starts no second save.
+      assert.equal(await heldStyle.getAttribute("aria-disabled"), "true");
+      assert.equal(await heldStyle.evaluate((select) => select.matches(":disabled")), false);
+      await heldStyle.evaluate((select: HTMLSelectElement) => {
+        select.value = "exact";
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await mobilePage.waitForTimeout(150);
+      assert.equal(await heldStyle.inputValue(), "balanced");
+      assert.equal(chatSettingChanges.length, 1);
+      releaseChatSettings();
+      await mobilePage.waitForFunction(() =>
+        [...document.querySelectorAll('[data-ltm-surface="chat-settings"] input[type="number"], select')].every(
+          (control) => control.getAttribute("aria-disabled") === null,
+        ),
+      );
+      assert.equal(await isFocused(heldMaxChunks), true);
+      assert.equal(chatSettingChanges.length, 1);
+      await mobilePage.evaluate(() =>
+        document.querySelectorAll("marinara-capability-long-term-memory").item(1)?.remove(),
+      );
       await mobilePage.evaluate(() => {
         const element = document.querySelector("marinara-capability-long-term-memory") as HTMLElement & {
           capabilityProps?: Record<string, unknown>;
