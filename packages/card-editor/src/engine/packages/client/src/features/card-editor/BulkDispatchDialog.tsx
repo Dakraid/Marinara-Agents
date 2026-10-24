@@ -36,10 +36,12 @@ import {
   loadStoredBulkConfig,
   normalizeBulkSessionConfig,
   saveBulkPreset,
+  restoreDraftTargets,
   storeBulkConfig,
   storeBulkDraft,
   type BulkDraft,
   type BulkFormState,
+  type BulkRerun,
 } from "./session-config";
 import { configFromDraft, draftFromConfig, TransformSettings } from "./TransformSettings";
 
@@ -72,12 +74,15 @@ export function BulkDispatchDialog({
   localization,
   characterIds,
   prefill,
+  rerun,
   onClose,
   onDispatched,
 }: {
   localization?: CardEditorLocalizationContext;
   characterIds: string[];
   prefill?: BulkDispatchPrefill;
+  /** Rerun selected cards of an old run: its settings and the cards' notes and styles fill the setup. */
+  rerun?: BulkRerun;
   onClose: () => void;
   onDispatched: (session: BulkSession) => void;
 }) {
@@ -92,7 +97,8 @@ export function BulkDispatchDialog({
   const [lorebookFilter, setLorebookFilter] = useState("");
 
   // Read the remembered config once (lazy initializer); corrupt entries fall back to defaults.
-  const [storedConfig] = useState(() => loadStoredBulkConfig(safeLocalStorage()));
+  // A rerun starts from the old run's settings instead.
+  const [storedConfig] = useState(() => rerun?.config ?? loadStoredBulkConfig(safeLocalStorage()));
   // SPEC 2026-10-10 §3: the chat-name prefill is only an editable suggestion in the prefix box.
   // Append prefix and suffix both apply (the old "prefix wins" rule is gone); blank boxes are
   // omitted from the dispatch config. The suffix starts at the " (Edited)" suggestion unless a
@@ -126,7 +132,10 @@ export function BulkDispatchDialog({
     },
   }));
   // An unsent draft (auto-saved below) takes precedence over prefill and the remembered config: it is newer work.
-  const [restoredDraft, setRestoredDraft] = useState(() => loadBulkDraft(safeLocalStorage(), defaultForm));
+  // A rerun neither restores nor overwrites that draft: it is separate, explicitly chosen work.
+  const [restoredDraft, setRestoredDraft] = useState(() =>
+    rerun ? null : loadBulkDraft(safeLocalStorage(), defaultForm),
+  );
   const [initialForm] = useState(() => restoredDraft?.form ?? defaultForm);
   const [mode, setMode] = useState(initialForm.mode);
   const [batchSize, setBatchSize] = useState(initialForm.batchSize);
@@ -180,19 +189,18 @@ export function BulkDispatchDialog({
     return () => controller.abort();
   }, [transform, schemas]);
 
-  // Snapshot: the selection at dialog-open time is the dispatch target list.
-  const [initialIds] = useState(() => [...new Set(characterIds)]);
+  // Snapshot at open: the draft's (or rerun's) targets with their notes and styles, plus the selection.
+  const [initialTargets] = useState(() => restoreDraftTargets(characterIds, rerun?.targets ?? restoredDraft));
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
     setTargetsLoading(true);
-    void Promise.allSettled(initialIds.map((id) => getHostCharacterCard(id, controller.signal))).then((results) => {
+    const requests = initialTargets.map(({ characterId: id }) => getHostCharacterCard(id, controller.signal));
+    void Promise.allSettled(requests).then((results) => {
       if (cancelled) return;
       setTargets(
         results.map((result, index) => {
-          const characterId = initialIds[index]!;
-          // Notes and styles come back for every target the draft knew; new targets start blank.
-          const saved = restoredDraft?.targets[characterId] ?? { note: "", style: { kind: "inherit" } };
+          const { characterId, ...saved } = initialTargets[index]!;
           if (result.status === "fulfilled") {
             return {
               characterId,
@@ -212,9 +220,7 @@ export function BulkDispatchDialog({
       cancelled = true;
       controller.abort();
     };
-    // The draft is read once at open; later draft changes must not reload the targets.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialIds]);
+  }, [initialTargets]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -262,12 +268,19 @@ export function BulkDispatchDialog({
     setPresetId(next);
   };
 
-  const updateTarget = (characterId: string, patch: Partial<DialogTarget>) =>
+  // Card loads also patch targets; they are not edits, so only the user-facing handlers mark the draft.
+  const patchTarget = (characterId: string, patch: Partial<DialogTarget>) =>
     setTargets((current) =>
       current.map((target) => (target.characterId === characterId ? { ...target, ...patch } : target)),
     );
-  const removeTarget = (characterId: string) =>
+  const updateTarget = (characterId: string, patch: Partial<DialogTarget>) => {
+    touched.current = true;
+    patchTarget(characterId, patch);
+  };
+  const removeTarget = (characterId: string) => {
+    touched.current = true;
     setTargets((current) => current.filter((target) => target.characterId !== characterId));
+  };
   // A run started from the workspace (no library selection) collects its cards here.
   const addTarget = (picked: { id: string; name: string; avatarPath?: string | null }) => {
     touched.current = true;
@@ -283,8 +296,8 @@ export function BulkDispatchDialog({
     };
     setTargets((current) => [...current, pending]);
     getHostCharacterCard(picked.id)
-      .then((card) => updateTarget(picked.id, { name: card.name, avatarPath: card.avatarPath, card: card.fields }))
-      .catch(() => updateTarget(picked.id, { loadError: true }));
+      .then((card) => patchTarget(picked.id, { name: card.name, avatarPath: card.avatarPath, card: card.fields }))
+      .catch(() => patchTarget(picked.id, { loadError: true }));
   };
 
   const visibleLorebooks = (lorebooks ?? []).filter(
@@ -385,14 +398,15 @@ export function BulkDispatchDialog({
   // Auto-save after every edit. Load-failed targets keep their notes too; they may load next time.
   const draftJson = JSON.stringify({
     form,
+    ids: targets.map((target) => target.characterId),
     targets: Object.fromEntries(
       targets.map((target) => [target.characterId, { note: target.note, style: target.style }]),
     ),
   });
   useEffect(() => {
-    if (!touched.current || dispatched.current || targetsLoading) return;
+    if (rerun || !touched.current || dispatched.current || targetsLoading) return;
     storeBulkDraft(JSON.parse(draftJson) as BulkDraft, safeLocalStorage());
-  }, [draftJson, targetsLoading]);
+  }, [draftJson, targetsLoading, rerun]);
 
   const applyForm = (next: BulkFormState) => {
     touched.current = true;
@@ -418,9 +432,14 @@ export function BulkDispatchDialog({
     setTransformDraft(next.transformDraft);
   };
 
+  // Start fresh keeps only the library selection the setup opened with.
   const discardDraft = () => {
     applyForm(defaultForm);
-    setTargets((current) => current.map((target) => ({ ...target, note: "", style: { kind: "inherit" } })));
+    setTargets((current) =>
+      current
+        .filter((target) => characterIds.includes(target.characterId))
+        .map((target) => ({ ...target, note: "", style: { kind: "inherit" } })),
+    );
     touched.current = false;
     clearBulkDraft(safeLocalStorage());
     setRestoredDraft(null);
@@ -503,14 +522,19 @@ export function BulkDispatchDialog({
               : {}),
         })),
         config,
-        // Prefilled labels come from the unified "Process characters" entry ("Process: <chat>").
-        ...(prefill?.label?.trim() ? { label: prefill.label.trim().slice(0, 200) } : {}),
+        // Prefilled labels come from the unified "Process characters" entry ("Process: <chat>");
+        // a rerun is named like the server's Run again.
+        ...(rerun
+          ? { label: `${rerun.label} (rerun)`.slice(0, 200) }
+          : prefill?.label?.trim()
+            ? { label: prefill.label.trim().slice(0, 200) }
+            : {}),
         ...(lorebookMaterials.length > 0 ? { lorebooks: lorebookMaterials } : {}),
         ...(sessionBehaviorCard ? { behaviorCharacter: behaviorCardMaterial(sessionBehaviorCard) } : {}),
       });
       storeBulkConfig(config, safeLocalStorage());
       dispatched.current = true;
-      clearBulkDraft(safeLocalStorage());
+      if (!rerun) clearBulkDraft(safeLocalStorage());
       onDispatched(session);
     } catch (error) {
       setDispatchError(error instanceof Error ? error.message : String(error));
@@ -556,9 +580,18 @@ export function BulkDispatchDialog({
           />
         ) : (
           <>
-            {restoredDraft ? (
+            {rerun ? (
               <div className="ce-status" role="status">
-                <span>{t("cardEditor.dialog.draft.restored")}</span>{" "}
+                {t("cardEditor.dialog.rerun.restored", { count: rerun.targets.ids.length, label: rerun.label })}
+              </div>
+            ) : restoredDraft ? (
+              <div className="ce-status" role="status">
+                <span>
+                  {t("cardEditor.dialog.draft.restored", {
+                    count: restoredDraft.ids.length,
+                    notes: Object.values(restoredDraft.targets).filter((target) => target.note.trim()).length,
+                  })}
+                </span>{" "}
                 <button type="button" className="mari-chrome-control mari-chrome-control--small" onClick={discardDraft}>
                   {t("cardEditor.dialog.draft.discard")}
                 </button>

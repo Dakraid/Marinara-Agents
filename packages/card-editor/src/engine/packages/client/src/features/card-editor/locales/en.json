@@ -9,7 +9,8 @@
   "cardEditor.action.open": "Card Editor",
   "cardEditor.dialog.title": "Bulk Card Editor",
   "cardEditor.dialog.close": "Close",
-  "cardEditor.dialog.draft.restored": "Restored your unsent settings and notes from last time.",
+  "cardEditor.dialog.draft.restored": "Restored your unsent draft: {{count}} characters and {{notes}} notes.",
+  "cardEditor.dialog.rerun.restored": "Rerunning {{count}} cards from “{{label}}” with their notes and settings.",
   "cardEditor.dialog.draft.discard": "Start fresh",
   "cardEditor.dialog.presets.title": "Presets",
   "cardEditor.dialog.presets.name": "Preset name",
@@ -380,6 +381,8 @@
   "cardEditor.setup.targets": "Targets",
   "cardEditor.workspace.newRun": "New run",
   "cardEditor.workspace.newRunCount": "New run · {{count}} characters selected",
+  "cardEditor.workspace.draft": "Unsent draft",
+  "cardEditor.workspace.draftCount": "{{count}} cards",
   "cardEditor.workspace.pickRun": "Pick a run on the left, or start a new one.",
   "cardEditor.workspace.runs": "Runs",
   "cardEditor.workspace.run": "Run",
@@ -410,5 +413,6 @@
   "cardEditor.workspace.selectedCount": "{{count}} selected",
   "cardEditor.workspace.approveSelected": "Approve selected ({{count}})",
   "cardEditor.workspace.rejectSelected": "Reject selected ({{count}})",
+  "cardEditor.workspace.rerunSelected": "Rerun selected ({{count}})",
   "cardEditor.workspace.approveAll": "Approve all remaining ({{count}})"
 }

@@ -2949,6 +2949,31 @@ async function main() {
     await app.close();
     app = await buildApp();
 
+    // The Movement Assessment switches save through the agent configuration route and must stick.
+    const saveAssessmentSwitches = async (value: boolean) => {
+      assert.ok(app);
+      await expectJson(app, {
+        method: "PATCH",
+        url: "/api/chats/spatial-context/agent-configuration",
+        headers: csrfHeaders,
+        payload: {
+          description: "World Maps",
+          phase: "pre_generation",
+          connectionId: null,
+          settings: { author: "Pasta Devs", assessImpliedMovement: value, assessmentPersistTravel: value },
+        },
+      });
+      const agents = (await expectJson(app, { method: "GET", url: "/api/agents" })) as Array<{
+        type: string;
+        settings?: unknown;
+      }>;
+      const saved = metadata(agents.find((agent) => agent.type === "hierarchical-maps")?.settings);
+      assert.equal(saved.assessImpliedMovement, value, "an assessment switch is saved");
+      assert.equal(saved.assessmentPersistTravel, value);
+    };
+    await saveAssessmentSwitches(false);
+    await saveAssessmentSwitches(true);
+
     const impersonateConnection = (await expectJson(app, {
       method: "POST",
       url: "/api/connections",

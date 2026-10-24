@@ -613,7 +613,7 @@ const features = [
   },
   {
     id: "card-editor",
-    version: "10.0.8",
+    version: "10.1.0",
     minEngineVersion: "2.4.7",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Card Editor",
@@ -708,7 +708,7 @@ const features = [
   },
   {
     id: "hierarchical-maps",
-    version: "10.2.0",
+    version: "10.2.1",
     minEngineVersion: "2.5.1",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "World Maps",

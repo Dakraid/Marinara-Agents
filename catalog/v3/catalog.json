@@ -364,7 +364,7 @@
         },
         "id": "card-editor",
         "name": "Card Editor",
-        "version": "10.0.8",
+        "version": "10.1.0",
         "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters: edit fields, or transform cards into your own schemas as Markdown, XML or JSON, split cards that describe several characters, refine results in a second phase, and composite avatars, with verdict review and session management in its workspace. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
         "engine": {
           "min": "2.4.7",
@@ -404,8 +404,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "30a5d5e512b67538b62eade669c1a43524c61449aa071e117d9985f5001789a0",
-            "bytes": 217949
+            "sha256": "dffd736a4d5bf835e8d73f5d18d2a52c0d6781ccbc65fc96bbd0cbe182d1e019",
+            "bytes": 223245
           }
         ],
         "permissions": [
@@ -421,9 +421,9 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-editor-10.0.8.zip",
-        "sha256": "c6b306d25a1e4067c0ce36273ddb38e44fa997f5d499d353b63902aaea44837e",
-        "bytes": 311144
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-editor-10.1.0.zip",
+        "sha256": "5a30214c0c429969cd94acee620c96f8e4f306c4f510320ee2307800d4c64c0f",
+        "bytes": 316440
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#card-editor"
     },
@@ -4071,7 +4071,7 @@
         },
         "id": "hierarchical-maps",
         "name": "World Maps",
-        "version": "10.2.0",
+        "version": "10.2.1",
         "description": "Adds world maps to Roleplay and Game, from whole regions down to single rooms, with art and travel between places. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay and Game modes.",
         "engine": {
           "min": "2.5.1",
@@ -4107,8 +4107,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "dd9f36f8d8c36b3b9fb9fe52d42fc46f2b7c255f06c038a860b1aab7a9a7ee75",
-            "bytes": 145179
+            "sha256": "90f88a92b870dfa0812962b48be7ea92b80af8e8572e95ea87ec237e341bbaf6",
+            "bytes": 145314
           },
           {
             "path": "client.js",
@@ -4131,9 +4131,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/hierarchical-maps.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/hierarchical-maps-10.2.0.zip",
-        "sha256": "2c8019cd4de1903a1b3bdb2267a73b996956c220602c4a716c5cf4bc10fbd74e",
-        "bytes": 597483
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/hierarchical-maps-10.2.1.zip",
+        "sha256": "e6436535360332fb4e0634d658580ea183ea34941c3576316239ceb2a9991262",
+        "bytes": 597618
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
     },

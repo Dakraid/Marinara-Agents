@@ -145,8 +145,12 @@ const spatialAgentConfigurationUpdateSchema = z.object({
   description: z.string(),
   phase: z.literal("pre_generation"),
   connectionId: z.string().nullable(),
+  // Every key listed here is saved; z.object drops unlisted keys, which made the assessment switches snap back.
   settings: z.object({
     author: z.string(),
+    assessImpliedMovement: z.boolean().optional(),
+    assessmentDiscovery: z.boolean().optional(),
+    assessmentPersistTravel: z.boolean().optional(),
   }),
 });
 

@@ -10,7 +10,9 @@ import {
   deleteBulkPreset,
   estimateBulkCalls,
   loadBulkDraft,
+  loadBulkDraftTargets,
   loadBulkPresets,
+  restoreDraftTargets,
   saveBulkPreset,
   storeBulkDraft,
   loadStoredBulkConfig,
@@ -235,10 +237,10 @@ assert.equal(loadStoredBulkConfig(undefined), null, "storage may be unavailable"
     behavior: { kind: "character", id: "style-1", name: "Mira", avatarPath: null },
     transformDraft: { ...defaults.transformDraft, phase2Enabled: true },
   };
-  storeBulkDraft({ form, targets: { a: { note: "keep accent", style: { kind: "none" } } } }, store);
+  storeBulkDraft({ form, ids: ["a"], targets: { a: { note: "keep accent", style: { kind: "none" } } } }, store);
   assert.deepEqual(
     loadBulkDraft(store, defaults),
-    { form, targets: { a: { note: "keep accent", style: { kind: "none" } } } },
+    { form, ids: ["a"], targets: { a: { note: "keep accent", style: { kind: "none" } } } },
     "a draft keeps raw, still-invalid inputs (blank affix, combined without a name) verbatim",
   );
   box.set(
@@ -252,10 +254,35 @@ assert.equal(loadStoredBulkConfig(undefined), null, "storage may be unavailable"
     loadBulkDraft(store, defaults),
     {
       form: { ...defaults, globalInstruction: "kept" },
+      ids: ["a"],
       targets: { a: { note: "", style: { kind: "inherit" } } },
     },
     "wrong-shaped fields fall back to defaults one by one",
   );
+  // Targets added by search (not in the library selection) come back with their notes, in draft order,
+  // and the incoming selection joins after them.
+  const style = { kind: "character", id: "style-1", name: "Mira", avatarPath: null };
+  storeBulkDraft(
+    {
+      form,
+      ids: ["searched", "a"],
+      targets: { a: { note: "", style: { kind: "inherit" } }, searched: { note: "make her taller", style } },
+    },
+    store,
+  );
+  assert.deepEqual(
+    restoreDraftTargets(["a", "picked"], loadBulkDraft(store, defaults)),
+    [
+      { characterId: "searched", note: "make her taller", style },
+      { characterId: "a", note: "", style: { kind: "inherit" } },
+      { characterId: "picked", note: "", style: { kind: "inherit" } },
+    ],
+    "the draft restores targets outside the incoming selection with their notes",
+  );
+  assert.deepEqual(loadBulkDraftTargets(store)?.ids, ["searched", "a"], "the run rail sees the draft's cards");
+  assert.deepEqual(restoreDraftTargets(["x", "x"], null), [{ characterId: "x", note: "", style: { kind: "inherit" } }]);
+  box.set(BULK_DRAFT_STORAGE_KEY, JSON.stringify({ ids: ["b", "gone", 4], targets: { a: {}, b: {} } }));
+  assert.deepEqual(loadBulkDraftTargets(store)?.ids, ["b", "a"], "ids keep their order; unknown ids drop");
   box.set(BULK_DRAFT_STORAGE_KEY, "{not json");
   assert.equal(loadBulkDraft(store, defaults), null, "a corrupt draft is ignored");
   clearBulkDraft(store);
@@ -283,8 +310,16 @@ assert.equal(loadStoredBulkConfig(undefined), null, "storage may be unavailable"
     "a click outside must not close the dialog and drop unsent work",
   );
   assert.match(dialog, /storeBulkDraft\(/u, "edits auto-save a draft");
-  assert.match(dialog, /clearBulkDraft\(safeLocalStorage\(\)\);\s*onDispatched/u, "a dispatch clears the draft");
-  assert.match(dialog, /restoredDraft\?\.targets\[characterId\]/u, "per-target notes come back with the draft");
+  assert.match(
+    dialog,
+    /if \(!rerun\) clearBulkDraft\(safeLocalStorage\(\)\);\s*onDispatched/u,
+    "a dispatch clears the draft",
+  );
+  assert.match(
+    dialog,
+    /restoreDraftTargets\(characterIds, rerun\?\.targets \?\? restoredDraft\)/u,
+    "per-target notes come back with the draft",
+  );
 }
 
 // ── 5. Live estimate math: ceil(N / batchSize) vs N ──
