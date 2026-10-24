@@ -560,6 +560,40 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
   await page.mouse.click(short.x, short.y);
   await expect.poll(() => forge.evaluate((node) => (node as HTMLElement).dataset.noticeTaps)).toBe("1");
 
+  const hidden = await forge.evaluate((node) => {
+    const game = node as any;
+    const stage = game._root.querySelector(".gf-stage") as HTMLElement;
+    stage.style.display = "none";
+    game._forgeAudio.notice("audio.generationReason", 400, "A longer provider explanation. ".repeat(9));
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    notice.style.maxHeight = "3rem";
+    return { client: notice.clientHeight, scroll: notice.scrollHeight };
+  });
+  expect(hidden).toEqual({ client: 0, scroll: 0 });
+  await forge.evaluate((node) => {
+    ((node as any)._root.querySelector(".gf-stage") as HTMLElement).style.removeProperty("display");
+  });
+  const status = forge.locator("[data-forge-audio-status]");
+  await expect(status).toHaveAttribute("tabindex", "0");
+  await expect(status).toHaveCSS("pointer-events", "auto");
+  await status.focus();
+  await page.keyboard.press("PageDown");
+  await expect.poll(() => status.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+  await status.evaluate((node) => {
+    const notice = node as HTMLElement;
+    notice.style.maxHeight = "1000px";
+    notice.style.fontSize = "12px";
+  });
+  await expect(status).toHaveAttribute("tabindex", "-1");
+  await expect(status).toHaveCSS("pointer-events", "none");
+  await status.evaluate((node) => {
+    const notice = node as HTMLElement;
+    notice.style.maxHeight = "3rem";
+    notice.style.fontSize = "24px";
+  });
+  await expect(status).toHaveAttribute("tabindex", "0");
+  await expect(status).toHaveCSS("pointer-events", "auto");
+
   await forge.locator("[data-forge-audio-status]").evaluate((node) => {
     (node as HTMLElement).style.maxHeight = "3rem";
     // Settle the fixture's size transition before freezing time for dismissal checks.
@@ -591,6 +625,34 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
   await forge.locator("[data-forge-audio-status]").evaluate((node) => (node as HTMLElement).blur());
   await page.clock.fastForward(6001);
   await expect(forge.locator("[data-forge-audio-status]")).toHaveCount(0);
+
+  await forge.evaluate((node) => {
+    const game = node as any;
+    game._forgeAudio.notice("audio.generationReason", 400, "A longer provider explanation. ".repeat(9));
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    notice.style.maxHeight = "3rem";
+  });
+  await expect(status).toHaveAttribute("tabindex", "0");
+  await status.focus();
+  await forge.evaluate((node) => {
+    const game = node as any;
+    game._root.querySelector("[data-forge-audio-status]").style.removeProperty("max-height");
+    game._forgeAudio.notice("audio.voiceFailed");
+  });
+  await expect(status).toHaveAttribute("tabindex", "-1");
+  await expect(status).toBeFocused();
+  await page.clock.fastForward(6001);
+  await expect(status).toHaveCount(0);
+  const disposed = await forge.evaluate((node) => {
+    const game = node as any;
+    game._forgeAudio.notice("audio.voiceFailed");
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    game._forgeAudio.dispose();
+    return { connected: notice.isConnected, focus: notice.onfocus, blur: notice.onblur };
+  });
+  expect(disposed).toEqual({ connected: false, focus: null, blur: null });
+  await page.clock.fastForward(6001);
+  await expect(status).toHaveCount(0);
 });
 
 test("Readiness recovers in the current world and single-channel selections keep the other channel on stock", async ({

@@ -33,7 +33,7 @@ Settings → Story → Continuity includes **Allow choices**, enabled by default
 
 Narration is written in sections. Small choices include every alternative branch in the same response, followed by shared narration. Playback pauses for your selection, then plays the stored branch without another model call. In 1.12.1, later shared sections and optional pre-forging can continue before you select a small choice. First-play selections are saved as canon; replay can show the other small branches without changing that history. Reloading or resuming restores the canonical selections. Completion and compression still wait for pending selections so their records and summaries include the chosen branches.
 
-A chapter or Character Story may end with one optional big choice. It is always the final beat, and the model stops before its outcome. Selecting it permanently records your fate; replay cannot change it. Later chapters use the chosen outcome, even after story compression or summary folding, and generation remains locked until it is selected. Pre-forging pauses at unresolved decisions and lets you enter the chapter to choose.
+A chapter or Character Story may end with one optional big choice. It is always the final beat, and the model stops before its outcome. Selecting it permanently records your fate; replay cannot change it. Later chapters use the chosen outcome, even after story compression or summary folding, and generation remains locked until it is selected. Pre-forging pauses at unresolved big decisions and lets you enter the chapter to choose.
 
 Turning choices off affects newly written scenes. Existing choice points and saved decisions remain intact. Previously written linear scenes stay playable.
 

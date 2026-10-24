@@ -695,11 +695,51 @@ try {
     assert.equal(message[3].length, 300);
     assert.equal(message[3].includes("\n"), false);
     assert.equal(JSON.stringify(events).includes("not public"), false);
-    const status = { textContent: "", style: {}, remove() {} };
+    const previousResizeObserver = globalThis.ResizeObserver;
+    const observers = [];
+    globalThis.ResizeObserver = class {
+      constructor(callback) {
+        this.callback = callback;
+        observers.push(this);
+      }
+      observe(node) {
+        this.node = node;
+      }
+      disconnect() {
+        this.disconnected = true;
+      }
+    };
+    const status = {
+      textContent: "",
+      style: {},
+      isConnected: true,
+      clientHeight: 30,
+      scrollHeight: 30,
+      remove() {
+        this.isConnected = false;
+      },
+    };
     const rendered = { host: { _root: { querySelector: () => status } } };
-    ForgeAudioController.prototype.notice.call(rendered, "audio.generationReason", 400, "Provider says $&");
-    assert.ok(status.textContent.includes("Provider says $&"), "provider text is interpolated literally");
-    clearTimeout(rendered.noticeTimer);
+    try {
+      ForgeAudioController.prototype.notice.call(rendered, "audio.generationReason", 400, "Provider says $&");
+      assert.ok(status.textContent.includes("Provider says $&"), "provider text is interpolated literally");
+      const observer = observers.at(-1);
+      assert.equal(observer.node, status);
+      assert.equal(status.tabIndex, -1);
+      status.scrollHeight = 80;
+      observer.callback();
+      assert.equal(status.tabIndex, 0);
+      assert.equal(status.style.pointerEvents, "auto");
+      rendered.dismissNotice();
+      assert.equal(observer.disconnected, true);
+      assert.equal(status.onfocus, null);
+      assert.equal(status.onblur, null);
+      assert.equal(status.isConnected, false);
+    } finally {
+      rendered.dismissNotice?.();
+      if (previousResizeObserver === undefined) delete globalThis.ResizeObserver;
+      else globalThis.ResizeObserver = previousResizeObserver;
+    }
     controller.dispose();
   });
 

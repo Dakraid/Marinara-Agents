@@ -4,6 +4,7 @@
 - Small choices no longer block later shared narration or background pre-forging. Their alternatives remain generated together; playback, canon, replay and big-choice locks are preserved.
 - Completion and compression still wait for pending selections to preserve canonical story history.
 - Short audio notices no longer intercept taps on the game stage. Long reasons remain scrollable and stay visible while focused with a keyboard.
+- Notice scrolling adapts when the panel becomes visible or changes size; replacing a long reason with short text restores dismissal.
 - Recorded the actual merged Engine music-test baseline.
 
 ## 1.12.0 — 2026-10-24

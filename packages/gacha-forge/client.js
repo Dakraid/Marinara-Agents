@@ -3698,24 +3698,37 @@ class ForgeAudioController {
       status.className = "gf-audio-status";
       this.host._root.querySelector(".gf-stage")?.append(status);
     }
-    if (status) {
-      status.textContent = forgeAudioEnglish[key]
-        .replace("{status}", String(httpStatus))
-        .replace("{reason}", () => reason);
-      const scrollable = status.scrollHeight > status.clientHeight;
-      status.style.pointerEvents = scrollable ? "auto" : "none";
-      status.tabIndex = scrollable ? 0 : -1;
-    }
+    this.noticeResize?.disconnect();
+    status.textContent = forgeAudioEnglish[key]
+      .replace("{status}", String(httpStatus))
+      .replace("{reason}", () => reason);
+    const dismiss = () => {
+      clearTimeout(this.noticeTimer);
+      this.noticeResize?.disconnect();
+      status.onfocus = null;
+      status.onblur = null;
+      status.remove();
+    };
+    this.dismissNotice = dismiss;
     const scheduleDismissal = () => {
       clearTimeout(this.noticeTimer);
-      if (!this.disposed && this.host._root.activeElement !== status) {
-        this.noticeTimer = setTimeout(() => status?.remove(), 6000);
+      if (!this.disposed && !(this.host._root.activeElement === status && status.tabIndex === 0)) {
+        this.noticeTimer = setTimeout(dismiss, 6000);
       }
     };
-    if (status) {
-      status.onfocus = () => clearTimeout(this.noticeTimer);
-      status.onblur = scheduleDismissal;
-    }
+    const measure = () => {
+      if (this.disposed || !status.isConnected) return dismiss();
+      const scrollable = status.clientHeight > 0 && status.scrollHeight > status.clientHeight;
+      const changed = scrollable !== (status.tabIndex === 0);
+      status.style.pointerEvents = scrollable ? "auto" : "none";
+      status.tabIndex = scrollable ? 0 : -1;
+      if (changed) scheduleDismissal();
+    };
+    status.onfocus = scheduleDismissal;
+    status.onblur = scheduleDismissal;
+    measure();
+    this.noticeResize = new ResizeObserver(measure);
+    this.noticeResize.observe(status);
     scheduleDismissal();
   }
 
@@ -3933,6 +3946,7 @@ class ForgeAudioController {
     if (this.disposed) return;
     this.disposed = true;
     clearTimeout(this.noticeTimer);
+    this.dismissNotice?.();
     this.voiceAbort?.abort();
     for (const request of this.requests) request.abort();
     this.host._root.removeEventListener("click", this.onClick);
