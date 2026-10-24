@@ -6197,6 +6197,10 @@ async function main() {
       await vaultFeedbackFocused("2 memories archived");
       const undoButton = page.locator("[data-ltm-vault-feedback]").getByRole("button", { name: "Undo" });
       assert.equal(await undoButton.count(), 1);
+      // The Undo's caption has its own element and the notice slot stays empty beside it.
+      const undoCaption = page.locator("[data-ltm-vault-feedback] [data-ltm-archive-undo-caption]");
+      assert.equal((await undoCaption.innerText()).trim(), "2 memories archived.");
+      assert.equal(await page.locator("[data-ltm-vault-feedback] [data-ltm-status] > span").count(), 1);
 
       // 1. Partial failure restores successful restores back to archived and surfaces error.
       batchNotesPartial = true;
@@ -6257,6 +6261,23 @@ async function main() {
       assert.deepEqual(batchNotesCalls.at(-1), { noteIds: ["world_second_mobile"], status: "archived" });
       batchNotesPartial = false;
 
+      // A later notice leaves the caption standing: save the open memory while Undo is still offered.
+      await page.route("**/api/long-term-memory/notes/world_second_mobile", async (route) => {
+        if (route.request().method() !== "PATCH") return route.fallback();
+        const current = await (await page.request.get(route.request().url())).json();
+        return route.fulfill({ json: { note: { ...current, version: current.version + 1 } } });
+      });
+      const titleField = page.locator("[data-ltm-field='title']");
+      await titleField.fill("Second mobile review memory, saved");
+      await page.getByRole("button", { name: "Save", exact: true }).click();
+      await page
+        .locator("[data-ltm-vault-feedback]")
+        .getByText(/Memory saved/u)
+        .waitFor();
+      assert.equal((await undoCaption.innerText()).trim(), "2 memories archived.");
+      assert.equal(await undoButton.count(), 1);
+      await page.unroute("**/api/long-term-memory/notes/world_second_mobile");
+
       // 2. Complete restore sends restore batches grouped by prior status.
       // Re-archive the two notes cleanly, with one of them open
       await activeWorldCard.locator("button").first().click();
@@ -6285,6 +6306,7 @@ async function main() {
         .locator("[data-ltm-vault-feedback]")
         .getByText(/2 memories restored/u)
         .waitFor();
+      assert.equal(await undoCaption.count(), 0);
       await restoredNoteReload;
       assert.equal(await page.locator("[data-ltm-vault-feedback]").getByRole("button", { name: "Undo" }).count(), 0);
       const restoreCalls = batchNotesCalls.slice(-2);

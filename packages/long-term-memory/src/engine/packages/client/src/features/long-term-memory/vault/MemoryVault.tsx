@@ -176,6 +176,8 @@ function targetDisplayLabel(target: Target | null | undefined) {
 
 type ArchiveUndoState = {
   notes: Array<{ id: string; status: LtmStatus }>;
+  // What Undo reverses; the banner shows it beside Undo, apart from the notice slot other actions write to.
+  caption: string;
 };
 
 function bulkAvailabilityScope(targets: readonly string[]): Partial<LtmScope> | undefined {
@@ -1567,11 +1569,12 @@ export default function MemoryVault({
         await invalidate();
         throw new Error();
       }
-      setArchiveUndo((current) => (current === recovery ? null : current));
       // Reload the open memory too if the undo restored it, so it neither shows nor saves back the archived status.
+      // The banner stays up through the reload (its caption holds it open) so the restored notice lands in the same region.
       await refreshAfterBatch(
         results.flatMap((result) => (result.status === "fulfilled" ? result.value.affectedNoteIds : [])),
       );
+      setArchiveUndo((current) => (current === recovery ? null : current));
       if (session !== editorSession.current) return;
       setNotice(
         localizeUi(
@@ -1682,8 +1685,8 @@ export default function MemoryVault({
     setSaveState("saving");
     setError("");
     // Clear the standing notice so this save's "Memory saved" is a change the banner announces; the same text twice is not.
-    // While an archive Undo holds the banner open the notice is its caption, so it stays and the save's text replaces it.
-    if (!archiveUndo) setNotice("");
+    // An archive Undo keeps its own caption, so clearing the notice leaves it standing.
+    setNotice("");
     let succeeded = false;
     try {
       const response = isNew
@@ -2118,13 +2121,14 @@ export default function MemoryVault({
           count: result.updatedNoteIds.length,
         },
       );
-      if (archiveCompleted && archiveUndoNotes.length === ids.length) setArchiveUndo({ notes: archiveUndoNotes });
+      const undoOffered = archiveCompleted && archiveUndoNotes.length === ids.length;
+      if (undoOffered) setArchiveUndo({ notes: archiveUndoNotes, caption: message });
       setOpenActionNoteId(null);
       if (unresolved.size) {
         setNotice("");
         setError(message);
       } else {
-        setNotice(message);
+        setNotice(undoOffered ? "" : message);
         setError("");
       }
       focusFeedback();
@@ -2365,7 +2369,12 @@ export default function MemoryVault({
           ) : null}
           {notice || archiveUndo ? (
             <StatusSurface tone={noticeState.warning ? "warning" : "success"} tabIndex={-1}>
-              <span className="min-w-0 flex-1">{notice}</span>
+              {archiveUndo ? (
+                <span data-ltm-archive-undo-caption className="min-w-0 flex-1">
+                  {archiveUndo.caption}
+                </span>
+              ) : null}
+              {notice ? <span className="min-w-0 flex-1">{notice}</span> : null}
               {archiveUndo ? (
                 <Button
                   className={busy ? "opacity-50" : ""}

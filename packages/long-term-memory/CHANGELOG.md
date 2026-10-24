@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## Unreleased
+
+- The Undo banner after archiving keeps saying how many memories it will restore, even when you save another memory while it is showing.
+
 ## 1.4.89 — 2026-10-24
 
 - The Memory Vault shows your memories sooner: rarer filters sit under Refine and open by themselves while in use, and changing several memories happens in one Edit selected sheet, with Archive and Delete kept apart.
