@@ -1,3 +1,7 @@
+## 10.2.1 — 2026-10-24
+
+- The Movement Assessment switches in Chat Settings (Assess implied movement, Discover unknown destinations, Remember travel route) now save. They used to flick back because the save dropped them.
+
 ## 10.2.0 — 2026-10-24
 
 - Includes upstream 1.7.0 and 1.7.1. World Maps can use the reference lorebook selected for it in Chat Settings: matching entries help chat-specific map creation, replacement, expansion and prompt previews. Needs a Marinara Engine with agent reference lorebooks (2.5.1, Capability API 1.380); update the Engine and World Maps together.
@@ -11,9 +15,11 @@
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
 
 ## 1.7.1 — 2026-10-23
+
 - Require the Engine version that supplies agent reference lorebooks, so an older Engine with a different capability update cannot accept an incompatible World Maps package. Update both the Engine and World Maps together.
 
 ## 1.7.0 — 2026-10-23
+
 - World Maps can use the reference lorebook selected for it in Chat Settings. Matching entries help chat-specific map creation, replacement, expansion and prompt previews without changing the map builder's other lore sources or global templates. Update both the Engine and World Maps to use this setting.
 
 ## 1.6.0 — 2026-10-20
@@ -28,9 +34,11 @@
 - Movement Assessment: after each turn the agent runs a focused assessment on its configured connection, detects completed implied location changes (narrated arrivals, phrasing like "we bed down at the inn"), moves the pin, and records the route as prior-arrival context for the next turn. Explicit directives and game-mode tracker guidance stay authoritative. Three chat settings, all on by default: Assess implied movement, Discover unknown destinations, Remember travel route. Deterministic validation guards every assessed move.
 
 ## 1.5.1 — 2026-10-01
+
 - The description now says what it does in plain words.
 
 ## 1.5.0 — 2026-09-30
+
 - Maps can now hold up to 5,000 locations instead of 500, so a whole world fits with its buildings, floors and rooms. Game Mode uses these larger maps on Marinara Engine versions that include the matching update; older versions skip a map over 500 locations when a game starts.
 
 ## 1.4.3 — 2026-09-20

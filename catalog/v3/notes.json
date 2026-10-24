@@ -578,6 +578,12 @@
     "hierarchical-maps": {
       "versions": [
         {
+          "version": "10.2.1",
+          "date": "2026-10-24",
+          "notes": "- The Movement Assessment switches in Chat Settings (Assess implied movement, Discover unknown destinations, Remember travel route) now save. They used to flick back because the save dropped them.",
+          "highlight": false
+        },
+        {
           "version": "10.2.0",
           "date": "2026-10-24",
           "notes": "- Includes upstream 1.7.0 and 1.7.1. World Maps can use the reference lorebook selected for it in Chat Settings: matching entries help chat-specific map creation, replacement, expansion and prompt previews. Needs a Marinara Engine with agent reference lorebooks (2.5.1, Capability API 1.380); update the Engine and World Maps together.",
