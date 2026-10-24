@@ -1,3 +1,9 @@
+## 1.12.2 — 2026-10-24
+
+- Combat shows one mute control without overlapping the other toolbar buttons.
+- Autoplay resumes after a small story choice when it was enabled before the choice.
+- Character communication keeps the composer visible when a mobile keyboard reduces the available height.
+
 ## 1.12.1 — 2026-10-24
 
 - Chapters and Character Stories generate and play their own music cues instead of reusing the Home track. Loading scenes keep the current track until their cue is ready.
