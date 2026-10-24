@@ -11,6 +11,7 @@ const baseRun = {
   runId: "audio-ui-proof",
   name: "Audio proof",
   scenario: "Synthetic garden audio.",
+  hudStyle: "vanguard",
   connectionId: "fixture-model",
   hasStandardBanner: true,
   protagonist: { name: "Mari" },
@@ -307,6 +308,7 @@ test("Combat has one working mute beside its fullscreen control without overlapp
 }, testInfo) => {
   const { forge, saved } = await openForge(page, testInfo);
   for (const theme of ["aurora", "bloom"]) {
+    saved.hudStyle = theme;
     await forge.evaluate((node, theme) => {
       const game = node as any;
       game._clearBeat();
@@ -320,6 +322,7 @@ test("Combat has one working mute beside its fullscreen control without overlapp
       game._combatNonce += 1;
       game._renderBrowser();
     }, theme);
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
     const mute = forge.locator(".cbar .ctrls > .gf-mute");
     await expect(mute).toBeVisible();
     await expect(forge.locator(".gf-mute:visible")).toHaveCount(1);
@@ -343,9 +346,12 @@ test("Combat has one working mute beside its fullscreen control without overlapp
     await forge.locator(".cbar .gf-fs-bar").click();
     await expect(page.locator(".mari-home-browser-chrome")).toBeHidden();
     await expect(page.locator('[data-component="TopBar"]')).toBeVisible();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
     await page.screenshot({ path: testInfo.outputPath(`combat-single-mute-${theme}.png`) });
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
     await forge.locator(".cbar .gf-fs-bar").click();
     await expect(page.locator(".mari-home-browser-chrome")).toBeVisible();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
   }
 });
 
@@ -377,7 +383,10 @@ for (const orientation of ["landscape", "portrait"]) {
           },
         });
       });
-    const { forge } = await openForge(page, testInfo);
+    const { forge, saved } = await openForge(page, testInfo);
+    const theme = orientation === "landscape" ? "aurora" : "bloom";
+    saved.hudStyle = theme;
+    Object.assign(saved, { chatChannel: "Letters" });
     await page.setViewportSize({ width: 874, height: 402 });
     const unit = { id: "arden", name: "Arden", bond: 120, open: true, portrait };
     const messages = [{ id: "letter-1", who: "unit", text: "A letter before the journey." }];
@@ -396,17 +405,17 @@ for (const orientation of ["landscape", "portrait"]) {
       messages.push({ id: "letter-2", who: "player", text: body.text });
       await route.fulfill({ json: { ok: true } });
     });
-    await forge.evaluate(
-      (node, theme) => {
-        const game = node as any;
-        game._run.hudStyle = theme;
-        game._run.chatChannel = "Letters";
-        game._guidesSeen.add("chat");
-        game._renderBrowser();
-      },
-      orientation === "landscape" ? "aurora" : "bloom",
-    );
+    await forge.evaluate((node, theme) => {
+      const game = node as any;
+      game._run.hudStyle = theme;
+      game._run.chatChannel = "Letters";
+      game._guidesSeen.add("chat");
+      game._renderBrowser();
+    }, theme);
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
     await forge.locator(".gf-fs-bar").click();
+    await expect(page.locator(".mari-home-browser-chrome")).toBeHidden();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
     await forge.locator("[data-chat-open]").click();
     await forge.locator('[data-chat-with="arden"]').click();
     const field = forge.locator("[data-chat-text]");
@@ -451,7 +460,9 @@ for (const orientation of ["landscape", "portrait"]) {
     await expect(page.locator('[data-component="TopBar"]')).toBeVisible({ visible: !hostHidesChrome });
     await expect(forge.locator(".gf-bar")).toBeHidden();
     await field.fill(`${draft} Ready to send.`);
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
     await page.screenshot({ path: testInfo.outputPath(`letters-${orientation}-simulated-keyboard.png`) });
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
     // A real pointer tap, without force or Enter, catches layout changes when the textarea blurs.
     await send.click();
     await expect
@@ -467,6 +478,7 @@ for (const orientation of ["landscape", "portrait"]) {
     await field.blur();
     await expect(page.locator('[data-component="TopBar"]')).toBeVisible();
     await expect(forge.locator(".gf-bar")).toBeVisible();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
     await expect(forge.locator(".ch-list")).toBeVisible();
     await expect(forge.locator("[data-chat-photo]")).toBeVisible();
     await expect(forge.locator("[data-chat-past]")).toBeVisible();
@@ -659,7 +671,7 @@ test("Audio settings persist, mute is compact and portrait frames retain a botto
 });
 
 test("Provider rejection reasons fit the game stage in dark and light themes", async ({ page }, testInfo) => {
-  const { forge } = await openForge(page, testInfo);
+  const { forge, saved } = await openForge(page, testInfo);
   await page.route("**/api/audio/generate", (route) =>
     route.fulfill({
       status: 502,
@@ -678,6 +690,8 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
     ["aurora", "home"],
     ["bloom", "boss"],
   ]) {
+    saved.hudStyle = theme;
+    saved.audio.generate = true;
     await forge.evaluate(
       async (node, { theme, cue }) => {
         const game = node as any;
@@ -690,6 +704,7 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
       },
       { theme, cue },
     );
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
     const notice = forge.locator("[data-forge-audio-status]");
     await expect(notice).toContainText("HTTP 400");
     await expect(notice).toContainText("Terms of Service");
@@ -708,6 +723,7 @@ test("Provider rejection reasons fit the game stage in dark and light themes", a
     for (const side of ["left", "right", "top", "bottom"] as const) expect(bounds[side]).toBeGreaterThanOrEqual(-1);
     expect(bounds.overflowX).toBeLessThanOrEqual(1);
     await page.screenshot({ path: testInfo.outputPath(`audio-provider-error-${theme}.png`) });
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
   }
 
   const short = await forge.evaluate((node) => {

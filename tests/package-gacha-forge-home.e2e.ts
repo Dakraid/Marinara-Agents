@@ -47,6 +47,7 @@ const run = {
 test("Home shows the real element matchups between Letters and the portrait with top-framed artwork", async ({
   page,
 }, testInfo) => {
+  const activeRun = { ...structuredClone(run), hudStyle: "vanguard" };
   const mobile = testInfo.project.name.includes("mobile");
   const viewports = mobile
     ? [{ width: 874, height: 402 }]
@@ -72,7 +73,7 @@ test("Home shows the real element matchups between Letters and the portrait with
   }, appVersion);
   await page.route("**/api/gacha-forge/state", (route) =>
     route.fulfill({
-      json: { runs: [run], activeRunId: run.runId, activeRun: run, guidesSeen: ["welcome", "home", "chat"] },
+      json: { runs: [activeRun], activeRunId: activeRun.runId, activeRun, guidesSeen: ["welcome", "home", "chat"] },
     }),
   );
   await page.route("**/api/gacha-forge/continuity", (route) => route.fulfill({ json: { ok: true, chapters: [] } }));
@@ -86,6 +87,7 @@ test("Home shows the real element matchups between Letters and the portrait with
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
     for (const theme of ["vanguard", "bloom"]) {
+      activeRun.hudStyle = theme;
       await forge.evaluate((node, theme) => {
         const game = node as any;
         game._clearBeat();
@@ -96,6 +98,7 @@ test("Home shows the real element matchups between Letters and the portrait with
         game._run = { ...game._run, hudStyle: theme };
         game._renderBrowser();
       }, theme);
+      await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
       const guide = forge.locator(".gf-home-affinities");
       await expect(guide).toBeVisible();
       await expect(guide).toHaveAccessibleName(/Element matchups/u);
@@ -120,6 +123,7 @@ test("Home shows the real element matchups between Letters and the portrait with
               .map((animation) => animation.finished.catch(() => {})),
           );
         });
+        await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
         const layout = await forge.evaluate(async (node) => {
           const root = node.shadowRoot!;
           const box = (selector: string) => root.querySelector(selector)!.getBoundingClientRect();
@@ -159,6 +163,7 @@ test("Home shows the real element matchups between Letters and the portrait with
         await page.screenshot({
           path: testInfo.outputPath(`home-${viewport.width}-${theme}-${fullscreen ? "full" : "window"}.png`),
         });
+        await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
         if (fullscreen) await forge.locator(".gf-fs-bar").click();
       }
     }
