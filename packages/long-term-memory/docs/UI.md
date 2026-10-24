@@ -90,7 +90,28 @@ does not change the selected scope. Each type group renders at most 100 rows;
 Show more adds the next 100 and moves focus to the first row it added. Group
 counts, the shown total, search, and Select visible still cover every memory,
 and a new search, filter, sort, or place starts again at 100 rows. The
-workbench distinguishes read-only
+navigator leads with the place, search, Show and Sort controls; a second place
+and the available-modes filter sit under a Refine disclosure that is closed by
+default, opens by itself while either is set, and names what is active when
+closed. With memories checked, the bulk rail is Edit selected…, then Archive and
+Delete set apart; Edit selected… opens one sheet for status, modes and
+availability that previews the outcome per memory and applies as one request.
+Under "What Apply will do" a polite summary counts ready, unchanged and blocked
+memories; Apply changes the ready ones and skips the rest, which stay selected.
+Apply appears in the header and under the list, stays focusable when off
+(`aria-disabled`, guarded handler) and names the reason beside it.
+Save in the memory header works the same way: it keeps its label and primary
+tone, stays focusable while off or running, and a polite status beside it says
+Saving or Saved until the next edit. A save whose recall index rebuild is
+deferred is a warning ("Saved. Recall will catch up…"), not a danger error,
+because the memory is saved.
+The open memory's row carries the primary wash, a left-edge bar and
+`aria-current="true"` on its button, so it is marked beyond colour.
+The memory's side panel is called Memory info wherever it opens: the toggle in the
+memory header (`aria-pressed`, no `aria-label`, so its accessible name is its visible
+label) and the narrow-layout pane tab. Its first section is named for what it holds,
+Keywords and links.
+The workbench distinguishes read-only
 source notes from editable memories and keeps validation, evidence, freshness,
 confidence, subjects, links, keywords, and availability visible as applicable.
 Archive supports undo. Destructive actions and navigation away from edits use

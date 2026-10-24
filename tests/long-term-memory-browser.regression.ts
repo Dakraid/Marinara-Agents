@@ -1905,6 +1905,10 @@ async function main() {
       // place does not hold would still reach the list and bulk selection.
       await choosePlaceBySearch("vault", "Character A", "character:character-a");
       const secondaryPlaceRequestPromise = notesRequest((params) => params.get("scopeGroupId") === "conversation-a");
+      // #1636: the second place and the mode filter sit under Refine, which stays closed until one is set.
+      const refine = page.locator("[data-ltm-refine]");
+      assert.equal(await refine.getAttribute("open"), null, "Refine starts closed");
+      await refine.locator("summary").click();
       await choosePlaceBySearch("vault-secondary", "Member Final Branch", "group:conversation-a");
       const secondaryPlaceRequest = await secondaryPlaceRequestPromise;
       assert.doesNotMatch(
@@ -1950,6 +1954,17 @@ async function main() {
       await page.getByText(/No memories are available in .*AND/u).waitFor();
       await choosePlaceBySearch("vault-secondary", "does-not-match", "all");
       assert.match(await secondaryScopeTrigger.innerText(), /No second place/u);
+      // A closed Refine names the filter in use, so a hidden mode filter is never a silent one.
+      const firstModeFilter = page.locator("[data-ltm-mode-filter] input").first();
+      await firstModeFilter.uncheck();
+      await refine.locator("summary").click();
+      assert.equal(await refine.getAttribute("open"), null, "Refine closes by hand");
+      await refine
+        .locator("[data-ltm-refine-active]")
+        .getByText(/^Available modes: /u)
+        .waitFor();
+      await refine.locator("summary").click();
+      await firstModeFilter.check();
       await openWorldGroup();
       await page.getByText("Memory outside current chat").waitFor();
       // Unsaved edits: Keep editing and Discard both return focus to the place button (#1442).
@@ -2219,7 +2234,7 @@ async function main() {
       await branchCard.locator('input[type="checkbox"]').check();
       // #1588: the whole label around a row checkbox is a 44px target, not just the box.
       assert.equal(await touchTargetSize(branchCard.locator('label:has(input[type="checkbox"])')), "fits");
-      await page.locator("[data-ltm-bulk-availability]").click();
+      await page.locator("[data-ltm-bulk-edit]").click();
       const bulkBranchRemoval = page.locator("[data-ltm-bulk-availability-workbench]");
       await bulkBranchRemoval.waitFor();
       await bulkBranchRemoval.getByRole("button", { name: "Remove availability", exact: true }).click();
@@ -2235,6 +2250,11 @@ async function main() {
       await bulkBranchRemoval.getByRole("button", { name: "Remove availability", exact: true }).click();
       assert.equal(await bulkBranchRow.getAttribute("aria-pressed"), "false", "switching to Add drops the branch");
       await bulkBranchRow.click();
+      assert.equal(await bulkBranchRemoval.getByText("1 memory selected", { exact: true }).count(), 1);
+      assert.equal(
+        await bulkBranchRemoval.locator("[data-ltm-bulk-outcome-summary]").innerText(),
+        "1 ready · 0 unchanged · 0 blocked",
+      );
       const bulkBranchRequest = page.waitForRequest(
         (request) => request.method() === "POST" && request.url().includes("/api/long-term-memory/notes/batch"),
       );
@@ -2243,7 +2263,7 @@ async function main() {
         ...outsideChatNote,
         scope: { ...keptBranchScope, chatIds: [...(keptBranchScope.chatIds ?? []), "deleted-chat"] },
       };
-      await bulkBranchRemoval.getByRole("button", { name: "Apply", exact: true }).click();
+      await bulkBranchRemoval.locator('[data-ltm-bulk-apply="top"]').click();
       assert.deepEqual((await bulkBranchRequest).postDataJSON().removeScope, { chatIds: ["memory-chat"] });
       await bulkBranchRemoval.waitFor({ state: "detached" });
       // The open memory was part of the change, so it reloads: its summary now counts the deleted chat.
@@ -2253,7 +2273,7 @@ async function main() {
       // Bulk Remove lists a place that no longer exists, with the single editor's fallback label (#1442).
       await page.locator("[data-ltm-select-mode]").click();
       await branchCard.locator('input[type="checkbox"]').check();
-      await page.locator("[data-ltm-bulk-availability]").click();
+      await page.locator("[data-ltm-bulk-edit]").click();
       await bulkBranchRemoval.waitFor();
       await bulkBranchRemoval.getByRole("button", { name: "Remove availability", exact: true }).click();
       await bulkBranchRemoval.locator("[data-ltm-availability-picker] > summary").click();
@@ -2293,7 +2313,7 @@ async function main() {
         },
         { times: 1 },
       );
-      await bulkBranchRemoval.getByRole("button", { name: "Apply", exact: true }).click();
+      await bulkBranchRemoval.locator('[data-ltm-bulk-apply="top"]').click();
       assert.deepEqual((await deletedChatRequest).postDataJSON().removeScope, {
         chatIds: ["deleted-chat", "memory-chat", "memory-conversation-branch"],
         groupIds: ["conversation-a"],
@@ -2351,8 +2371,17 @@ async function main() {
         releaseBranchSave = resolve;
       });
       const branchNoteRoute = `**/api/long-term-memory/notes/${outsideChatNote.id}`;
+      let deferRecallRebuild = false;
       await page.route(branchNoteRoute, async (route) => {
         if (route.request().method() === "PATCH") await branchSaveHeld;
+        if (route.request().method() === "PATCH" && deferRecallRebuild) {
+          const response = await route.fetch();
+          await route.fulfill({
+            response,
+            json: { ...(await response.json()), rebuild: { status: "deferred", error: "index busy" } },
+          });
+          return;
+        }
         await route.continue();
       });
       await branchTitle.fill("Memory outside current chat, saved");
@@ -2374,8 +2403,57 @@ async function main() {
       );
       await page.getByRole("button", { name: "Save", exact: true }).waitFor();
       await branchTitle.fill("Memory outside current chat, edited again");
-      await page.locator("button:enabled", { hasText: /^Save$/u }).waitFor();
+      await page.locator("[data-ltm-save]:not([aria-disabled])").waitFor();
       assert.ok(noteQueries.length > noteQueriesBeforeSave, "the memory list reloads after the save");
+      // #1636: Save keeps its label and focus (aria-disabled, never disabled) and a polite status beside it says Saved.
+      const saveButton = page.locator("[data-ltm-save]");
+      const saveStatus = page.locator("[data-ltm-save-status]");
+      assert.equal(await saveStatus.getAttribute("role"), "status");
+      await saveButton.focus();
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(() => document.querySelector("[data-ltm-save-status]")?.textContent === "Saved");
+      assert.equal(await saveButton.getAttribute("aria-disabled"), "true");
+      assert.equal(await saveButton.getAttribute("disabled"), null);
+      assert.equal(await saveButton.innerText(), "Save");
+      await page.locator("[data-ltm-save]:focus").waitFor();
+      await branchTitle.fill("Memory outside current chat, edited a third time");
+      assert.equal(await saveStatus.innerText(), "", "an edit clears the Saved status");
+      // A save whose recall rebuild is deferred is a warning with the strong border, not a danger error.
+      deferRecallRebuild = true;
+      await saveButton.click();
+      const staleWarning = page.locator('[data-ltm-vault-feedback] [data-ltm-status="warning"]');
+      await staleWarning.waitFor();
+      assert.equal(
+        (await staleWarning.innerText()).trim(),
+        "Saved. Recall will catch up once the index rebuild succeeds: index busy",
+      );
+      assert.equal(await staleWarning.locator("[data-ltm-status-icon]").count(), 1);
+      assert.equal(await page.locator('[data-ltm-vault-feedback] [data-ltm-status="danger"]').count(), 0);
+      // The next message resets the tone: a plain save shows the success notice again.
+      deferRecallRebuild = false;
+      await branchTitle.fill("Memory outside current chat, saved");
+      await saveButton.click();
+      await page.waitForFunction(() => document.querySelector("[data-ltm-save-status]")?.textContent === "Saved");
+      assert.equal(await staleWarning.count(), 0);
+      assert.equal(
+        await page.locator('[data-ltm-vault-feedback] [data-ltm-status="success"]').innerText(),
+        "Memory saved.",
+      );
+      // Opening another memory without editing must not carry the Saved status over to it.
+      const otherRow = page
+        .locator(`[data-ltm-note-id]:not([data-ltm-note-id="${outsideChatNote.id}"]) button`)
+        .first();
+      assert.ok(await otherRow.count(), "a second memory row exists to open");
+      await page.waitForFunction(() => document.querySelector("[data-ltm-save-status]")?.textContent === "Saved");
+      await otherRow.click();
+      await page.waitForFunction(() => document.querySelector("[data-ltm-save-status]")?.textContent === "");
+      // #1636: the open row is marked beyond colour: aria-current on its button and a start-edge bar, on that row only.
+      assert.equal(await otherRow.getAttribute("aria-current"), "true");
+      assert.equal(await page.locator('[data-ltm-note-id] button[aria-current="true"]').count(), 1);
+      assert.equal(await page.locator("[data-ltm-note-open-bar]").count(), 1);
+      await page.locator(`[data-ltm-note-id="${outsideChatNote.id}"] button`).first().click();
+      await page.locator(`[data-ltm-note-id="${outsideChatNote.id}"] [data-ltm-note-open-bar]`).waitFor();
+      assert.equal(await otherRow.getAttribute("aria-current"), null);
       await branchTitle.fill("Memory outside current chat, saved");
       await page.unroute(branchNoteRoute);
       // Escape keeps the Rename detail dialog open while the rename runs, as its disabled Cancel button does.
@@ -5786,6 +5864,8 @@ async function main() {
         return document.activeElement === tab && tab?.getAttribute("aria-selected") === "true";
       });
       await page.locator("[data-ltm-note-inspector]").waitFor({ state: "visible" });
+      const inspectorPaneName = (await page.locator('[data-ltm-workspace-pane-tab="inspector"]').textContent())?.trim();
+      assert.equal(inspectorPaneName, "Memory info");
       await page.locator('[data-ltm-workspace-pane-tab="inspector"]').press("Home");
       await page.waitForFunction(
         () => document.activeElement?.getAttribute("data-ltm-workspace-pane-tab") === "workbench",
@@ -5818,6 +5898,17 @@ async function main() {
         document.documentElement.style.fontSize = "";
       });
       await page.setViewportSize({ width: 1280, height: 900 });
+      // One name for the pane: the toggle and the <48rem tab both say "Memory info" with no aria-label to
+      // override it, and the inspector's first section is named for what it holds.
+      const detailsToggle = page.locator("[data-ltm-details-toggle]");
+      assert.equal(await detailsToggle.getAttribute("aria-label"), null);
+      assert.equal((await detailsToggle.textContent())?.trim(), inspectorPaneName);
+      assert.equal(await detailsToggle.getAttribute("aria-pressed"), "true");
+      await page.getByRole("button", { name: "Memory info", exact: true, pressed: true }).waitFor();
+      assert.equal(
+        (await page.locator("[data-ltm-memory-options] > summary").textContent())?.trim(),
+        "Keywords and links",
+      );
       await page.locator("[data-ltm-details-toggle]").click();
       assert.equal(await page.locator("[data-ltm-details-toggle]").getAttribute("aria-pressed"), "false");
       assert.equal(await page.locator('[data-ltm-workspace-pane="inspector"]').count(), 0);
@@ -5953,10 +6044,69 @@ async function main() {
       }
       await selectableWorldNotes.nth(0).check();
       await selectableWorldNotes.nth(1).check();
-      await page.locator("[data-ltm-bulk-availability]").click();
+      await page.locator("[data-ltm-bulk-edit]").click();
       const bulkAvailability = page.locator("[data-ltm-bulk-availability-workbench]");
       await bulkAvailability.waitFor();
+      // #1636: one Edit selected sheet holds status, modes and availability.
+      await bulkAvailability.getByRole("heading", { name: "Edit selected memories", exact: true }).waitFor();
+      assert.equal(await bulkAvailability.locator("[data-ltm-bulk-edit-status] option").count(), 4);
+      assert.equal(await bulkAvailability.locator("[data-ltm-bulk-edit-status]").inputValue(), "");
       assert.equal(await bulkAvailability.locator("h3").filter({ hasText: "Available in" }).count(), 1);
+      // #1636: with nothing chosen both Apply buttons stay focusable, say why they are off, and do nothing.
+      assert.equal(await bulkAvailability.getByText("2 memories selected", { exact: true }).count(), 1);
+      assert.equal(await bulkAvailability.getByRole("heading", { name: "What Apply will do", exact: true }).count(), 1);
+      assert.equal(
+        await bulkAvailability.locator("[data-ltm-bulk-outcome-summary]").innerText(),
+        "0 ready · 2 unchanged · 0 blocked",
+      );
+      const bulkApplyButtons = bulkAvailability.locator("[data-ltm-bulk-apply]");
+      assert.equal(await bulkApplyButtons.count(), 2);
+      let bulkGuardRequests = 0;
+      const countBulkGuardRequests = (request: { method(): string; url(): string }) => {
+        if (request.method() === "POST" && request.url().includes("/api/long-term-memory/notes/batch"))
+          bulkGuardRequests += 1;
+      };
+      page.on("request", countBulkGuardRequests);
+      await bulkAvailability.locator('[data-ltm-bulk-apply="top"]').click({ force: true });
+      await page.waitForTimeout(150);
+      page.off("request", countBulkGuardRequests);
+      assert.equal(bulkGuardRequests, 0);
+      assert.equal(await bulkAvailability.count(), 1);
+      for (const placement of ["top", "bottom"]) {
+        const applyButton = bulkAvailability.locator(`[data-ltm-bulk-apply="${placement}"]`);
+        assert.equal(await applyButton.getAttribute("aria-disabled"), "true");
+        assert.equal(await applyButton.evaluate((button) => (button as HTMLButtonElement).disabled), false);
+        const reasonId = await applyButton.getAttribute("aria-describedby");
+        assert.match(
+          await page.locator(`[id="${reasonId}"]`).innerText(),
+          /^Nothing to apply yet\. Choose a status, a mode or a place\.$/u,
+        );
+      }
+      assert.equal(
+        await bulkAvailability.getByRole("button", { name: "Add availability" }).getAttribute("aria-pressed"),
+        "true",
+      );
+      assert.equal(
+        await bulkAvailability.getByRole("button", { name: "Remove availability" }).getAttribute("aria-pressed"),
+        "false",
+      );
+      assert.equal(await bulkAvailability.getByRole("button", { name: "Add availability" }).locator("svg").count(), 1);
+      // Removing every mode blocks each memory: Apply stays off and the reason names the blockage.
+      await bulkAvailability.getByRole("button", { name: "Remove availability" }).click();
+      const bulkModeBoxes = bulkAvailability.locator('input[type="checkbox"]');
+      for (let index = 0; index < (await bulkModeBoxes.count()); index += 1) await bulkModeBoxes.nth(index).check();
+      assert.equal(
+        await bulkAvailability.locator("[data-ltm-bulk-outcome-summary]").innerText(),
+        "0 ready · 0 unchanged · 2 blocked",
+      );
+      const blockedApply = bulkAvailability.locator('[data-ltm-bulk-apply="bottom"]');
+      assert.equal(await blockedApply.getAttribute("aria-disabled"), "true");
+      assert.match(
+        await page.locator(`[id="${await blockedApply.getAttribute("aria-describedby")}"]`).innerText(),
+        /^Nothing to apply: every selected memory is unchanged or would be skipped\. Each row says why\.$/u,
+      );
+      for (let index = 0; index < (await bulkModeBoxes.count()); index += 1) await bulkModeBoxes.nth(index).uncheck();
+      await bulkAvailability.getByRole("button", { name: "Add availability" }).click();
       assert.equal(
         await bulkAvailability.getByText("Chat mode eligibility is set separately", { exact: false }).count(),
         1,
@@ -5996,7 +6146,12 @@ async function main() {
       const bulkAvailabilityRequest = page.waitForRequest(
         (request) => request.method() === "POST" && request.url().includes("/api/long-term-memory/notes/batch"),
       );
-      await bulkAvailability.getByRole("button", { name: "Apply" }).click();
+      assert.match(
+        await bulkAvailability.locator("[data-ltm-bulk-outcome-summary]").innerText(),
+        /^[1-2] ready · [0-1] unchanged · 0 blocked$/u,
+      );
+      assert.equal(await bulkAvailability.locator('[data-ltm-bulk-apply][aria-disabled="true"]').count(), 0);
+      await bulkAvailability.locator('[data-ltm-bulk-apply="bottom"]').click();
       const bulkAvailabilityPayload = (await bulkAvailabilityRequest).postDataJSON();
       assert.deepEqual(bulkAvailabilityPayload.addScope, {
         characterIds: ["character-a"],

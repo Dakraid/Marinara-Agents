@@ -1,5 +1,13 @@
 # Long-Term Memory changelog
 
+## 1.4.89 — 2026-10-24
+
+- The Memory Vault shows your memories sooner: rarer filters sit under Refine and open by themselves while in use, and changing several memories happens in one Edit selected sheet, with Archive and Delete kept apart.
+- Changing availability for several memories now says how many will change, stay the same or be blocked, explains why Apply is off, and repeats Apply under the list.
+- Saving a memory now confirms beside the Save button, and a save that waits on a recall rebuild says so as a warning instead of an error.
+- The memory you have open is now marked with an edge bar and announced to screen readers, not only by a tint.
+- The memory info panel now has one name everywhere you open it.
+
 ## 1.4.88 — 2026-10-24
 
 - Switching Long-Term Memory on or off, changing a chat's recall settings and running Reindex no longer drop keyboard focus while they work.

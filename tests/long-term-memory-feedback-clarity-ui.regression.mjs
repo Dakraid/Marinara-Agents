@@ -178,7 +178,7 @@ assert.match(vault, /availabilityStaged/u);
 assert.match(vaultScreen, /lastPlaceRequired/u);
 assert.match(vaultScreen, /lastModeRequired/u);
 assert.match(vaultScreen, /function BulkAvailabilityWorkbench/u);
-assert.match(vault, /data-ltm-bulk-availability/u);
+assert.match(vault, /data-ltm-bulk-edit/u);
 assert.match(vaultScreen, /data-ltm-bulk-availability-action/u);
 assert.match(vault, /onActionChange=/u);
 assert.match(vaultScreen, /data-ltm-availability-picker/u);
@@ -363,7 +363,24 @@ assert.match(vault, /characterScopeTargets/u);
 assert.match(vault, /conversationScopeTargets/u);
 assert.doesNotMatch(vault, /branchScopeTargets|deriveScopeBranches\b/u);
 assert.match(vault, /bulkAvailabilityScope/u);
-assert.match(vaultScreen, /bulkAvailabilitySelected/u);
+assert.match(vaultScreen, /bulkAvailabilitySelectedOne/u);
+assert.match(vaultScreen, /bulkAvailabilitySelectedOther/u);
+assert.equal(locale["ui.longTermMemory.memoryvault.bulkAvailabilitySelectedOne"], "{{count}} memory selected");
+assert.equal(locale["ui.longTermMemory.memoryvault.bulkAvailabilitySelectedOther"], "{{count}} memories selected");
+// #1636: the Edit selected sheet says what Apply will do, and why it is off, beside both Apply buttons.
+assert.equal(
+  locale["ui.longTermMemory.memoryvault.bulkOutcomeSummary"],
+  "{{ready}} ready · {{unchanged}} unchanged · {{blocked}} blocked",
+);
+assert.match(bulkAvailability, /role="status"[^>]*data-ltm-bulk-outcome-summary/u);
+assert.match(bulkAvailability, /aria-disabled=\{canApply \? undefined : true\}/u);
+assert.doesNotMatch(bulkAvailability, /\sdisabled=\{/u);
+assert.match(bulkAvailability, /renderApply\("top"\)[\s\S]*renderApply\("bottom"\)/u);
+assert.match(bulkAvailability, /if \(canApply\) onApply\(\)/u);
+assert.match(bulkAvailability, /removedTargets\.length > 0 && remainingPlaces\.length === 0 && changes/u);
+assert.match(bulkAvailability, /pressedMark/u);
+assert.match(vault, /pending=\{Boolean\(busy\)\}/u);
+assert.match(vault, /if \(busy \|\| batchPendingRef\.current\) return;\s*setAvailabilityOpen\(null\);/u);
 assert.match(vaultScreen, /chat:all/u);
 assert.doesNotMatch(vaultScreen, /branch:all|"branch"/u);
 assert.doesNotMatch(vault, /chooseOneAvailabilityPlace/u);
@@ -389,7 +406,13 @@ assert.match(vault, /place-items-center bg-black\/50/u);
 assert.match(vault, /mari-editor-panel w-full max-w-md space-y-3 p-3 shadow-xl/u);
 assert.doesNotMatch(vault, /max-w-72/u);
 assert.match(vault, /details\[open\] > summary/u);
-assert.match(vault, /localizeUi\("ui\.longTermMemory\.memoryvault\.memoryOptions"\)/u);
+assert.match(vault, /localizeUi\("ui\.longTermMemory\.memoryvault\.keywordsAndLinks"\)/u);
+assert.doesNotMatch(vault, /memoryvault\.(memoryOptions|memoryInfo|showMemoryInfo|hideMemoryInfo)/u);
+assert.match(
+  vault,
+  /<Button\s+onClick=\{\(\) => \{\s+const next = !detailsOpen;[\s\S]*?aria-pressed=\{detailsOpen\}[\s\S]*?data-ltm-details-toggle[\s\S]*?memoryvault\.memoryDetails"\)\}\s+<\/Button>/u,
+);
+assert.match(vault, /label: localizeUi\("ui\.longTermMemory\.memoryvault\.memoryDetails"\)/u);
 assert.doesNotMatch(vault, /<Braces aria-hidden="true" size="1rem" className="shrink-0" \/>/u);
 assert.doesNotMatch(vault, /<Check aria-hidden="true" size="1rem" className="shrink-0" \/>\n\s*\{saveState/u);
 assert.match(vault, /beginRename/u);
@@ -415,7 +438,15 @@ assert.equal(locale["ui.longTermMemory.memoryvault.searchChats"], "Search chats"
 assert.equal(locale["ui.longTermMemory.memoryvault.searchBranches"], undefined);
 assert.equal(locale["ui.longTermMemory.memoryvault.showMemories"], "Show");
 assert.equal(locale["ui.longTermMemory.memoryvault.sortBy"], "Sort by");
-assert.equal(locale["ui.longTermMemory.memoryvault.changeAvailability"], "Change availability");
+assert.equal(locale["ui.longTermMemory.memoryvault.editSelected"], "Edit selected…");
+assert.equal(locale["ui.longTermMemory.memoryvault.refine"], "Refine");
+assert.equal(locale["ui.longTermMemory.memoryvault.changeAvailability"], undefined);
+assert.match(
+  vault,
+  /<details\s+data-ltm-refine[\s\S]*?data-ltm-memory-scope-secondary[\s\S]*?data-ltm-mode-filter[\s\S]*?<\/details>/u,
+);
+assert.match(vault, /useEffect\(\(\) => \{\s*if \(refineActive\) setRefineOpen\(true\);/u);
+assert.equal(locale["ui.longTermMemory.memoryvault.bulkChangeGroup"], undefined);
 
 assert.match(detail, /TriangleAlert/u);
 assert.doesNotMatch(detail, /CircleAlert/u);
@@ -436,8 +467,11 @@ assert.match(detail, /health !== "healthy" && !needsHealthAttention/u);
 assert.match(detail, /howToRepairVaultHealth[\s\S]*compact/u);
 assert.match(detail, /tone=\{healthNeedsDangerTone \? "danger" : "warning"\}/u);
 assert.match(vault, /data-ltm-detail-conflict/u);
-assert.equal(locale["ui.longTermMemory.memoryvault.memoryInfo"], "Memory info");
-assert.equal(locale["ui.longTermMemory.memoryvault.memoryOptions"], "Memory options");
+assert.equal(locale["ui.longTermMemory.memoryvault.memoryDetails"], "Memory info");
+assert.equal(locale["ui.longTermMemory.memoryvault.keywordsAndLinks"], "Keywords and links");
+for (const key of ["memoryInfo", "memoryOptions", "showMemoryInfo", "hideMemoryInfo"]) {
+  assert.equal(`ui.longTermMemory.memoryvault.${key}` in locale, false, `${key} is replaced by one pane name`);
+}
 assert.equal(locale["ui.longTermMemory.memoryvault.renameDetails"], "Rename details");
 assert.equal(locale["ui.longTermMemory.memoryvault.previewRename"], "Preview rename");
 assert.equal(locale["ui.longTermMemory.memoryvault.openDebugLog"], "Open debug log");
@@ -540,7 +574,7 @@ assert.match(vault, /<span data-ltm-accent-border className="rounded-full border
 assert.match(vaultScreen, /inline-flex min-h-11 max-w-full[\s\S]*h-11 w-11/u);
 assert.match(vault, /clearMemorySearch[\s\S]*h-11 w-11/u);
 assert.match(vault, /data-ltm-mode-filter[\s\S]*min-h-11/u);
-assert.match(vault, /bulkModes[\s\S]*min-h-11/u);
+assert.match(vaultScreen, /memoryvault\.chatModes[\s\S]*min-h-11/u);
 assert.match(vault, /data-ltm-note-inspector/u);
 assert.match(vault, /mari-editor-panel min-w-0 space-y-4 p-3/u);
 assert.match(vault, /copyDiagnostics/u);
@@ -884,6 +918,42 @@ assert.match(vault, /localCharacters\.isLoading && !localCharacters\.data/u);
 assert.match(vault, /localCharacters\.isError && !localCharacters\.data/u);
 assert.match(vault, /localCharacters\.refetch\(\)/u);
 assert.equal((maintenance.match(/queryKeys\.localCharactersRoot/g) ?? []).length, 2);
+// #1636: Save keeps its label and tone, stays focusable while off and reports Saving and Saved in a polite region
+// beside it; a save that waits on a recall rebuild is a warning, not an error.
+assert.match(vault, /aria-disabled=\{!dirty \|\| busy === "save" \? true : undefined\}/u);
+assert.doesNotMatch(vault, /primary\s+disabled=/u);
+assert.match(vault, /role="status"\s+data-ltm-save-status/u);
+// A save asked for during a save (the unsaved-changes dialog, the host shortcut) awaits that run's result, never a
+// synthetic `false` that `confirm()` reads as "did not save" and the host reads as "save failed".
+assert.match(vault, /if \(savePromiseRef\.current\) return savePromiseRef\.current;/u);
+assert.doesNotMatch(vault, /savePendingRef/u);
+// One save speaks once: the inline status announces Saving, and its Saved text is hidden from assistive technology
+// because the banner's "Memory saved" notice announces it.
+assert.match(vault, /saveState === "saved" \? <span aria-hidden="true">\{saveStatus\}<\/span> : saveStatus/u);
+// A save clears the standing notice first: a second save writes the identical "Memory saved" text, which a polite
+// region does not announce twice, so without this the later save would start aloud and finish silently.
+// While an archive Undo keeps the banner open the notice is its caption, so it is kept then.
+assert.match(
+  vault,
+  /setSaveState\("saving"\);\s+setError\(""\);\s+(?:\/\/[^\n]*\n\s*)*if \(!archiveUndo\) setNotice\(""\);/u,
+);
+// A memory that is already global is blocked under its own reason, not under a last place it never had.
+assert.match(vaultScreen, /alreadyEverywhere: removesLastPlace && !removesLastMode && places\.length === 0/u);
+assert.match(locale["ui.longTermMemory.memoryvault.applyReasonNothingToChange"], /would be skipped/u);
+assert.doesNotMatch(locale["ui.longTermMemory.memoryvault.applyReasonNothingToChange"], /last place/u);
+assert.ok(locale["ui.longTermMemory.memoryvault.alreadyAvailableEverywhere"]);
+assert.match(vault, /const setWarning = useCallback/u);
+assert.match(vault, /tone=\{noticeState\.warning \? "warning" : "success"\}/u);
+assert.doesNotMatch(vault, /setError\(\s*localizeUi\("ui\.longTermMemory\.memoryvault\.savedButRecallIsStale"/u);
+assert.equal(
+  locale["ui.longTermMemory.memoryvault.savedButRecallIsStale"],
+  "Saved. Recall will catch up once the index rebuild succeeds: {{error}}",
+);
+// #1636: the open row uses the documented primary wash plus a start-edge bar and aria-current, not an accent tint.
+assert.match(vaultRow, /selected \? "bg-\[var\(--primary\)\]\/10" : ""/u);
+assert.doesNotMatch(vaultRow, /bg-\[var\(--accent\)\]\/50/u);
+assert.match(vaultRow, /\{selected \? \(\s*<span\s+aria-hidden="true"\s+data-ltm-note-open-bar/u);
+assert.match(vaultRow, /aria-current=\{selected \? "true" : undefined\}/u);
 
 process.stdout.write(
   "Long-Term Memory feedback clarity UI regression: labels, outcomes, usage, warnings, defaults, and scope loading ok\n",
