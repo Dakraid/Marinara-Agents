@@ -5,6 +5,7 @@ import { listSessions, type SessionIndexEntry } from "./api";
 import { BulkDispatchDialog, type BulkDispatchPrefill } from "./BulkDispatchDialog";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 import type { PromptPresetId } from "./presets";
+import type { BulkRerun } from "./session-config";
 import { useDialogFocusTrap } from "./dialog-controls";
 import { RunsPanel } from "./RunsPanel";
 import type { RunStage } from "./panel-status";
@@ -114,8 +115,13 @@ export function OverlayWorkspace({ localization }: { localization?: CardEditorLo
   const t = (key: string, values?: Record<string, string | number>) => translateCardEditor(localization, key, values);
   const [open, setOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
-  /** A run being set up: the library selection it starts from (possibly empty) and its prefill. */
-  const [setup, setSetup] = useState<{ ids: string[]; prefill?: BulkDispatchPrefill; key: number } | null>(null);
+  /** A run being set up: the library selection it starts from (possibly empty), its prefill or rerun source. */
+  const [setup, setSetup] = useState<{
+    ids: string[];
+    prefill?: BulkDispatchPrefill;
+    rerun?: BulkRerun;
+    key: number;
+  } | null>(null);
   const [runInfo, setRunInfo] = useState<{ stage: RunStage; label: string } | null>(null);
   /** Phones show the rail or the main pane. */
   const [pane, setPane] = useState<"rail" | "main">("main");
@@ -243,6 +249,7 @@ export function OverlayWorkspace({ localization }: { localization?: CardEditorLo
                 localization={localization}
                 characterIds={setup.ids}
                 prefill={setup.prefill}
+                rerun={setup.rerun}
                 onClose={() => setSetup(null)}
                 onDispatched={(session: BulkSession) => showMain(session.id)}
               />
@@ -254,6 +261,10 @@ export function OverlayWorkspace({ localization }: { localization?: CardEditorLo
                 onBack={() => setPane("rail")}
                 onDeleted={() => showMain(null)}
                 onRerun={showMain}
+                onRerunSelected={(rerun) => {
+                  setSetup({ ids: rerun.targets.ids, rerun, key: Date.now() });
+                  setPane("main");
+                }}
                 onStage={onStage}
               />
             ) : (

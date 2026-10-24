@@ -1,3 +1,9 @@
+## 10.1.0 — 2026-10-24
+
+- The Bulk Card Editor's draft now keeps every character you added, including ones found by search, with their notes and styles. Removing a card or changing its style saves too.
+- An **Unsent draft** entry at the top of the run list reopens it, and Setup says how many characters and notes came back.
+- **Rerun selected** in a run's bar opens Setup with just the checked cards, their notes and styles, and the old run's settings. Adjust and start; the old run stays in History.
+
 ## 10.0.8 — 2026-10-21
 
 - Setup errors, such as a card that cannot be loaded, now show in the run summary under the settings. They used to land in a column to the right, off screen.

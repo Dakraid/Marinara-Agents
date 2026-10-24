@@ -76,10 +76,22 @@ export interface BulkTargetDraft {
   style: BehaviorSelection;
 }
 
-/** Unsent dialog work, auto-saved on every edit so a stray close never loses it. */
-export interface BulkDraft {
-  form: BulkFormState;
+/** The setup's target list: ids in display order, each with its note and style. */
+export interface BulkDraftTargets {
+  ids: string[];
   targets: Record<string, BulkTargetDraft>;
+}
+
+/** Unsent dialog work, auto-saved on every edit so a stray close never loses it. */
+export interface BulkDraft extends BulkDraftTargets {
+  form: BulkFormState;
+}
+
+/** A selective rerun: an old run's settings plus the chosen cards with their notes and styles. */
+export interface BulkRerun {
+  label: string;
+  config: BulkSessionConfig;
+  targets: BulkDraftTargets;
 }
 
 export interface BulkPreset {
@@ -145,12 +157,7 @@ function writeJson(storage: Pick<Storage, "setItem"> | undefined, key: string, v
   }
 }
 
-export function loadBulkDraft(
-  storage: Pick<Storage, "getItem"> | undefined,
-  defaults: BulkFormState,
-): BulkDraft | null {
-  const source = record(readJson(storage, BULK_DRAFT_STORAGE_KEY));
-  if (!source) return null;
+function draftTargets(source: Record<string, unknown>): BulkDraftTargets {
   const targets: Record<string, BulkTargetDraft> = {};
   for (const [id, entry] of Object.entries(record(source.targets) ?? {})) {
     const target = record(entry);
@@ -160,7 +167,37 @@ export function loadBulkDraft(
       style: behaviorSelection(target.style, { kind: "inherit" }),
     };
   }
-  return { form: sanitizeBulkForm(source.form, defaults), targets };
+  // Drafts from before 10.1.0 have no ids; their targets keep the record's key order.
+  const stored = Array.isArray(source.ids) ? source.ids.filter((id): id is string => typeof id === "string") : [];
+  const ids = [
+    ...new Set([...stored.filter((id) => Object.prototype.hasOwnProperty.call(targets, id)), ...Object.keys(targets)]),
+  ];
+  return { ids, targets };
+}
+
+/** Just the draft's targets, for the run rail's "Unsent draft" entry. */
+export function loadBulkDraftTargets(storage: Pick<Storage, "getItem"> | undefined): BulkDraftTargets | null {
+  const source = record(readJson(storage, BULK_DRAFT_STORAGE_KEY));
+  return source ? draftTargets(source) : null;
+}
+
+export function loadBulkDraft(
+  storage: Pick<Storage, "getItem"> | undefined,
+  defaults: BulkFormState,
+): BulkDraft | null {
+  const source = record(readJson(storage, BULK_DRAFT_STORAGE_KEY));
+  return source ? { form: sanitizeBulkForm(source.form, defaults), ...draftTargets(source) } : null;
+}
+
+/** Setup targets on open: the saved ones in their order, then incoming ids they lack, which start blank. */
+export function restoreDraftTargets(
+  incomingIds: readonly string[],
+  saved: BulkDraftTargets | null,
+): Array<BulkTargetDraft & { characterId: string }> {
+  return [...new Set([...(saved?.ids ?? []), ...incomingIds])].map((characterId) => ({
+    characterId,
+    ...(saved?.targets[characterId] ?? { note: "", style: { kind: "inherit" } }),
+  }));
 }
 
 export function storeBulkDraft(draft: BulkDraft, storage: Pick<Storage, "setItem"> | undefined): void {

@@ -5,6 +5,7 @@ import {
   cancelSession,
   cancelSessionItem,
   deleteSession,
+  getHostCharacter,
   getSession,
   rerunSession,
   retrySessionItem,
@@ -21,6 +22,7 @@ import { AvatarStudio } from "./AvatarStudio";
 import { EditRetryDialog } from "./EditRetryDialog";
 import { FixJsonDialog } from "./FixJsonDialog";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
+import type { BulkRerun, BulkTargetDraft } from "./session-config";
 import {
   deriveLiveStatus,
   inspectorTabs,
@@ -87,6 +89,7 @@ export function SessionDetail({
   onBack,
   onDeleted,
   onRerun,
+  onRerunSelected,
   onStage,
 }: {
   localization?: CardEditorLocalizationContext;
@@ -94,6 +97,8 @@ export function SessionDetail({
   onBack: () => void;
   onDeleted: () => void;
   onRerun?: (sessionId: string) => void;
+  /** Opens Setup with the chosen cards and this run's settings; the run itself stays unchanged. */
+  onRerunSelected?: (rerun: BulkRerun) => void;
   /** Tells the workspace header which stage the run is in and what it is called. */
   onStage?: (stage: RunStage, label: string) => void;
 }) {
@@ -228,6 +233,44 @@ export function SessionDetail({
       const created = await rerunSession(sessionId);
       onRerun?.(created.id);
       return created;
+    });
+
+  // One target per card: split children and Phase 2 items share their source card's id.
+  const rerunSelected = (items: readonly SessionItem[]) =>
+    void runAction("rerun-selected", async () => {
+      if (!session) return;
+      const unique = items.filter(
+        (item, index) => items.findIndex((other) => other.characterId === item.characterId) === index,
+      );
+      const styleIds = [
+        ...new Set(
+          unique.flatMap((item) => (typeof item.behaviorOverride === "string" ? [item.behaviorOverride] : [])),
+        ),
+      ];
+      // A style card that no longer loads falls back to the session style.
+      const styles = new Map(
+        (await Promise.allSettled(styleIds.map((id) => getHostCharacter(id)))).flatMap((result, index) =>
+          result.status === "fulfilled" ? [[styleIds[index]!, result.value] as const] : [],
+        ),
+      );
+      const targets: Record<string, BulkTargetDraft> = {};
+      for (const item of unique) {
+        const style = typeof item.behaviorOverride === "string" ? styles.get(item.behaviorOverride) : undefined;
+        targets[item.characterId] = {
+          note: item.note ?? "",
+          style:
+            item.behaviorOverride === null
+              ? { kind: "none" }
+              : style
+                ? { kind: "character", ...style }
+                : { kind: "inherit" },
+        };
+      }
+      onRerunSelected?.({
+        label: session.label,
+        config: session.config,
+        targets: { ids: unique.map((item) => item.characterId), targets },
+      });
     });
 
   const rerunAllFailed = () =>
@@ -749,6 +792,16 @@ export function SessionDetail({
               }
             >
               {t("cardEditor.pipeline.startPhase2", { count: counts.results })}
+            </button>
+          ) : null}
+          {onRerunSelected ? (
+            <button
+              type="button"
+              className="mari-chrome-control mari-chrome-control--small"
+              disabled={busyKey !== null || checkedItems.length === 0}
+              onClick={() => rerunSelected(checkedItems)}
+            >
+              {t("cardEditor.workspace.rerunSelected", { count: checkedItems.length })}
             </button>
           ) : null}
           {failedCount > 0 ? (

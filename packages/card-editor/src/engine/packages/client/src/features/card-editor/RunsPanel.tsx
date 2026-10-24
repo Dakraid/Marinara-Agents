@@ -3,9 +3,10 @@ import { Plus } from "lucide-react";
 import type { BulkSession } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import { getBulkSettings, getSession, listSessions, saveBulkSettings, type SessionIndexEntry } from "./api";
 import { executeCompletionEnforcement } from "./apply-ops";
-import { NumberField } from "./dialog-controls";
+import { NumberField, safeLocalStorage } from "./dialog-controls";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 import { deriveLiveStatus } from "./panel-status";
+import { loadBulkDraftTargets } from "./session-config";
 import { useVisiblePoll } from "./use-visible-poll";
 
 /** Collapsible bulk settings: the agent-level parallel-call cap and the require-review toggle,
@@ -202,6 +203,8 @@ export function RunsPanel({
     }
   }, [activeDetails, detailId, refresh]);
 
+  // Read on every render: the poll re-renders often enough to pick up the setup's auto-saves.
+  const draft = loadBulkDraftTargets(safeLocalStorage());
   const list = sessions ?? [];
   const active = list.filter((entry) => entry.status === "active");
   const history = list.filter((entry) => entry.status !== "active");
@@ -269,6 +272,22 @@ export function RunsPanel({
         </button>
       </div>
       <div className="ce-rail-runs">
+        {draft ? (
+          <div data-ce-section="draft">
+            <ul className="ce-sessions">
+              <li>
+                <button type="button" className="ce-run-row" onClick={onNewRun}>
+                  <span className="ce-run-row-label">{t("cardEditor.workspace.draft")}</span>
+                  <span className="ce-run-row-meta">
+                    <span className="ce-caption">
+                      {t("cardEditor.workspace.draftCount", { count: draft.ids.length })}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        ) : null}
         {loadError ? (
           <div className="ce-status ce-status--error" role="alert">
             {t("cardEditor.panel.loadError")}
