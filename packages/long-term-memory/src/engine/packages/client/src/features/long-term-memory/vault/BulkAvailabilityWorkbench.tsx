@@ -1,12 +1,12 @@
 import { ChevronRight } from "lucide-react";
-import type { LtmMode, LtmNote } from "../../../../../shared/src/features/agents/long-term-memory/schema.js";
+import type { LtmMode, LtmNote, LtmStatus } from "../../../../../shared/src/features/agents/long-term-memory/schema.js";
 import {
   getLtmScopeChatIds,
   getLtmScopeGroupIds,
   getLtmScopePersonaIds,
 } from "../../../../../shared/src/features/agents/long-term-memory/scope.js";
 import { uniqueStrings } from "../../../../../shared/src/features/agents/long-term-memory/utils.js";
-import { Button, StatusSurface } from "../shared-controls";
+import { Button, inputClass, StatusSurface } from "../shared-controls";
 import { type LtmTranslationFunction } from "../localization";
 import { AvailabilityTabRail, type AvailabilityPlaceKind } from "../AvailabilityTabRail";
 import type { PickerTarget } from "./TargetPicker";
@@ -19,15 +19,21 @@ function bulkAvailabilityTargetMatchesEntry(target: string, entry: Pick<PickerTa
   return id === entry.id && kind === entry.kind;
 }
 
+// Backs the Vault's "Edit selected…" sheet: status, retrieval modes and availability for the checked memories,
+// previewed per memory before one combined batch request.
 export function BulkAvailabilityWorkbench({
   notes,
   action,
   selectedTargets,
   modes: selectedModes,
+  status,
+  statuses,
   availabilityTargets,
   localizeUi,
   modeLabel,
+  statusLabel,
   onActionChange,
+  onStatusChange,
   onModesChange,
   onTargetsChange,
   onApply,
@@ -37,10 +43,14 @@ export function BulkAvailabilityWorkbench({
   action: "add" | "remove";
   selectedTargets: string[];
   modes: LtmMode[];
+  status: LtmStatus | "";
+  statuses: readonly LtmStatus[];
   availabilityTargets: AvailabilityTargets;
   localizeUi: LtmTranslationFunction;
   modeLabel: (mode: string) => string;
+  statusLabel: (status: LtmStatus) => string;
   onActionChange: (action: "add" | "remove") => void;
+  onStatusChange: (status: LtmStatus | "") => void;
   onModesChange: (modes: LtmMode[]) => void;
   onTargetsChange: (targets: string[]) => void;
   onApply: () => void;
@@ -145,10 +155,12 @@ export function BulkAvailabilityWorkbench({
       (entry) => !removedTargets.some((target) => bulkAvailabilityTargetMatchesEntry(target, entry)),
     );
     const matchingModes = selectedModes.filter((mode) => note.modes.includes(mode));
+    const statusChanges = Boolean(status) && note.status !== status;
     const changes =
-      action === "add"
+      statusChanges ||
+      (action === "add"
         ? Boolean(addsPlace || selectedModes.some((mode) => !note.modes.includes(mode)))
-        : Boolean(hasPlace || matchingModes.length);
+        : Boolean(hasPlace || matchingModes.length));
     const removesLastPlace = action === "remove" && hasPlace && remainingPlaces.length === 0;
     const removesLastMode = action === "remove" && matchingModes.length === note.modes.length;
     return {
@@ -161,9 +173,7 @@ export function BulkAvailabilityWorkbench({
     <section className="mari-editor-panel min-w-0 space-y-4 p-4" data-ltm-bulk-availability-workbench>
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border)] pb-3">
         <div>
-          <h2 className="text-base font-semibold">
-            {localizeUi("ui.longTermMemory.memoryvault.bulkMemoryAvailability")}
-          </h2>
+          <h2 className="text-base font-semibold">{localizeUi("ui.longTermMemory.memoryvault.editSelectedTitle")}</h2>
           <p className="mt-1 text-xs text-[var(--muted-foreground)]">
             {localizeUi("ui.longTermMemory.memoryvault.bulkAvailabilitySelected", {
               count: notes.length,
@@ -177,6 +187,22 @@ export function BulkAvailabilityWorkbench({
           </Button>
         </div>
       </header>
+      <label className="block space-y-1 border-b border-[var(--border)] pb-4 text-sm font-semibold">
+        <span className="block">{localizeUi("ui.longTermMemory.memoryvault.status")}</span>
+        <select
+          className={`${inputClass} font-normal`}
+          value={status}
+          onChange={(event) => onStatusChange(event.target.value as LtmStatus | "")}
+          data-ltm-bulk-edit-status
+        >
+          <option value="">{localizeUi("ui.longTermMemory.memoryvault.statusNoChange")}</option>
+          {statuses.map((value) => (
+            <option key={value} value={value}>
+              {statusLabel(value)}
+            </option>
+          ))}
+        </select>
+      </label>
       <fieldset className="space-y-2 border-b border-[var(--border)] pb-4">
         <legend className="text-sm font-semibold">
           {localizeUi("ui.longTermMemory.memoryvault.availabilityChange")}

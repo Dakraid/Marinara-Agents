@@ -90,7 +90,13 @@ does not change the selected scope. Each type group renders at most 100 rows;
 Show more adds the next 100 and moves focus to the first row it added. Group
 counts, the shown total, search, and Select visible still cover every memory,
 and a new search, filter, sort, or place starts again at 100 rows. The
-workbench distinguishes read-only
+navigator leads with the place, search, Show and Sort controls; a second place
+and the available-modes filter sit under a Refine disclosure that is closed by
+default, opens by itself while either is set, and names what is active when
+closed. With memories checked, the bulk rail is Edit selected…, then Archive and
+Delete set apart; Edit selected… opens one sheet for status, modes and
+availability that previews the outcome per memory and applies as one request.
+The workbench distinguishes read-only
 source notes from editable memories and keeps validation, evidence, freshness,
 confidence, subjects, links, keywords, and availability visible as applicable.
 Archive supports undo. Destructive actions and navigation away from edits use

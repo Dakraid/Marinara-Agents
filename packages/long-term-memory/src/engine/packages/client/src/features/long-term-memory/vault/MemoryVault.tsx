@@ -460,6 +460,12 @@ export default function MemoryVault({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [draft, setDraft] = useState<LtmNote | null>(null);
   const [availabilityOpen, setAvailabilityOpen] = useState<"single" | "bulk" | null>(null);
+  // Refine holds the rarer filters. A second place or a mode filter opens it, and closing it stays the user's choice.
+  const refineActive = Boolean(secondaryTarget) || filterModes.length < modes.length;
+  const [refineOpen, setRefineOpen] = useState(refineActive);
+  useEffect(() => {
+    if (refineActive) setRefineOpen(true);
+  }, [refineActive]);
   const draftRef = useRef(draft);
   draftRef.current = draft;
   function setMobilePaneAndFocus(pane: LtmWorkspacePane) {
@@ -493,8 +499,7 @@ export default function MemoryVault({
     vaultRef.current?.querySelector<HTMLElement>("[data-ltm-vault-feedback] [data-ltm-status]")?.focus();
   }, [feedbackFocusRequest]);
   const [recoverySuggestionId, setRecoverySuggestionId] = useState<string | null>(null);
-  const [bulkStatus, setBulkStatus] = useState<LtmStatus>("active");
-  const [bulkModes, setBulkModes] = useState<LtmMode[]>(["roleplay"]);
+  const [bulkEditStatus, setBulkEditStatus] = useState<LtmStatus | "">("");
   const [bulkAvailabilityModes, setBulkAvailabilityModes] = useState<LtmMode[]>([]);
   const [bulkAvailabilityTargets, setBulkAvailabilityTargets] = useState<string[]>([]);
   const [bulkAvailabilityAction, setBulkAvailabilityAction] = useState<"add" | "remove">("add");
@@ -1090,6 +1095,16 @@ export default function MemoryVault({
         })
       : "",
   ].filter(Boolean);
+  const refineSummary = [
+    secondaryTarget
+      ? localizeUi("ui.longTermMemory.memoryvault.refineActivePlace", { value1: targetDisplayLabel(secondaryTarget) })
+      : "",
+    filterModes.length < modes.length
+      ? `${localizeUi("ui.longTermMemory.memoryvault.availableModes")}: ${filterModes.map(modeLabel).join(", ")}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const scopeEntryLabel = secondaryTarget
     ? localizeUi("ui.longTermMemory.memoryvault.combinedScope", {
         first: targetDisplayLabel(target) || localizeUi("ui.longTermMemory.memoryvault.allMemories"),
@@ -1896,7 +1911,7 @@ export default function MemoryVault({
   }
   async function runBatchForIds(
     ids: string[],
-    action: "status" | "modes" | "availability" | "remove-availability" | "archive" | "delete",
+    action: "edit" | "archive" | "delete",
     options?: { preserveSelection?: boolean },
   ) {
     if (!ids.length || batchPendingRef.current) return;
@@ -1910,7 +1925,7 @@ export default function MemoryVault({
   }
   async function applyBatchForIds(
     ids: string[],
-    action: "status" | "modes" | "availability" | "remove-availability" | "archive" | "delete",
+    action: "edit" | "archive" | "delete",
     options?: { preserveSelection?: boolean },
   ) {
     const session = editorSession.current;
@@ -2004,25 +2019,23 @@ export default function MemoryVault({
     );
     setBusy(action);
     try {
+      const adding = bulkAvailabilityAction === "add";
       const availabilityScope = bulkAvailabilityScope(
-        action === "remove-availability"
-          ? withWholeChatBranches(bulkAvailabilityTargets, availabilityTargets.chats)
-          : bulkAvailabilityTargets,
+        adding ? bulkAvailabilityTargets : withWholeChatBranches(bulkAvailabilityTargets, availabilityTargets.chats),
       );
       const result = await request<LtmBulkNoteResult>("/notes/batch", "POST", {
         noteIds: ids,
         ...(action === "archive" ? { archive: "notes_only" } : {}),
-        ...(action === "status" ? { status: bulkStatus } : {}),
-        ...(action === "modes" ? { modes: bulkModes } : {}),
-        ...(action === "availability" || action === "remove-availability"
+        ...(action === "edit"
           ? {
+              ...(bulkEditStatus ? { status: bulkEditStatus } : {}),
               ...(availabilityScope
-                ? action === "availability"
+                ? adding
                   ? { addScope: availabilityScope }
                   : { removeScope: availabilityScope }
                 : {}),
               ...(bulkAvailabilityModes.length
-                ? action === "availability"
+                ? adding
                   ? { enableModes: bulkAvailabilityModes }
                   : { disableModes: bulkAvailabilityModes }
                 : {}),
@@ -2097,7 +2110,7 @@ export default function MemoryVault({
       setBusy((current) => (current === action ? "" : current));
     }
   }
-  async function batch(action: "status" | "modes" | "availability" | "remove-availability" | "archive" | "delete") {
+  async function batch(action: "edit" | "archive" | "delete") {
     await runBatchForIds([...checked], action);
   }
   const busyActionProps = busy ? ({ "aria-disabled": true, className: "opacity-50" } as const) : {};
@@ -2374,21 +2387,6 @@ export default function MemoryVault({
                     }}
                   />
                 </div>
-                <div data-ltm-memory-scope-secondary className="col-span-2 grid min-w-0 max-w-full gap-1">
-                  <span className="text-[0.625rem] font-medium text-[var(--marinara-editor-muted)]">
-                    {localizeUi("ui.longTermMemory.memoryvault.combineWithPlace")}
-                  </span>
-                  <SourceScopeCombobox
-                    targets={secondaryPlaceOptions}
-                    value={secondaryTarget?.id ?? "all"}
-                    ariaLabel={localizeUi("ui.longTermMemory.memoryvault.combineWithPlace")}
-                    testId="vault-secondary"
-                    memoryGroups={placeMemoryGroups}
-                    onChange={(id) =>
-                      selectSecondaryTarget(secondaryPlaceOptions.find((option) => option.id === id)?.target ?? null)
-                    }
-                  />
-                </div>
                 <label className="relative col-span-2 block">
                   <Search
                     aria-hidden="true"
@@ -2418,24 +2416,6 @@ export default function MemoryVault({
                     </button>
                   ) : null}
                 </label>
-                <fieldset className="col-span-2 space-y-1" data-ltm-mode-filter>
-                  <legend className="text-[0.625rem] font-medium text-[var(--marinara-editor-muted)]">
-                    {localizeUi("ui.longTermMemory.memoryvault.availableModes")}
-                  </legend>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1">
-                    {modes.map((mode) => (
-                      <label key={mode} className="flex min-h-11 items-center gap-2 text-xs">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4"
-                          checked={filterModes.includes(mode)}
-                          onChange={() => toggleFilterMode(mode)}
-                        />
-                        {modeLabel(mode)}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
                 <label className="min-w-0 space-y-1 text-xs font-medium">
                   <span className="block text-[var(--marinara-editor-muted)]">
                     {localizeUi("ui.longTermMemory.memoryvault.showMemories")}
@@ -2472,6 +2452,70 @@ export default function MemoryVault({
                       ))}
                   </select>
                 </label>
+                <details
+                  data-ltm-refine
+                  open={refineOpen}
+                  onToggle={(event) => setRefineOpen(event.currentTarget.open)}
+                  className="group col-span-2"
+                >
+                  <summary
+                    data-ltm-tab-focus
+                    className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-xs font-semibold [&::-webkit-details-marker]:hidden"
+                  >
+                    <ChevronRight
+                      aria-hidden="true"
+                      size="0.875rem"
+                      className="shrink-0 transition-transform group-open:rotate-90"
+                    />
+                    <span>{localizeUi("ui.longTermMemory.memoryvault.refine")}</span>
+                    {refineSummary ? (
+                      <span
+                        data-ltm-refine-active
+                        title={refineSummary}
+                        className="min-w-0 truncate font-normal text-[var(--muted-foreground)] group-open:hidden"
+                      >
+                        {refineSummary}
+                      </span>
+                    ) : null}
+                  </summary>
+                  <div className="grid gap-2 pb-1">
+                    <div data-ltm-memory-scope-secondary className="grid min-w-0 max-w-full gap-1">
+                      <span className="text-[0.625rem] font-medium text-[var(--marinara-editor-muted)]">
+                        {localizeUi("ui.longTermMemory.memoryvault.combineWithPlace")}
+                      </span>
+                      <SourceScopeCombobox
+                        targets={secondaryPlaceOptions}
+                        value={secondaryTarget?.id ?? "all"}
+                        ariaLabel={localizeUi("ui.longTermMemory.memoryvault.combineWithPlace")}
+                        testId="vault-secondary"
+                        memoryGroups={placeMemoryGroups}
+                        onChange={(id) =>
+                          selectSecondaryTarget(
+                            secondaryPlaceOptions.find((option) => option.id === id)?.target ?? null,
+                          )
+                        }
+                      />
+                    </div>
+                    <fieldset className="space-y-1" data-ltm-mode-filter>
+                      <legend className="text-[0.625rem] font-medium text-[var(--marinara-editor-muted)]">
+                        {localizeUi("ui.longTermMemory.memoryvault.availableModes")}
+                      </legend>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        {modes.map((mode) => (
+                          <label key={mode} className="flex min-h-11 items-center gap-2 text-xs">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              checked={filterModes.includes(mode)}
+                              onChange={() => toggleFilterMode(mode)}
+                            />
+                            {modeLabel(mode)}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                  </div>
+                </details>
                 <div className="col-span-2 flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-2">
                   <Button
                     onClick={() => {
@@ -2524,68 +2568,28 @@ export default function MemoryVault({
                   aria-labelledby="ltm-selection-count"
                   className="mari-editor-panel flex flex-wrap items-center gap-2 p-3"
                 >
-                  <>
-                    <select
-                      className={inputClass}
-                      value={bulkStatus}
-                      onChange={(event) => setBulkStatus(event.target.value as LtmStatus)}
-                      aria-label={localizeUi("ui.longTermMemory.memoryvault.setStatus")}
-                    >
-                      {statuses.map((status) => (
-                        <option key={status} value={status}>
-                          {statusLabel(status)}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button
                       {...busyActionProps}
                       onClick={() => {
-                        if (!busy) void batch("status");
-                      }}
-                    >
-                      {localizeUi("ui.longTermMemory.memoryvault.setStatus")}
-                    </Button>
-                    <fieldset className="flex flex-wrap items-center gap-2">
-                      <legend className="sr-only">
-                        {localizeUi("ui.longTermMemory.memoryvault.setRetrievalModes")}
-                      </legend>
-                      {modes.map((mode) => (
-                        <label key={mode} className="flex min-h-11 items-center gap-1 text-xs">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4"
-                            checked={bulkModes.includes(mode)}
-                            onChange={() =>
-                              setBulkModes((current) =>
-                                current.includes(mode) ? current.filter((item) => item !== mode) : [...current, mode],
-                              )
-                            }
-                          />
-                          {modeLabel(mode)}
-                        </label>
-                      ))}
-                    </fieldset>
-                    <Button
-                      {...busyActionProps}
-                      disabled={!bulkModes.length}
-                      onClick={() => {
-                        if (!busy) void batch("modes");
-                      }}
-                    >
-                      {localizeUi("ui.longTermMemory.memoryvault.setModes")}
-                    </Button>
-                    <Button
-                      disabled={Boolean(busy)}
-                      onClick={() => {
+                        if (busy) return;
                         setBulkAvailabilityAction("add");
                         setBulkAvailabilityTargets([]);
+                        setBulkAvailabilityModes([]);
+                        setBulkEditStatus("");
                         setAvailabilityOpen("bulk");
                         setMobilePaneAndFocus("workbench");
                       }}
-                      data-ltm-bulk-availability
+                      data-ltm-bulk-edit
                     >
-                      {localizeUi("ui.longTermMemory.memoryvault.changeAvailability")}
+                      {localizeUi("ui.longTermMemory.memoryvault.editSelected")}
                     </Button>
+                  </div>
+                  <div
+                    role="group"
+                    aria-label={localizeUi("ui.longTermMemory.memoryvault.bulkRemoveGroup")}
+                    className="ml-auto flex flex-wrap items-center gap-2 border-l border-[var(--border)] pl-2"
+                  >
                     <Button
                       {...busyActionProps}
                       onClick={() => {
@@ -2605,7 +2609,7 @@ export default function MemoryVault({
                       <Trash2 aria-hidden="true" size="1rem" className="shrink-0" />
                       {localizeUi("ui.longTermMemory.extractionprompttemplates.delete")}
                     </Button>
-                  </>
+                  </div>
                 </section>
               ) : null}
               <section
@@ -2764,9 +2768,13 @@ export default function MemoryVault({
                 onActionChange={setBulkAvailabilityAction}
                 onModesChange={setBulkAvailabilityModes}
                 onTargetsChange={setBulkAvailabilityTargets}
+                status={bulkEditStatus}
+                statuses={statuses}
+                statusLabel={statusLabel}
+                onStatusChange={setBulkEditStatus}
                 onApply={() => {
                   setAvailabilityOpen(null);
-                  void batch(bulkAvailabilityAction === "add" ? "availability" : "remove-availability");
+                  void batch("edit");
                 }}
                 onCancel={() => setAvailabilityOpen(null)}
               />

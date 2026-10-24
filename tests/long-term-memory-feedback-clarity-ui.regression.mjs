@@ -178,7 +178,7 @@ assert.match(vault, /availabilityStaged/u);
 assert.match(vaultScreen, /lastPlaceRequired/u);
 assert.match(vaultScreen, /lastModeRequired/u);
 assert.match(vaultScreen, /function BulkAvailabilityWorkbench/u);
-assert.match(vault, /data-ltm-bulk-availability/u);
+assert.match(vault, /data-ltm-bulk-edit/u);
 assert.match(vaultScreen, /data-ltm-bulk-availability-action/u);
 assert.match(vault, /onActionChange=/u);
 assert.match(vaultScreen, /data-ltm-availability-picker/u);
@@ -415,7 +415,15 @@ assert.equal(locale["ui.longTermMemory.memoryvault.searchChats"], "Search chats"
 assert.equal(locale["ui.longTermMemory.memoryvault.searchBranches"], undefined);
 assert.equal(locale["ui.longTermMemory.memoryvault.showMemories"], "Show");
 assert.equal(locale["ui.longTermMemory.memoryvault.sortBy"], "Sort by");
-assert.equal(locale["ui.longTermMemory.memoryvault.changeAvailability"], "Change availability");
+assert.equal(locale["ui.longTermMemory.memoryvault.editSelected"], "Edit selected…");
+assert.equal(locale["ui.longTermMemory.memoryvault.refine"], "Refine");
+assert.equal(locale["ui.longTermMemory.memoryvault.changeAvailability"], undefined);
+assert.match(
+  vault,
+  /<details\s+data-ltm-refine[\s\S]*?data-ltm-memory-scope-secondary[\s\S]*?data-ltm-mode-filter[\s\S]*?<\/details>/u,
+);
+assert.match(vault, /useEffect\(\(\) => \{\s*if \(refineActive\) setRefineOpen\(true\);/u);
+assert.equal(locale["ui.longTermMemory.memoryvault.bulkChangeGroup"], undefined);
 
 assert.match(detail, /TriangleAlert/u);
 assert.doesNotMatch(detail, /CircleAlert/u);
@@ -540,7 +548,7 @@ assert.match(vault, /<span data-ltm-accent-border className="rounded-full border
 assert.match(vaultScreen, /inline-flex min-h-11 max-w-full[\s\S]*h-11 w-11/u);
 assert.match(vault, /clearMemorySearch[\s\S]*h-11 w-11/u);
 assert.match(vault, /data-ltm-mode-filter[\s\S]*min-h-11/u);
-assert.match(vault, /bulkModes[\s\S]*min-h-11/u);
+assert.match(vaultScreen, /memoryvault\.chatModes[\s\S]*min-h-11/u);
 assert.match(vault, /data-ltm-note-inspector/u);
 assert.match(vault, /mari-editor-panel min-w-0 space-y-4 p-3/u);
 assert.match(vault, /copyDiagnostics/u);

@@ -1905,6 +1905,10 @@ async function main() {
       // place does not hold would still reach the list and bulk selection.
       await choosePlaceBySearch("vault", "Character A", "character:character-a");
       const secondaryPlaceRequestPromise = notesRequest((params) => params.get("scopeGroupId") === "conversation-a");
+      // #1636: the second place and the mode filter sit under Refine, which stays closed until one is set.
+      const refine = page.locator("[data-ltm-refine]");
+      assert.equal(await refine.getAttribute("open"), null, "Refine starts closed");
+      await refine.locator("summary").click();
       await choosePlaceBySearch("vault-secondary", "Member Final Branch", "group:conversation-a");
       const secondaryPlaceRequest = await secondaryPlaceRequestPromise;
       assert.doesNotMatch(
@@ -1950,6 +1954,17 @@ async function main() {
       await page.getByText(/No memories are available in .*AND/u).waitFor();
       await choosePlaceBySearch("vault-secondary", "does-not-match", "all");
       assert.match(await secondaryScopeTrigger.innerText(), /No second place/u);
+      // A closed Refine names the filter in use, so a hidden mode filter is never a silent one.
+      const firstModeFilter = page.locator("[data-ltm-mode-filter] input").first();
+      await firstModeFilter.uncheck();
+      await refine.locator("summary").click();
+      assert.equal(await refine.getAttribute("open"), null, "Refine closes by hand");
+      await refine
+        .locator("[data-ltm-refine-active]")
+        .getByText(/^Available modes: /u)
+        .waitFor();
+      await refine.locator("summary").click();
+      await firstModeFilter.check();
       await openWorldGroup();
       await page.getByText("Memory outside current chat").waitFor();
       // Unsaved edits: Keep editing and Discard both return focus to the place button (#1442).
@@ -2219,7 +2234,7 @@ async function main() {
       await branchCard.locator('input[type="checkbox"]').check();
       // #1588: the whole label around a row checkbox is a 44px target, not just the box.
       assert.equal(await touchTargetSize(branchCard.locator('label:has(input[type="checkbox"])')), "fits");
-      await page.locator("[data-ltm-bulk-availability]").click();
+      await page.locator("[data-ltm-bulk-edit]").click();
       const bulkBranchRemoval = page.locator("[data-ltm-bulk-availability-workbench]");
       await bulkBranchRemoval.waitFor();
       await bulkBranchRemoval.getByRole("button", { name: "Remove availability", exact: true }).click();
@@ -2253,7 +2268,7 @@ async function main() {
       // Bulk Remove lists a place that no longer exists, with the single editor's fallback label (#1442).
       await page.locator("[data-ltm-select-mode]").click();
       await branchCard.locator('input[type="checkbox"]').check();
-      await page.locator("[data-ltm-bulk-availability]").click();
+      await page.locator("[data-ltm-bulk-edit]").click();
       await bulkBranchRemoval.waitFor();
       await bulkBranchRemoval.getByRole("button", { name: "Remove availability", exact: true }).click();
       await bulkBranchRemoval.locator("[data-ltm-availability-picker] > summary").click();
@@ -5953,9 +5968,13 @@ async function main() {
       }
       await selectableWorldNotes.nth(0).check();
       await selectableWorldNotes.nth(1).check();
-      await page.locator("[data-ltm-bulk-availability]").click();
+      await page.locator("[data-ltm-bulk-edit]").click();
       const bulkAvailability = page.locator("[data-ltm-bulk-availability-workbench]");
       await bulkAvailability.waitFor();
+      // #1636: one Edit selected sheet holds status, modes and availability.
+      await bulkAvailability.getByRole("heading", { name: "Edit selected memories", exact: true }).waitFor();
+      assert.equal(await bulkAvailability.locator("[data-ltm-bulk-edit-status] option").count(), 4);
+      assert.equal(await bulkAvailability.locator("[data-ltm-bulk-edit-status]").inputValue(), "");
       assert.equal(await bulkAvailability.locator("h3").filter({ hasText: "Available in" }).count(), 1);
       assert.equal(
         await bulkAvailability.getByText("Chat mode eligibility is set separately", { exact: false }).count(),
