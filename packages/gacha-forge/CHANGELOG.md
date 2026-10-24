@@ -1,3 +1,10 @@
+## 1.13.0 — 2026-10-24
+
+- Added Soldier, Elite and Boss enemy tiers in combat and enemy details.
+- New story chapters build toward a boss confrontation using existing boss mechanics.
+- Significant fights prepare contextual enemy dialogue, with local one-shot triggers and manual or Auto progression.
+- Combat dialogue respects assigned character voices, mute and dialogue volume. Existing saved chapters and Tower encounters remain playable.
+
 ## 1.12.2 — 2026-10-24
 
 - Home shows a compact affinity matchup diagram beneath the communication button.
