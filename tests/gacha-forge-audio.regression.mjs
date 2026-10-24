@@ -1,10 +1,12 @@
 // Exercise audio behavior with deterministic host boundaries; no provider is contacted.
 import assert from "node:assert/strict";
-import { normalizeForgeAudio } from "../packages/gacha-forge/src/audio-settings.mjs";
+import { readFile } from "node:fs/promises";
+import { normalizeForgeAudio, normalizeForgeMusicMood } from "../packages/gacha-forge/src/audio-settings.mjs";
 import { forgeAudioEnglish, forgeAudioFields } from "../packages/gacha-forge/src/audio-en.mjs";
 import {
   ForgeAudioController,
   forgeExplicitVoice,
+  forgeAudioCue,
   forgeMusicContextKey,
   loadForgeAudioConnections,
   saveForgeAudioSources,
@@ -13,6 +15,7 @@ import { createForgeVoiceLine, forgeVoiceCharacter } from "../packages/gacha-for
 
 const before = {
   normalizeForgeAudio: globalThis.normalizeForgeAudio,
+  normalizeForgeMusicMood: globalThis.normalizeForgeMusicMood,
   forgeAudioEnglish: globalThis.forgeAudioEnglish,
   forgeAudioFields: globalThis.forgeAudioFields,
   Ze: globalThis.Ze,
@@ -20,6 +23,7 @@ const before = {
   Option: globalThis.Option,
 };
 globalThis.normalizeForgeAudio = normalizeForgeAudio;
+globalThis.normalizeForgeMusicMood = normalizeForgeMusicMood;
 globalThis.forgeAudioEnglish = forgeAudioEnglish;
 globalThis.forgeAudioFields = forgeAudioFields;
 const tick = () => new Promise((resolve) => setImmediate(resolve));
@@ -39,6 +43,10 @@ const generationConfig = (path, values = {}) => ({
     soundEffects: true,
     ...values,
   }),
+});
+const musicBriefResponse = () => ({
+  ok: true,
+  json: async () => ({ ok: true, prompt: "Original instrumental fantasy theme with woodwinds and harp." }),
 });
 let cases = 0;
 async function test(name, callback) {
@@ -265,9 +273,120 @@ try {
       tts: { ttsService: { getActiveId: () => null, speakSequence: async (...args) => voices.push(args) } },
     };
     const controller = new ForgeAudioController(host, services);
-    controller.notice = (message) => events.push(["notice", message]);
+    controller.notice = (...message) => events.push(["notice", ...message]);
     return { host, controller, events, voices };
   };
+
+  const client = await readFile(new URL("../packages/gacha-forge/client.js", import.meta.url), "utf8");
+  const stateMethod = client.match(/_state\(\)\{return[^{}]+\}/u)?.[0];
+  assert(stateMethod, "extract the shipped string-valued state method, not an invented beat HUD view");
+  const actualState = new Function(`return ({${stateMethod}})._state;`)();
+  const readyWorld = {
+    _state: actualState,
+    _boot: "ready",
+    _bannerReady: true,
+    _artReady: true,
+    _hudView: "home",
+    _plan: { nodes: [] },
+    _beatState: "idle",
+    _storyWaits: () => false,
+  };
+
+  await test("shipped state routes ready story, bond and combat music without generating during loading", async () => {
+    const generated = [];
+    globalThis.Ze = async (path, options) => {
+      if (path.startsWith("/api/audio/config")) return generationConfig(path);
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
+      const body = JSON.parse(options.body);
+      generated.push(body);
+      return { ok: true, json: async () => ({ tag: `music:${body.context.key}`, path: `${body.context.key}.mp3` }) };
+    };
+    const { host, controller } = fixture();
+    Object.assign(host, readyWorld);
+    controller.configure({ generate: true, audioConnectionId: "cue-fixture" });
+    const step = async (changes, state, cue) => {
+      Object.assign(host, changes);
+      assert.equal(host._state(), state);
+      assert.equal(forgeAudioCue(host), cue);
+      await controller.cue(forgeAudioCue(host));
+    };
+    try {
+      await step({}, "hud", "home");
+      const homeTag = controller.currentTag;
+      await step({ _hudView: "chapter", _beatState: "loading", _forgeMusicMood: "sad" }, "beat", null);
+      assert.equal(generated.length, 1);
+      assert.equal(controller.currentTag, homeTag, "loading keeps the current track without composing a wrong cue");
+      for (const mood of ["happy", "tense", "sad"])
+        await step({ _beatState: "ready", _forgeMusicMood: mood }, "beat", mood);
+      await step({ _bondUnit: "arden" }, "beat", "bond");
+      await step({ _hudView: "combat", _combatPhase: "loading", _combat: null }, "combat", null);
+      assert.equal(generated.length, 5);
+      await step({ _combatPhase: "prebattle", _combat: { enemies: [{ tier: "common" }] } }, "combat", "combat");
+      await step({ _combatPhase: "battle", _combat: { enemies: [{ boss: true }] } }, "combat", "boss");
+      await step({ _hudView: "home", _beatState: "idle", _bondUnit: "" }, "hud", "home");
+      assert.equal(controller.currentTag, homeTag);
+      assert.deepEqual(
+        generated.map((body) => body.context.key),
+        ["home", "happy", "tense", "sad", "bond", "combat", "boss"].map((cue) =>
+          forgeMusicContextKey("audio-world", "cue-fixture", cue),
+        ),
+      );
+      for (const [changes, state] of [
+        [{ _boot: "loading" }, "boot"],
+        [{ _boot: "ready", _bannerReady: false }, "banner"],
+        [{ _bannerReady: true, _artReady: false, _artBlocking: true }, "art"],
+        [{ _artReady: true, _plan: null, _planEscaped: false }, "forge"],
+      ])
+        await step(changes, state, null);
+      assert.equal(generated.length, 7);
+    } finally {
+      controller.dispose();
+    }
+  });
+
+  await test("leaving a story or muting fences a late readiness result or music brief before composition", async () => {
+    for (const stage of ["readiness", "brief"]) {
+      for (const destination of ["home", "loading", "muted"]) {
+        const held = deferred();
+        const generated = [];
+        globalThis.Ze = async (path, options) => {
+          if (path.startsWith("/api/audio/config"))
+            return stage === "readiness" ? held.promise : generationConfig(path);
+          const body = JSON.parse(options.body);
+          if (path === "/api/gacha-forge/audio/prompt")
+            return stage === "brief" && body.cue === "sad" ? held.promise : musicBriefResponse();
+          generated.push(body);
+          return {
+            ok: true,
+            json: async () => ({ tag: `music:${body.context.key}`, path: `${body.context.key}.mp3` }),
+          };
+        };
+        const { host, controller } = fixture();
+        Object.assign(host, readyWorld, { _hudView: "chapter", _beatState: "ready", _forgeMusicMood: "sad" });
+        controller.configure({ generate: true });
+        try {
+          const old = controller.cue(forgeAudioCue(host));
+          await tick();
+          let current;
+          if (destination === "muted") controller.configure({ generate: true, muted: true });
+          else {
+            if (destination === "home") Object.assign(host, { _hudView: "home", _beatState: "idle" });
+            else host._beatState = "loading";
+            current = controller.cue(forgeAudioCue(host));
+          }
+          held.resolve(stage === "readiness" ? generationConfig("/api/audio/config") : musicBriefResponse());
+          await Promise.all([old, current]);
+          assert.deepEqual(
+            generated.map((body) => body.context.key),
+            destination === "home" ? [forgeMusicContextKey("audio-world", "current", "home")] : [],
+            `${stage}/${destination}: the old story cannot submit a paid composition after leaving`,
+          );
+        } finally {
+          controller.dispose();
+        }
+      }
+    }
+  });
 
   await test("readiness refreshes after failure or unconfigured state, without probing on each render", async () => {
     const now = Date.now;
@@ -279,6 +398,7 @@ try {
         let reads = 0;
         let posts = 0;
         globalThis.Ze = async (path) => {
+          if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
           if (path.startsWith("/api/audio/config")) {
             reads += 1;
             if (!ready && initial === "offline") throw new Error("offline");
@@ -316,6 +436,7 @@ try {
     let reads = 0;
     const posts = [];
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path.startsWith("/api/audio/config")) {
         reads += 1;
         return reads === 1 ? first.promise : generationConfig(path);
@@ -347,6 +468,7 @@ try {
       const posts = [];
       const id = `${supported}-only`;
       globalThis.Ze = async (path, options) => {
+        if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
         if (path.startsWith("/api/audio/config")) {
           paths.push(path);
           return generationConfig(path, { music: supported === "music", soundEffects: supported === "sfx" });
@@ -375,6 +497,7 @@ try {
     const missingRequests = [];
     // API 1.381 rejects unknown explicit IDs rather than borrowing its default connection.
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       missingRequests.push([path, options?.method || "GET"]);
       return { ok: false, status: 409, json: async () => ({ error: "Selected source unavailable" }) };
     };
@@ -389,6 +512,7 @@ try {
     const posts = [];
     const reads = [];
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path.startsWith("/api/audio/config")) {
         reads.push(path);
         return generationConfig(path, { connectionId: "canonical-generation" });
@@ -461,6 +585,7 @@ try {
   await test("generated cues dedupe, reuse and return to stock when disabled", async () => {
     const requests = [];
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path.startsWith("/api/audio/config")) return generationConfig(path);
       const body = JSON.parse(options.body);
       requests.push({ path, ...body });
@@ -496,6 +621,7 @@ try {
   await test("generation errors leave stock music playing and do not retry a cue on every render", async () => {
     let requests = 0;
     globalThis.Ze = async (path) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path.startsWith("/api/audio/config")) return generationConfig(path);
       requests += 1;
       return { ok: false, status: 503 };
@@ -509,14 +635,181 @@ try {
       events.filter(([event]) => event === "playMusic").map(([, tag]) => tag),
       ["stock:home"],
     );
-    assert.equal(events.filter(([event]) => event === "notice").at(-1)[1], "audio.generationFailed");
+    assert.deepEqual(events.filter(([event]) => event === "notice").at(-1), [
+      "notice",
+      "audio.generationRejected",
+      503,
+    ]);
     assert.equal(controller.generated.size, 0);
     controller.dispose();
+  });
+
+  await test("generation failures retain the provider HTTP status without displaying response bodies", async () => {
+    globalThis.Ze = async (path) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
+      if (path.startsWith("/api/audio/config")) return generationConfig(path);
+      return {
+        ok: false,
+        status: 502,
+        json: async () => ({
+          error: "Audio generation failed",
+          detail: "ElevenLabs audio request returned HTTP 401",
+          secret: "must never appear in a notice",
+        }),
+      };
+    };
+    const { controller, events } = fixture();
+    controller.configure({ generate: true, audioConnectionId: "rejected" });
+    await controller.cue("home");
+    assert.deepEqual(events.filter(([event]) => event === "notice").at(-1), [
+      "notice",
+      "audio.generationRejected",
+      401,
+    ]);
+    assert.equal(JSON.stringify(events).includes("secret"), false);
+    assert.equal(controller.generated.size, 0);
+    controller.dispose();
+  });
+
+  await test("new hosts expose their bounded provider reason while old hosts retain numeric fallback", async () => {
+    globalThis.Ze = async (path) => {
+      if (path.startsWith("/api/audio/config")) return generationConfig(path);
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
+      return {
+        ok: false,
+        status: 502,
+        json: async () => ({
+          error: "Audio generation failed",
+          providerStatus: 400,
+          reason: "Prompt rejected.\n" + "x".repeat(400),
+          secret: "not public",
+        }),
+      };
+    };
+    const { controller, events } = fixture();
+    controller.configure({ generate: true });
+    await controller.cue("home");
+    const message = events.filter(([event]) => event === "notice").at(-1);
+    assert.equal(message[1], "audio.generationReason");
+    assert.equal(message[2], 400);
+    assert.equal(message[3].length, 300);
+    assert.equal(message[3].includes("\n"), false);
+    assert.equal(JSON.stringify(events).includes("not public"), false);
+    const previousResizeObserver = globalThis.ResizeObserver;
+    const observers = [];
+    globalThis.ResizeObserver = class {
+      constructor(callback) {
+        this.callback = callback;
+        observers.push(this);
+      }
+      observe(node) {
+        this.node = node;
+      }
+      disconnect() {
+        this.disconnected = true;
+      }
+    };
+    const status = {
+      textContent: "",
+      style: {},
+      isConnected: true,
+      clientHeight: 30,
+      scrollHeight: 30,
+      remove() {
+        this.isConnected = false;
+      },
+    };
+    const rendered = { host: { _root: { querySelector: () => status } } };
+    try {
+      ForgeAudioController.prototype.notice.call(rendered, "audio.generationReason", 400, "Provider says $&");
+      assert.ok(status.textContent.includes("Provider says $&"), "provider text is interpolated literally");
+      const observer = observers.at(-1);
+      assert.equal(observer.node, status);
+      assert.equal(status.tabIndex, -1);
+      status.scrollHeight = 80;
+      observer.callback();
+      assert.equal(status.tabIndex, 0);
+      assert.equal(status.style.pointerEvents, "auto");
+      rendered.dismissNotice();
+      assert.equal(observer.disconnected, true);
+      assert.equal(status.onfocus, null);
+      assert.equal(status.onblur, null);
+      assert.equal(status.isConnected, false);
+    } finally {
+      rendered.dismissNotice?.();
+      if (previousResizeObserver === undefined) delete globalThis.ResizeObserver;
+      else globalThis.ResizeObserver = previousResizeObserver;
+    }
+    controller.dispose();
+  });
+
+  await test("music waits for one model brief and submits its exact output before caching the asset", async () => {
+    const model = deferred();
+    const requests = [];
+    globalThis.Ze = async (path, options) => {
+      if (path.startsWith("/api/audio/config")) return generationConfig(path);
+      requests.push({ path, body: JSON.parse(options.body) });
+      if (path === "/api/gacha-forge/audio/prompt") return model.promise;
+      return { ok: true, json: async () => ({ tag: "music:model", path: "music/model.mp3" }) };
+    };
+    const { controller } = fixture();
+    controller.configure({ generate: true });
+    const first = controller.generate("music", "home");
+    const second = controller.generate("music", "home");
+    await tick();
+    assert.deepEqual(requests, [
+      { path: "/api/gacha-forge/audio/prompt", body: { runId: "audio-world", cue: "home", debugMode: false } },
+    ]);
+    model.resolve(musicBriefResponse());
+    assert.equal((await first).tag, "music:model");
+    assert.equal((await second).tag, "music:model");
+    assert.equal(requests.length, 2);
+    assert.equal(requests[1].path, "/api/audio/generate");
+    assert.equal(requests[1].body.prompt, (await musicBriefResponse().json()).prompt);
+    await controller.generate("music", "home");
+    assert.equal(requests.length, 2, "cached music does not pay for another brief or composition");
+    controller.dispose();
+  });
+
+  await test("failed or cancelled model briefs never submit a paid audio generation", async () => {
+    for (const mode of ["failed", "invalid", "cancelled", "muted", "quiet", "world"]) {
+      const model = deferred();
+      const requests = [];
+      globalThis.Ze = async (path, options) => {
+        if (path.startsWith("/api/audio/config")) return generationConfig(path);
+        requests.push(path);
+        assert.equal(path, "/api/gacha-forge/audio/prompt");
+        return model.promise;
+      };
+      const { controller, events } = fixture();
+      controller.configure({ generate: true });
+      const pending = controller.cue("home");
+      await tick();
+      if (mode === "cancelled") controller.configure({ generate: false });
+      if (mode === "muted") controller.configure({ generate: true, muted: true });
+      if (mode === "quiet") controller.configure({ generate: true, musicVolume: 0 });
+      if (mode === "world") controller.host._run.runId = "another-world";
+      model.resolve({
+        ok: true,
+        json: async () =>
+          mode === "failed"
+            ? { ok: false }
+            : { ok: true, prompt: mode === "invalid" ? "x".repeat(1001) : "late brief" },
+      });
+      await pending;
+      assert.deepEqual(requests, ["/api/gacha-forge/audio/prompt"]);
+      assert.equal(controller.generated.size, 0);
+      const notices = events.filter(([event]) => event === "notice");
+      if (["cancelled", "muted", "quiet", "world"].includes(mode)) assert.equal(notices.length, 0);
+      else assert.equal(notices[0][1], "audio.promptFailed");
+      controller.dispose();
+    }
   });
 
   await test("complete provider prompts are bounded and sound effects never use a music context", async () => {
     const requests = [];
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path.startsWith("/api/audio/config")) return generationConfig(path);
       const body = JSON.parse(options.body);
       requests.push(body);
@@ -525,6 +818,7 @@ try {
     const { host, controller } = fixture();
     host._run.scenario = "W".repeat(4000);
     controller.runId = "_world-with-a-valid-NanoID-prefix";
+    host._run.runId = controller.runId;
     controller.configure({ generate: true, audioConnectionId: "dedicated" });
     await controller.generate("music", "boss");
     await controller.generate("sfx", "critical");
@@ -541,6 +835,7 @@ try {
   await test("current connection capabilities limit generation and disabling it aborts an in-flight request", async () => {
     const requests = [];
     globalThis.Ze = async (path, options) => {
+      if (path === "/api/gacha-forge/audio/prompt") return musicBriefResponse();
       if (path === "/api/audio/config")
         return {
           ok: true,

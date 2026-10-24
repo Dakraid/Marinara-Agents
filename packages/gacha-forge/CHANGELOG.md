@@ -1,3 +1,22 @@
+## 1.12.1 — 2026-10-24
+
+- Chapters and Character Stories generate and play their own music cues instead of reusing the Home track. Loading scenes keep the current track until their cue is ready.
+- Small choices no longer block later shared narration or background pre-forging. Their alternatives remain generated together; playback, canon, replay and big-choice locks are preserved.
+- Completion and compression still wait for pending selections to preserve canonical story history.
+- Short audio notices no longer intercept taps on the game stage. Long reasons remain scrollable and stay visible while focused with a keyboard.
+- Notice scrolling adapts when the panel becomes visible or changes size; replacing a long reason with short text restores dismissal.
+- Recorded the actual merged Engine music-test baseline.
+
+## 1.12.0 — 2026-10-24
+
+### New
+- World-specific soundtrack briefs generated through the narration connection, cached for each music context and translated into original musical qualities.
+
+### Fixed
+- Audio failures show their HTTP status and, on newer Engine hosts, the provider's safe rejection reason while stock audio continues.
+- Unit and relic achievements count every gained level; capped duplicates do not count as gained facets, and Tower-shop facet gains count.
+- Existing worlds recover proven achievement progress without changing claimed rewards or pass progress.
+
 ## 1.11.1 — 2026-10-23
 - Fixed generated music and effects for worlds using migrated legacy audio connections.
 - Recorded the merged Engine audio connection baseline.

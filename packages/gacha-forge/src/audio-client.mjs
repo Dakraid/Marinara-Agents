@@ -19,15 +19,6 @@ const forgeStockSfx = {
   win: "sfx:ui:coin-pickup",
   lose: "sfx:ui:menu-cancel",
 };
-const forgeMusicDescriptions = {
-  home: "welcoming home screen, calm and inviting",
-  combat: "ordinary turn-based battle, energetic and rhythmic",
-  boss: "major boss confrontation, dramatic and intense",
-  happy: "hopeful story dialogue, warm and happy",
-  tense: "tense story dialogue, suspenseful and uncertain",
-  sad: "sad story dialogue, intimate and melancholic",
-  bond: "a personal character story, reflective and intimate",
-};
 let forgeAudioSession = 0;
 const forgeAudioRetryMs = 60_000;
 
@@ -41,7 +32,32 @@ export function forgeMusicContextKey(runId, connectionId, cue) {
 
 async function forgeAudioJson(path, options) {
   const response = await Ze(path, options);
-  if (!response.ok) throw new Error(`Audio request failed (${response.status})`);
+  if (!response.ok) {
+    const error = new Error(`Audio request failed (${response.status})`);
+    error.httpStatus = response.status;
+    try {
+      const body = await response.json();
+      // Older hosts expose only detail; newer hosts provide a bounded, redacted provider reason.
+      const upstream = /^(?:ElevenLabs|SunoAPI) audio request returned HTTP ([45]\d{2})$/.exec(body?.detail);
+      if (upstream) error.httpStatus = Number(upstream[1]);
+      if (
+        body?.error === "Audio generation failed" &&
+        Number.isInteger(body.providerStatus) &&
+        body.providerStatus >= 400 &&
+        body.providerStatus <= 599
+      ) {
+        error.httpStatus = body.providerStatus;
+        if (typeof body.reason === "string")
+          error.reason = body.reason
+            .replace(/\p{Cc}/gu, " ")
+            .trim()
+            .slice(0, 300);
+      }
+    } catch (parseError) {
+      if (parseError?.name === "AbortError") throw parseError;
+    }
+    throw error;
+  }
   return response.json();
 }
 
@@ -96,7 +112,14 @@ export class ForgeAudioController {
     }
     if (
       previous &&
-      ((!this.settings.generate && previous.generate) || previous.audioConnectionId !== this.settings.audioConnectionId)
+      (previous.muted !== this.settings.muted || (previous.musicVolume === 0) !== (this.settings.musicVolume === 0))
+    )
+      this.musicRevision = undefined;
+    if (
+      previous &&
+      ((!this.settings.generate && previous.generate) ||
+        (this.settings.muted && !previous.muted) ||
+        previous.audioConnectionId !== this.settings.audioConnectionId)
     ) {
       for (const request of this.requests) request.abort();
     }
@@ -108,7 +131,7 @@ export class ForgeAudioController {
     }
   }
 
-  notice(key) {
+  notice(key, httpStatus, reason = "") {
     if (this.disposed) return;
     let status = this.host._root.querySelector("[data-forge-audio-status]");
     if (!status) {
@@ -118,12 +141,41 @@ export class ForgeAudioController {
       status.className = "gf-audio-status";
       this.host._root.querySelector(".gf-stage")?.append(status);
     }
-    if (status) status.textContent = forgeAudioEnglish[key];
-    clearTimeout(this.noticeTimer);
-    this.noticeTimer = setTimeout(() => status?.remove(), 6000);
+    this.noticeResize?.disconnect();
+    status.textContent = forgeAudioEnglish[key]
+      .replace("{status}", String(httpStatus))
+      .replace("{reason}", () => reason);
+    const dismiss = () => {
+      clearTimeout(this.noticeTimer);
+      this.noticeResize?.disconnect();
+      status.onfocus = null;
+      status.onblur = null;
+      status.remove();
+    };
+    this.dismissNotice = dismiss;
+    const scheduleDismissal = () => {
+      clearTimeout(this.noticeTimer);
+      if (!this.disposed && !(this.host._root.activeElement === status && status.tabIndex === 0)) {
+        this.noticeTimer = setTimeout(dismiss, 6000);
+      }
+    };
+    const measure = () => {
+      if (this.disposed || !status.isConnected) return dismiss();
+      const scrollable = status.clientHeight > 0 && status.scrollHeight > status.clientHeight;
+      const changed = scrollable !== (status.tabIndex === 0);
+      status.style.pointerEvents = scrollable ? "auto" : "none";
+      status.tabIndex = scrollable ? 0 : -1;
+      if (changed) scheduleDismissal();
+    };
+    status.onfocus = scheduleDismissal;
+    status.onblur = scheduleDismissal;
+    measure();
+    this.noticeResize = new ResizeObserver(measure);
+    this.noticeResize.observe(status);
+    scheduleDismissal();
   }
 
-  async generate(kind, cue) {
+  async generate(kind, cue, musicRevision) {
     const settings = this.settings;
     if (!settings.generate || this.disposed || settings.muted) return null;
     let probe = this.generationConfig;
@@ -143,6 +195,7 @@ export class ForgeAudioController {
       !this.settings.generate ||
       this.settings.muted ||
       this.settings.audioConnectionId !== settings.audioConnectionId ||
+      (musicRevision !== undefined && musicRevision !== this.musicRevision) ||
       !config?.configured ||
       !config.connectionId ||
       config[kind === "music" ? "music" : "soundEffects"] !== true
@@ -158,31 +211,59 @@ export class ForgeAudioController {
     const abort = new AbortController();
     this.requests.add(abort);
     const world = String(this.host._run?.scenario || "").slice(0, 2000);
-    const prompt = (
-      kind === "music"
-        ? `Instrumental looping game soundtrack, no vocals. ${forgeMusicDescriptions[cue] || cue}. World: ${world}`
-        : `A short game sound effect for ${cue}, no music or speech. World: ${world}`
-    ).slice(0, kind === "music" ? 1000 : 500);
-    const request = forgeAudioJson("/api/audio/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: abort.signal,
-      body: JSON.stringify({
-        kind,
-        audioConnectionId: connectionId,
-        prompt,
-        ...(kind === "music"
-          ? {
-              context: {
-                scope: "gacha-forge",
-                key: forgeMusicContextKey(this.runId, connectionId, cue),
-                lengthMs: 60_000,
-              },
-            }
-          : {}),
-        debugMode: this.host.capabilityProps?.debugMode === true,
-      }),
-    })
+    const request = (async () => {
+      let prompt = `A short game sound effect for ${cue}, no music or speech. World: ${world}`.slice(0, 500);
+      if (kind === "music") {
+        try {
+          const brief = await forgeAudioJson("/api/gacha-forge/audio/prompt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: abort.signal,
+            body: JSON.stringify({ runId: this.runId, cue, debugMode: this.host.capabilityProps?.debugMode === true }),
+          });
+          if (
+            this.disposed ||
+            !this.settings.generate ||
+            this.settings.muted ||
+            this.settings.musicVolume === 0 ||
+            this.settings.audioConnectionId !== settings.audioConnectionId ||
+            (musicRevision !== undefined && musicRevision !== this.musicRevision) ||
+            this.host._run?.runId !== this.runId
+          )
+            abort.abort();
+          abort.signal.throwIfAborted();
+          if (!brief?.ok || typeof brief.prompt !== "string" || !brief.prompt.trim() || brief.prompt.length > 1000)
+            throw new Error("Music brief generation failed");
+          prompt = brief.prompt.trim();
+        } catch (error) {
+          if (error?.name === "AbortError") throw error;
+          const failure = new Error("Music brief generation failed", { cause: error });
+          failure.audioStage = "prompt";
+          throw failure;
+        }
+      }
+      abort.signal.throwIfAborted();
+      return forgeAudioJson("/api/audio/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: abort.signal,
+        body: JSON.stringify({
+          kind,
+          audioConnectionId: connectionId,
+          prompt,
+          ...(kind === "music"
+            ? {
+                context: {
+                  scope: "gacha-forge",
+                  key: forgeMusicContextKey(this.runId, connectionId, cue),
+                  lengthMs: 60_000,
+                },
+              }
+            : {}),
+          debugMode: this.host.capabilityProps?.debugMode === true,
+        }),
+      });
+    })()
       .then((result) => {
         if (typeof result?.tag !== "string" || typeof result?.path !== "string") throw new Error("Missing audio asset");
         this.generated.set(cacheKey, result);
@@ -191,7 +272,17 @@ export class ForgeAudioController {
       .catch((error) => {
         if (error?.name !== "AbortError") {
           this.failures.set(cacheKey, Date.now());
-          this.notice("audio.generationFailed");
+          this.notice(
+            error.audioStage === "prompt"
+              ? "audio.promptFailed"
+              : error.reason
+                ? "audio.generationReason"
+                : error.httpStatus
+                  ? "audio.generationRejected"
+                  : "audio.generationFailed",
+            error.httpStatus,
+            ...(error.reason ? [error.reason] : []),
+          );
         }
         return null;
       })
@@ -205,6 +296,10 @@ export class ForgeAudioController {
 
   async cue(cue) {
     if (!this.player || this.disposed) return;
+    if (!cue) {
+      this.musicRevision = null;
+      return;
+    }
     const enabled = this.settings.generate && !this.settings.muted && this.settings.musicVolume > 0;
     const revision = `${cue}:${enabled}:${this.settings.audioConnectionId}`;
     if (revision === this.musicRevision && (!enabled || Date.now() - this.musicAttemptAt < forgeAudioRetryMs)) return;
@@ -226,7 +321,7 @@ export class ForgeAudioController {
       }
     }
     if (!enabled) return;
-    const asset = await this.generate("music", cue);
+    const asset = await this.generate("music", cue, revision);
     if (asset && !this.disposed && revision === this.musicRevision && asset.tag !== this.currentTag) {
       this.currentTag = asset.tag;
       this.currentGenerated = true;
@@ -294,6 +389,7 @@ export class ForgeAudioController {
     if (this.disposed) return;
     this.disposed = true;
     clearTimeout(this.noticeTimer);
+    this.dismissNotice?.();
     this.voiceAbort?.abort();
     for (const request of this.requests) request.abort();
     this.host._root.removeEventListener("click", this.onClick);
@@ -302,14 +398,26 @@ export class ForgeAudioController {
 }
 
 export function forgeAudioCue(host) {
-  if (host._hudView === "combat") {
+  const state = host._state?.();
+  if (
+    typeof state !== "string" ||
+    ["boot", "themes", "runs", "unreachable", "setup", "banner", "art", "forge"].includes(state)
+  )
+    return null;
+  if (state === "combat") {
+    if (!["prebattle", "battle"].includes(host._combatPhase) || !host._combat) return null;
     return host._combat?.enemies?.some(
       (enemy) => enemy.boss || enemy.tier === "boss" || (Array.isArray(enemy.mech) && enemy.mech.length > 0),
     )
       ? "boss"
       : "combat";
   }
-  if (host._hudView === "beat") return host._bondUnit ? "bond" : normalizeForgeMusicMood(host._forgeMusicMood);
+  if (state === "beat")
+    return host._beatState === "ready"
+      ? host._bondUnit
+        ? "bond"
+        : normalizeForgeMusicMood(host._forgeMusicMood)
+      : null;
   return "home";
 }
 
