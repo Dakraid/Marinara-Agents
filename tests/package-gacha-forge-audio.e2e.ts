@@ -1,0 +1,1263 @@
+import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { createServer } from "node:http";
+
+const engineRoot = process.env.MARINARA_ENGINE_ROOT;
+if (!engineRoot) throw new Error("Set MARINARA_ENGINE_ROOT to a compatible Engine checkout");
+const appVersion = JSON.parse(readFileSync(resolve(engineRoot, "package.json"), "utf8")).version;
+const portrait = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300"><rect width="200" height="300" fill="#83597d"/><circle cx="100" cy="90" r="45" fill="#eed8b2"/><path d="M35 300V190Q100 125 165 190V300Z" fill="#353d60"/></svg>')}`;
+const baseRun = {
+  runId: "audio-ui-proof",
+  name: "Audio proof",
+  scenario: "Synthetic garden audio.",
+  hudStyle: "vanguard",
+  connectionId: "fixture-model",
+  hasStandardBanner: true,
+  protagonist: { name: "Mari" },
+  story: { preforge: "off", choices: true },
+  progress: {},
+  decor: { unit: { id: "arden", name: "Arden", portrait } },
+  audio: {
+    tts: false,
+    generate: false,
+    muted: false,
+    musicVolume: 0.5,
+    dialogueVolume: 1,
+    sfxVolume: 0.5,
+    autoplayPauseSeconds: 3,
+    audioConnectionId: "",
+  },
+};
+const scene = {
+  ok: true,
+  musicMood: "sad",
+  places: [],
+  choices: [],
+  cast: [
+    { name: "Arden", art: portrait, prota: false, characterId: "engine-arden" },
+    { name: "Generated", art: portrait, prota: false, characterId: null },
+  ],
+  segments: [
+    { speaker: "Arden", text: "ASSIGNED_FIRST" },
+    { speaker: "Generated", text: "UNASSIGNED_SECOND" },
+    { speaker: "Arden", text: "THOUGHT_THIRD", thought: true },
+    { speaker: "", text: "NARRATION_FOURTH" },
+    { speaker: "Arden", text: "ASSIGNED_LAST" },
+  ],
+};
+
+async function openForge(
+  page: Page,
+  testInfo: TestInfo,
+  options: {
+    voice?: boolean;
+    empty?: boolean;
+    realGeneration?: string;
+    realConnections?: boolean;
+    selectedAudio?: string;
+  } = {},
+) {
+  const saved = structuredClone(baseRun);
+  saved.audio.tts = options.voice === true;
+  if (options.selectedAudio) saved.audio.audioConnectionId = options.selectedAudio;
+  if (options.realGeneration) {
+    saved.scenario = "W".repeat(4000);
+    saved.audio.generate = true;
+    saved.audio.audioConnectionId = options.realGeneration;
+  }
+  const speech: Record<string, unknown>[] = [];
+  const generated: Record<string, any>[] = [];
+  const briefs: Record<string, unknown>[] = [];
+  const writes: Record<string, any>[] = [];
+  await page.setViewportSize(
+    testInfo.project.name.includes("mobile") ? { width: 874, height: 402 } : { width: 1440, height: 900 },
+  );
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.addInitScript((version) => {
+    localStorage.removeItem("marinara-active-chat-id");
+    localStorage.setItem("marinara:whats-new:seen-version", version);
+    localStorage.setItem(
+      "marinara-engine-ui",
+      JSON.stringify({
+        state: { hasCompletedOnboarding: true, sidebarOpen: false, rightPanelOpen: false, appAccentPulseMode: false },
+        version: 65,
+      }),
+    );
+    // Controlled media only: the real host TTS service still fetches, queues, cancels and handles ended.
+    // Native device playback/codec policy is deliberately outside this fixture.
+    HTMLMediaElement.prototype.play = function () {
+      return Promise.resolve();
+    };
+  }, appVersion);
+  await page.route("**/api/app-settings/ui", (route) =>
+    route.fulfill({ json: route.request().method() === "GET" ? { value: null } : { success: true } }),
+  );
+  if (!options.realGeneration && !options.realConnections)
+    await page.route("**/api/connections", (route) =>
+      route.fulfill({
+        json: [
+          { id: "fixture-model", name: "Text fixture", provider: "custom", model: "fixture" },
+          {
+            id: "music-fixture",
+            name: "Audio fixture",
+            provider: "audio_generation",
+            audioMusic: true,
+            audioSoundEffects: true,
+          },
+        ],
+      }),
+    );
+  await page.route("**/api/tts/config", (route) =>
+    route.fulfill({
+      json: {
+        enabled: false,
+        connectionId: "speech-fixture",
+        connectionProfiles: {
+          "speech-fixture": { voiceAssignments: [{ characterId: "engine-arden", voice: "voice-arden" }] },
+        },
+      },
+    }),
+  );
+  const wav = Buffer.alloc(44 + 16000);
+  wav.write("RIFF", 0);
+  wav.writeUInt32LE(wav.length - 8, 4);
+  wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(8000, 24);
+  wav.writeUInt32LE(16000, 28);
+  wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write("data", 36);
+  wav.writeUInt32LE(16000, 40);
+  await page.route("**/api/tts/speak", async (route) => {
+    speech.push(route.request().postDataJSON());
+    await route.fulfill({ contentType: "audio/wav", body: wav });
+  });
+  if (!options.realGeneration)
+    await page.route("**/api/audio/config*", (route) =>
+      route.fulfill({
+        json: {
+          configured: true,
+          connectionId: new URL(route.request().url()).searchParams.get("audioConnectionId") || "music-fixture",
+          music: true,
+          soundEffects: false,
+          source: "custom",
+        },
+      }),
+    );
+  if (!options.realGeneration)
+    await page.route("**/api/audio/generate", async (route) => {
+      const body = route.request().postDataJSON();
+      generated.push(body);
+      await route.fulfill({
+        json: {
+          tag: `music:package:${body.context?.key || "sfx"}`,
+          path: `music/package/${body.context?.key || "sfx"}.wav`,
+          cached: false,
+        },
+      });
+    });
+  // Exercise the shipped client orchestration without invoking a paid narration provider.
+  // The actual persisted-world narration route has separate maintained Node coverage.
+  await page.route("**/api/gacha-forge/audio/prompt", async (route) => {
+    briefs.push(route.request().postDataJSON());
+    await route.fulfill({
+      json: { ok: true, prompt: "Original fantasy instrumental: woodwinds, harp and soft strings." },
+    });
+  });
+  await page.route("**/api/game-assets/manifest", (route) =>
+    route.fulfill({
+      json: {
+        scannedAt: "fixture",
+        count: 1,
+        assets: {
+          "music:dialogue:slice_of_life:calm:fixture": {
+            tag: "music:dialogue:slice_of_life:calm:fixture",
+            category: "music",
+            subcategory: "dialogue",
+            name: "Fixture",
+            path: "music/fixture.wav",
+            ext: ".wav",
+          },
+        },
+        byCategory: {},
+      },
+    }),
+  );
+  await page.route("**/api/game-assets/file/**", (route) => route.fulfill({ contentType: "audio/wav", body: wav }));
+  await page.route("**/api/gacha-forge/state", (route) =>
+    route.fulfill({
+      json: options.empty
+        ? { runs: [], guidesSeen: ["welcome"] }
+        : {
+            runs: [saved],
+            activeRunId: saved.runId,
+            activeRun: saved,
+            guidesSeen: ["welcome", "home", "settings", "continuity", "beat", "chapter"],
+          },
+    }),
+  );
+  await page.route("**/api/gacha-forge/continuity", (route) => route.fulfill({ json: { ok: true, chapters: [] } }));
+  await page.route("**/api/gacha-forge/preforge", (route) =>
+    route.fulfill({ json: { ok: true, preforge: { mode: "off", locked: false, canAuto: false } } }),
+  );
+  await page.route("**/api/gacha-forge/beat", (route) => route.fulfill({ json: scene }));
+  await page.route("**/api/gacha-forge/run/sources", async (route) => {
+    const body = route.request().postDataJSON();
+    writes.push(body.sources);
+    Object.assign(saved, { ...body.sources, audio: { ...saved.audio, ...body.sources.audio } });
+    await route.fulfill({ json: { ok: true, run: saved } });
+  });
+  await page.route("**/api/gacha-forge/setup/draft", (route) =>
+    route.fulfill({
+      json:
+        route.request().method() === "GET"
+          ? {
+              ok: true,
+              draft: {
+                step: 4,
+                furthest: 6,
+                values: { scenario: "A synthetic world.", "audio.tts": false, "audio.generate": false },
+              },
+            }
+          : { ok: true },
+    }),
+  );
+  await page.goto("/");
+  await page.getByRole("tab", { name: "Open Gacha Forge" }).click();
+  const forge = page.locator("marinara-capability-gacha-forge");
+  if (!options.empty) await showHome(forge);
+  return { forge, saved, speech, generated, briefs, writes };
+}
+
+async function showHome(forge: Locator) {
+  await expect.poll(() => forge.evaluate((node) => (node as any)._boot)).toBe("ready");
+  await forge.evaluate((node) => {
+    const game = node as any;
+    game._clearBeat();
+    game._bannerReady = true;
+    game._artReady = true;
+    game._planEscaped = true;
+    game._hudView = "home";
+    game._renderBrowser();
+  });
+  await expect(forge.getByRole("button", { name: "Game settings", exact: true })).toBeVisible();
+}
+
+async function seedScene(forge: Locator, theme = "aurora") {
+  await forge.evaluate(
+    (node, fixture) => {
+      const game = node as any;
+      game._clearBeat();
+      game._boot = "ready";
+      game._welcomeBegun = true;
+      game._guidesSeen = new Set(["welcome", "home", "chapters", "chapter", "beat", "settings", "continuity"]);
+      game._run.hudStyle = fixture.theme;
+      game._bannerReady = true;
+      game._artReady = true;
+      game._artState = "idle";
+      game._artBlocking = false;
+      game._hudView = "chapter";
+      game._planChapter = 1;
+      game._chapterProgress = { normal: 0 };
+      game._plan = { title: "Audio chapter", nodes: [{ index: 1, type: "story", title: "The garden", storyIndex: 0 }] };
+      game._activeStoryNode = {
+        chapter: 1,
+        nodeIndex: 0,
+        storyIndex: 0,
+        title: "The garden",
+        difficulty: "normal",
+        replay: false,
+      };
+      game._beatState = "loading";
+      game._beatRequested = false;
+      game._renderBrowser();
+    },
+    { theme },
+  );
+  await expect(forge.locator("[data-vn]")).toBeVisible();
+}
+
+async function frameBottom(frame: Locator, artSelector: string) {
+  await expect(frame).toBeVisible();
+  await frame.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .closest(".gf-stage")!
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
+  return frame.evaluate((node, selector) => {
+    const art = node.querySelector(selector)!;
+    return {
+      gap: node.getBoundingClientRect().bottom - art.getBoundingClientRect().bottom,
+      edge: Number.parseFloat(getComputedStyle(node).getPropertyValue("--edge-w")),
+      bottom: getComputedStyle(art).bottom,
+      padding: getComputedStyle(node).paddingBottom,
+    };
+  }, artSelector);
+}
+
+test("Combat has one working mute beside its fullscreen control without overlapping the toolbar", async ({
+  page,
+}, testInfo) => {
+  const { forge, saved } = await openForge(page, testInfo);
+  for (const theme of ["aurora", "bloom"]) {
+    saved.hudStyle = theme;
+    await forge.evaluate((node, theme) => {
+      const game = node as any;
+      game._clearBeat();
+      game._run.hudStyle = theme;
+      game._guidesSeen.add("combat");
+      game._hudView = "combat";
+      game._combatPhase = "battle";
+      // Pause the simulation while exercising the shipped battle toolbar and its real handlers.
+      game._combat = { allies: [], enemies: [] };
+      game._combatRun = null;
+      game._combatNonce += 1;
+      game._renderBrowser();
+    }, theme);
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    const mute = forge.locator(".cbar .ctrls > .gf-mute");
+    await expect(mute).toBeVisible();
+    await expect(forge.locator(".gf-mute:visible")).toHaveCount(1);
+    const overlap = await mute.evaluate((button) => {
+      const box = button.getBoundingClientRect();
+      return [...button.parentElement!.querySelectorAll("button")].some((other) => {
+        if (other === button) return false;
+        const sibling = other.getBoundingClientRect();
+        return (
+          Math.min(box.right, sibling.right) - Math.max(box.left, sibling.left) > 1 &&
+          Math.min(box.bottom, sibling.bottom) - Math.max(box.top, sibling.top) > 1
+        );
+      });
+    });
+    expect(overlap, `${theme} mute does not cover another toolbar control`).toBe(false);
+    await mute.click();
+    await expect.poll(() => saved.audio.muted).toBe(true);
+    await expect(mute).toHaveAccessibleName("Unmute audio");
+    await mute.click();
+    await expect.poll(() => saved.audio.muted).toBe(false);
+    await forge.locator(".cbar .gf-fs-bar").click();
+    await expect(page.locator(".mari-home-browser-chrome")).toBeHidden();
+    await expect(page.locator('[data-component="TopBar"]')).toBeVisible();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await page.screenshot({ path: testInfo.outputPath(`combat-single-mute-${theme}.png`) });
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await forge.locator(".cbar .gf-fs-bar").click();
+    await expect(page.locator(".mari-home-browser-chrome")).toBeVisible();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+  }
+});
+
+for (const orientation of ["landscape", "portrait"]) {
+  test(`Letters composer can send above a simulated ${orientation} keyboard and restores its controls`, async ({
+    page,
+  }, testInfo) => {
+    // Browser emulation cannot open an iPhone keyboard. Exercise the real Engine viewport
+    // contract with controlled visualViewport geometry, not a claim of native Safari proof.
+    const iphone = testInfo.project.name === "mobile-webkit";
+    if (iphone)
+      await page.addInitScript(() => {
+        let keyboardTop: number | null = null;
+        const viewport = new EventTarget();
+        Object.defineProperties(viewport, {
+          height: { get: () => keyboardTop ?? window.innerHeight },
+          width: { get: () => window.innerWidth },
+          offsetTop: { get: () => 0 },
+          pageTop: { get: () => 0 },
+          offsetLeft: { get: () => 0 },
+          pageLeft: { get: () => 0 },
+          scale: { get: () => 1 },
+        });
+        Object.defineProperty(window, "visualViewport", { configurable: true, value: viewport });
+        Object.defineProperty(window, "__forgeKeyboardTop", {
+          value: (top: number | null) => {
+            keyboardTop = top;
+            viewport.dispatchEvent(new Event("resize"));
+          },
+        });
+      });
+    const { forge, saved } = await openForge(page, testInfo);
+    const theme = orientation === "landscape" ? "aurora" : "bloom";
+    saved.hudStyle = theme;
+    Object.assign(saved, { chatChannel: "Letters" });
+    await page.setViewportSize({ width: 874, height: 402 });
+    const unit = { id: "arden", name: "Arden", bond: 120, open: true, portrait };
+    const messages = [{ id: "letter-1", who: "unit", text: "A letter before the journey." }];
+    const sends: Record<string, unknown>[] = [];
+    await page.route("**/api/gacha-forge/chat/list", (route) =>
+      route.fulfill({ json: { ok: true, channel: "Letters", contacts: [unit] } }),
+    );
+    await page.route("**/api/gacha-forge/chat/open", (route) =>
+      route.fulfill({
+        json: { ok: true, channel: "Letters", unit, messages, cost: 1, max: 2400, photos: true, past: 1 },
+      }),
+    );
+    await page.route("**/api/gacha-forge/chat/send", async (route) => {
+      const body = route.request().postDataJSON();
+      sends.push(body);
+      messages.push({ id: "letter-2", who: "player", text: body.text });
+      await route.fulfill({ json: { ok: true } });
+    });
+    await forge.evaluate((node, theme) => {
+      const game = node as any;
+      game._run.hudStyle = theme;
+      game._run.chatChannel = "Letters";
+      game._guidesSeen.add("chat");
+      game._renderBrowser();
+    }, theme);
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await forge.locator(".gf-fs-bar").click();
+    await expect(page.locator(".mari-home-browser-chrome")).toBeHidden();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await forge.locator("[data-chat-open]").click();
+    await forge.locator('[data-chat-with="arden"]').click();
+    const field = forge.locator("[data-chat-text]");
+    await expect(field).toBeVisible();
+    const draft = `A ${orientation} letter that survives the keyboard resizing.`;
+    await field.fill(draft);
+    const phone = orientation === "portrait" ? { width: 390, height: 844 } : { width: 874, height: 402 };
+    const keyboardTop = orientation === "portrait" ? 300 : 190;
+    if (iphone) {
+      // Preserve the layout viewport, as iOS does; a portrait rotation happens with the letter open.
+      await page.evaluate((top) => (window as any).__forgeKeyboardTop(top), keyboardTop);
+      await page.setViewportSize(phone);
+    } else {
+      // Android's resizes-content path reduces the layout viewport itself.
+      await page.setViewportSize({ width: phone.width, height: keyboardTop });
+    }
+    await expect(field).toHaveValue(draft);
+    const send = forge.locator("[data-chat-send]");
+    for (const control of [field, send]) {
+      await expect(control).toBeVisible();
+      await expect
+        .poll(() =>
+          control.evaluate((node, bottom) => {
+            const box = node.getBoundingClientRect();
+            const panel = node.closest(".hm-pk.chat")!.getBoundingClientRect();
+            return box.top >= panel.top && box.bottom <= Math.min(panel.bottom, bottom) + 1;
+          }, keyboardTop),
+        )
+        .toBe(true);
+    }
+    // The host intentionally hides its own bars for a focused package on a short touch
+    // landscape screen (globals.css); the package must respect that keyboard policy.
+    const hostHidesChrome = await page.evaluate(
+      () =>
+        matchMedia(
+          "(orientation: landscape) and (max-height: 500px) and (min-width: 640px) and (hover: none) and (any-pointer: coarse)",
+        ).matches &&
+        document.documentElement.matches(
+          "[data-mari-software-keyboard-open]:has([data-home-package-view] :focus-within)",
+        ),
+    );
+    await expect(page.locator('[data-component="TopBar"]')).toBeVisible({ visible: !hostHidesChrome });
+    await expect(forge.locator(".gf-bar")).toBeHidden();
+    await field.fill(`${draft} Ready to send.`);
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await page.screenshot({ path: testInfo.outputPath(`letters-${orientation}-simulated-keyboard.png`) });
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    // A real pointer tap, without force or Enter, catches layout changes when the textarea blurs.
+    await send.click();
+    await expect
+      .poll(() => sends.at(-1))
+      .toMatchObject({
+        runId: baseRun.runId,
+        unitId: "arden",
+        text: `${draft} Ready to send.`,
+      });
+    await expect(forge.locator(".ch-msg.mine")).toContainText(`${draft} Ready to send.`);
+    if (iphone) await page.evaluate(() => (window as any).__forgeKeyboardTop(null));
+    await page.setViewportSize({ width: 874, height: 402 });
+    await field.blur();
+    await expect(page.locator('[data-component="TopBar"]')).toBeVisible();
+    await expect(forge.locator(".gf-bar")).toBeVisible();
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    await expect(forge.locator(".ch-list")).toBeVisible();
+    await expect(forge.locator("[data-chat-photo]")).toBeVisible();
+    await expect(forge.locator("[data-chat-past]")).toBeVisible();
+    await expect(forge.locator(".ch-who .nm")).toHaveText("Arden");
+    await expect(field).toHaveValue("");
+  });
+}
+
+test("Real story navigation selects distinct home, story and bond music after each scene is ready", async ({
+  page,
+}, testInfo) => {
+  const { forge, generated, briefs } = await openForge(page, testInfo);
+  const plan = { title: "Audio chapter", nodes: [{ type: "story", title: "The garden", storyIndex: 0 }] };
+  const waiting: Array<() => Promise<void>> = [];
+  await page.route("**/api/gacha-forge/chapters", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        chapters: [{ chapter: 1, title: plan.title, normal: 0 }],
+        nextChapter: 2,
+        nextUnlocked: false,
+        bonds: [{ id: "arden", name: "Arden", part: 1, state: "open", beats: 0 }],
+      },
+    }),
+  );
+  for (const path of ["chapter-plan", "bond-chapter/plan"])
+    await page.route(`**/api/gacha-forge/${path}`, (route) =>
+      route.fulfill({ json: { ok: true, plan, progress: {}, beats: 0, name: "Arden" } }),
+    );
+  for (const path of ["story/start", "bond-chapter/start"])
+    await page.route(`**/api/gacha-forge/${path}`, (route) => route.fulfill({ json: { ok: true } }));
+  for (const path of ["beat", "bond-chapter/beat"])
+    await page.route(`**/api/gacha-forge/${path}`, (route) => {
+      waiting.push(() => route.fulfill({ json: scene }));
+    });
+  await page.route("**/api/gacha-forge/locations", (route) => route.fulfill({ json: { ok: true, places: [] } }));
+  await page.route("**/api/gacha-forge/preforge/start", (route) =>
+    route.fulfill({ json: { ok: true, allowed: false, preforge: { mode: "off", locked: false } } }),
+  );
+  await forge.getByRole("button", { name: "Game settings", exact: true }).click();
+  await forge.locator('[role="tab"][data-view="sources"]').click();
+  await forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true }).click();
+  await expect.poll(() => generated.filter((request) => request.kind === "music").length).toBe(1);
+  await forge.locator("[data-settings-back]").click();
+  const homeTag = `music:package:${generated[0].context.key}`;
+  await expect.poll(() => forge.evaluate((node) => (node as any)._forgeAudio.currentTag)).toBe(homeTag);
+
+  const openChapters = async () => {
+    await forge.evaluate((node) => {
+      const game = node as any;
+      game._clearBeat();
+      game._guidesSeen.add("chapters");
+      game._hudView = "chapters";
+      game._renderBrowser();
+    });
+    await expect(forge.locator('[data-open-chapter="1"]')).toBeVisible();
+  };
+  for (const [index, selector, cue] of [
+    [0, '[data-open-chapter="1"]', "sad"],
+    [1, "[data-open-bond]", "bond"],
+  ] as const) {
+    await openChapters();
+    await forge.locator(selector).click();
+    await forge.locator("[data-play]").click();
+    await expect.poll(() => waiting.length).toBe(index + 1);
+    expect(await forge.evaluate((node) => (node as any)._state())).toBe("beat");
+    expect(await forge.evaluate((node) => (node as any)._beatState)).toBe("loading");
+    expect(briefs.map((request) => request.cue)).toEqual(index === 0 ? ["home"] : ["home", "sad"]);
+    await waiting[index]();
+    await expect(forge.locator("[data-vn]")).toBeVisible();
+    await expect.poll(() => generated.filter((request) => request.kind === "music").length).toBe(index + 2);
+    expect(briefs.at(-1)).toMatchObject({ runId: baseRun.runId, cue });
+    await expect
+      .poll(() => forge.evaluate((node) => (node as any)._forgeAudio.currentTag))
+      .toBe(`music:package:${generated.at(-1)!.context.key}`);
+    await showHome(forge);
+    await expect.poll(() => forge.evaluate((node) => (node as any)._forgeAudio.currentTag)).toBe(homeTag);
+  }
+  expect(
+    new Set(generated.filter((request) => request.kind === "music").map((request) => request.context.key)).size,
+  ).toBe(3);
+  expect(briefs.map((request) => request.cue)).toEqual(["home", "sad", "bond"]);
+  await page.screenshot({ path: testInfo.outputPath("audio-distinct-story-cues.png") });
+});
+
+test("Audio settings persist, mute is compact and portrait frames retain a bottom stroke", async ({
+  page,
+}, testInfo) => {
+  const { forge, saved, generated, briefs } = await openForge(page, testInfo);
+  expect(generated).toHaveLength(0);
+  const settings = forge.getByRole("button", { name: "Game settings", exact: true });
+  await settings.click();
+  await forge.locator('[role="tab"][data-view="visual"]').click();
+  for (const [field, value] of [
+    ["musicVolume", "0.17"],
+    ["dialogueVolume", "0"],
+    ["sfxVolume", "0.31"],
+    ["autoplayPauseSeconds", "4.5"],
+  ]) {
+    const input = forge.locator(`[data-input="audio.${field}"]`);
+    await input.fill(value);
+    await input.dispatchEvent("input");
+    await input.dispatchEvent("change");
+    await expect.poll(() => Number((saved.audio as any)[field])).toBe(Number(value));
+  }
+  await forge.locator('[role="tab"][data-view="sources"]').click();
+  await expect(forge.getByRole("checkbox", { name: "Read character dialogue", exact: true })).toHaveAttribute(
+    "aria-checked",
+    "false",
+  );
+  await forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true }).click();
+  await expect.poll(() => saved.audio.generate).toBe(true);
+  await expect.poll(() => generated.filter((request) => request.kind === "music").length).toBe(1);
+  expect(briefs).toHaveLength(1);
+  expect(briefs[0]).toMatchObject({ runId: baseRun.runId, cue: "home" });
+  expect(generated[0].prompt).toBe("Original fantasy instrumental: woodwinds, harp and soft strings.");
+  await expect(forge.locator('[data-input="audio.audioConnectionId"]')).toContainText("Audio fixture");
+  await page.screenshot({ path: testInfo.outputPath("audio-sources.png") });
+  await forge.locator("[data-settings-back]").click();
+  await forge.getByRole("button", { name: "Mute all audio", exact: true }).click();
+  await expect(forge.getByRole("button", { name: "Unmute audio", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await forge.getByRole("button", { name: "Unmute audio", exact: true }).click();
+  await expect(forge.getByRole("button", { name: "Mute all audio", exact: true })).toBeEnabled();
+  expect(generated.filter((request) => request.kind === "music")).toHaveLength(1);
+  await page.reload();
+  await page.getByRole("tab", { name: "Open Gacha Forge" }).click();
+  await showHome(forge);
+  await expect.poll(() => forge.evaluate((node) => (node as any)._run?.audio.musicVolume)).toBe(0.17);
+  for (const theme of ["aurora", "bloom", "signal", "ember", "vanguard"]) {
+    await forge.evaluate((node, theme) => {
+      const game = node as any;
+      game._clearBeat();
+      game._run.hudStyle = theme;
+      game._hudView = "home";
+      game._renderBrowser();
+    }, theme);
+    const home = await frameBottom(forge.locator(".hm-plate"), ".hm-art");
+    expect(home.gap, `${theme} home ${JSON.stringify(home)}`).toBeGreaterThanOrEqual(home.edge - 0.1);
+    if (theme === "bloom") await page.screenshot({ path: testInfo.outputPath("audio-home-light.png") });
+    await seedScene(forge, theme);
+    const story = await frameBottom(forge.locator('.vn-plate[data-side="right"]'), ".vn-art");
+    expect(story.gap, `${theme} story ${JSON.stringify(story)}`).toBeGreaterThanOrEqual(story.edge - 0.1);
+    const mute = forge.locator(".vn-top > .gf-mute-chapter");
+    const box = await mute.boundingBox();
+    expect(box?.width).toBe(44);
+    expect(box?.height).toBe(44);
+    if (theme === "aurora") await page.screenshot({ path: testInfo.outputPath("audio-chapter.png") });
+  }
+  await showHome(forge);
+  await forge.evaluate((node) => {
+    const game = node as any;
+    game._run.textScale = 1.75;
+    game._settingsRev += 1;
+    game._renderBrowser();
+  });
+  await settings.click();
+  await forge.locator('[role="tab"][data-view="visual"]').click();
+  for (const name of ["musicVolume", "dialogueVolume", "sfxVolume", "autoplayPauseSeconds"]) {
+    const range = forge.locator(`[data-input="audio.${name}"]`);
+    await range.scrollIntoViewIfNeeded();
+    await expect(range).toBeVisible();
+    expect(
+      await range.evaluate((node) => {
+        const box = node.getBoundingClientRect();
+        const stage = node.closest(".gf-stage")!.getBoundingClientRect();
+        return box.left >= stage.left && box.right <= stage.right;
+      }),
+      `${name} stays horizontally inside the stage at 175% text`,
+    ).toBe(true);
+  }
+  await page.screenshot({ path: testInfo.outputPath("audio-mix-large-text.png") });
+  await forge.evaluate((node) => {
+    const game = node as any;
+    game._clearBeat();
+    game._run = null;
+    game._activeRunId = null;
+    game._creatingNew = false;
+    game._boot = "ready";
+    game._setupDraftAsked = false;
+    game._renderKey = null;
+    game._renderBrowser();
+  });
+  await expect(forge.getByRole("checkbox", { name: "Read character dialogue", exact: true })).toBeVisible();
+  await expect(forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true })).toBeVisible();
+  await expect(forge.locator(".gf-mute")).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath("audio-world-setup.png") });
+});
+
+test("Provider rejection reasons fit the game stage in dark and light themes", async ({ page }, testInfo) => {
+  const { forge, saved } = await openForge(page, testInfo);
+  await page.route("**/api/audio/generate", (route) =>
+    route.fulfill({
+      status: 502,
+      json: {
+        error: "Audio generation failed",
+        detail: "ElevenLabs audio request returned HTTP 400",
+        providerStatus: 400,
+        reason:
+          "Your prompt appears to have violated our Terms of Service. Please try again with a different prompt. " +
+          "Use an original musical description. ".repeat(7),
+        private: "must not be displayed",
+      },
+    }),
+  );
+  for (const [theme, cue] of [
+    ["aurora", "home"],
+    ["bloom", "boss"],
+  ]) {
+    saved.hudStyle = theme;
+    saved.audio.generate = true;
+    await forge.evaluate(
+      async (node, { theme, cue }) => {
+        const game = node as any;
+        game._run.hudStyle = theme;
+        game._run.audio = { ...game._run.audio, generate: true };
+        game._renderKey = null;
+        game._renderBrowser();
+        game._forgeAudio.configure(game._run.audio);
+        await game._forgeAudio.generate("music", cue);
+      },
+      { theme, cue },
+    );
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+    const notice = forge.locator("[data-forge-audio-status]");
+    await expect(notice).toContainText("HTTP 400");
+    await expect(notice).toContainText("Terms of Service");
+    await expect(notice).not.toContainText("must not be displayed");
+    const bounds = await notice.evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      const stage = node.closest(".gf-stage")!.getBoundingClientRect();
+      return {
+        left: box.left - stage.left,
+        right: stage.right - box.right,
+        top: box.top - stage.top,
+        bottom: stage.bottom - box.bottom,
+        overflowX: node.scrollWidth - node.clientWidth,
+      };
+    });
+    for (const side of ["left", "right", "top", "bottom"] as const) expect(bounds[side]).toBeGreaterThanOrEqual(-1);
+    expect(bounds.overflowX).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: testInfo.outputPath(`audio-provider-error-${theme}.png`) });
+    await expect(forge.locator(".gf-arena")).toHaveAttribute("data-style", theme);
+  }
+
+  const short = await forge.evaluate((node) => {
+    const game = node as any;
+    game._forgeAudio.notice("audio.voiceFailed");
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    const stage = notice.closest(".gf-stage")!;
+    const target = document.createElement("button");
+    target.style.cssText = `position:absolute;z-index:7;left:${notice.offsetLeft}px;top:${notice.offsetTop}px;width:${notice.offsetWidth}px;height:${notice.offsetHeight}px;opacity:0`;
+    target.addEventListener("click", (event) => {
+      event.stopPropagation();
+      (node as HTMLElement).dataset.noticeTaps = "1";
+    });
+    stage.append(target);
+    const box = notice.getBoundingClientRect();
+    return {
+      x: box.left + box.width / 2,
+      y: box.top + box.height / 2,
+      overflow: notice.scrollHeight - notice.clientHeight,
+    };
+  });
+  expect(short.overflow).toBeLessThanOrEqual(0);
+  await page.mouse.click(short.x, short.y);
+  await expect.poll(() => forge.evaluate((node) => (node as HTMLElement).dataset.noticeTaps)).toBe("1");
+
+  const hidden = await forge.evaluate((node) => {
+    const game = node as any;
+    const stage = game._root.querySelector(".gf-stage") as HTMLElement;
+    stage.style.display = "none";
+    game._forgeAudio.notice("audio.generationReason", 400, "A longer provider explanation. ".repeat(9));
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    notice.style.maxHeight = "3rem";
+    return { client: notice.clientHeight, scroll: notice.scrollHeight };
+  });
+  expect(hidden).toEqual({ client: 0, scroll: 0 });
+  await forge.evaluate((node) => {
+    ((node as any)._root.querySelector(".gf-stage") as HTMLElement).style.removeProperty("display");
+  });
+  const status = forge.locator("[data-forge-audio-status]");
+  await expect(status).toHaveAttribute("tabindex", "0");
+  await expect(status).toHaveCSS("pointer-events", "auto");
+  await status.focus();
+  await page.keyboard.press("PageDown");
+  await expect.poll(() => status.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+  await status.evaluate((node) => {
+    const notice = node as HTMLElement;
+    notice.style.maxHeight = "1000px";
+    notice.style.fontSize = "12px";
+  });
+  await expect(status).toHaveAttribute("tabindex", "-1");
+  await expect(status).toHaveCSS("pointer-events", "none");
+  await status.evaluate((node) => {
+    const notice = node as HTMLElement;
+    notice.style.maxHeight = "3rem";
+    notice.style.fontSize = "24px";
+  });
+  await expect(status).toHaveAttribute("tabindex", "0");
+  await expect(status).toHaveCSS("pointer-events", "auto");
+
+  await forge.locator("[data-forge-audio-status]").evaluate((node) => {
+    (node as HTMLElement).style.maxHeight = "3rem";
+    // Settle the fixture's size transition before freezing time for dismissal checks.
+    for (const animation of node.getAnimations()) animation.finish();
+  });
+  await page.clock.install();
+  const long = await forge.evaluate((node) => {
+    const game = node as any;
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    game._forgeAudio.notice("audio.generationReason", 400, "A longer provider explanation. ".repeat(9));
+    const box = notice.getBoundingClientRect();
+    return {
+      x: box.left + box.width / 2,
+      y: box.top + box.height / 2,
+      overflow: notice.scrollHeight - notice.clientHeight,
+    };
+  });
+  expect(long.overflow).toBeGreaterThan(0);
+  await forge.locator("[data-forge-audio-status]").focus();
+  await expect(forge.locator("[data-forge-audio-status]")).toBeFocused();
+  await page.mouse.move(long.x, long.y);
+  if (testInfo.project.name === "mobile-webkit") await page.keyboard.press("PageDown");
+  else await page.mouse.wheel(0, 80);
+  await expect
+    .poll(() => forge.locator("[data-forge-audio-status]").evaluate((node) => node.scrollTop))
+    .toBeGreaterThan(0);
+  await page.clock.fastForward(6001);
+  await expect(forge.locator("[data-forge-audio-status]")).toBeFocused();
+  await forge.locator("[data-forge-audio-status]").evaluate((node) => (node as HTMLElement).blur());
+  await page.clock.fastForward(6001);
+  await expect(forge.locator("[data-forge-audio-status]")).toHaveCount(0);
+
+  await forge.evaluate((node) => {
+    const game = node as any;
+    game._forgeAudio.notice("audio.generationReason", 400, "A longer provider explanation. ".repeat(9));
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    notice.style.maxHeight = "3rem";
+  });
+  await expect(status).toHaveAttribute("tabindex", "0");
+  await status.focus();
+  await forge.evaluate((node) => {
+    const game = node as any;
+    game._root.querySelector("[data-forge-audio-status]").style.removeProperty("max-height");
+    game._forgeAudio.notice("audio.voiceFailed");
+  });
+  await expect(status).toHaveAttribute("tabindex", "-1");
+  await expect(status).toBeFocused();
+  await page.clock.fastForward(6001);
+  await expect(status).toHaveCount(0);
+  const disposed = await forge.evaluate((node) => {
+    const game = node as any;
+    game._forgeAudio.notice("audio.voiceFailed");
+    const notice = game._root.querySelector("[data-forge-audio-status]") as HTMLElement;
+    game._forgeAudio.dispose();
+    return { connected: notice.isConnected, focus: notice.onfocus, blur: notice.onblur };
+  });
+  expect(disposed).toEqual({ connected: false, focus: null, blur: null });
+  await page.clock.fastForward(6001);
+  await expect(status).toHaveCount(0);
+});
+
+test("Readiness recovers in the current world and single-channel selections keep the other channel on stock", async ({
+  page,
+}, testInfo) => {
+  const { forge, generated } = await openForge(page, testInfo);
+  let configured = false;
+  const probes: string[] = [];
+  await page.route("**/api/audio/config*", (route) => {
+    const id = new URL(route.request().url()).searchParams.get("audioConnectionId") || "music-fixture";
+    probes.push(id);
+    return route.fulfill({
+      json: {
+        configured,
+        connectionId: configured ? id : null,
+        music: id !== "sfx-only",
+        soundEffects: id === "sfx-only",
+      },
+    });
+  });
+  await page.route("**/api/connections", (route) =>
+    route.fulfill({
+      json: [
+        { id: "fixture-model", name: "Text fixture", provider: "custom", model: "fixture" },
+        {
+          id: "music-only",
+          name: "Score",
+          provider: "audio_generation",
+          audioMusic: "true",
+          audioSoundEffects: "false",
+        },
+        {
+          id: "sfx-only",
+          name: "Effects",
+          provider: "audio_generation",
+          audioMusic: "false",
+          audioSoundEffects: "true",
+        },
+      ],
+    }),
+  );
+  const settings = forge.getByRole("button", { name: "Game settings", exact: true });
+  await settings.click();
+  await forge.locator('[role="tab"][data-view="sources"]').click();
+  const generation = forge.getByRole("checkbox", { name: "Generate music and sound effects", exact: true });
+  await generation.click();
+  await expect.poll(() => probes.length).toBe(1);
+  await forge.evaluate(async (node) => {
+    const audio = (node as any)._forgeAudio;
+    await audio.cue("home");
+    await audio.effect("click");
+  });
+  expect(probes).toHaveLength(1);
+  expect(generated).toHaveLength(0);
+  configured = true;
+  await generation.click();
+  await generation.click();
+  await expect.poll(() => generated.filter((request) => request.kind === "music").length).toBe(1);
+  expect(probes).toHaveLength(2);
+  const select = forge.locator('[data-input="audio.audioConnectionId"]');
+  await expect(select.locator('option[value="music-only"]')).toHaveText("Score (Music only)");
+  await expect(select.locator('option[value="sfx-only"]')).toHaveText("Effects (Sound effects only)");
+  for (const [id, supported, unsupported] of [
+    ["music-only", "music", "sfx"],
+    ["sfx-only", "sfx", "music"],
+  ]) {
+    await select.selectOption(id);
+    await expect.poll(() => probes.includes(id)).toBe(true);
+    await forge.evaluate(async (node) => {
+      const audio = (node as any)._forgeAudio;
+      await audio.cue("home");
+      await audio.effect("click");
+      await audio.generate("music", "boss");
+      await audio.generate("sfx", "hit");
+    });
+    await expect.poll(() => generated.filter((request) => request.audioConnectionId === id).length).toBe(2);
+    expect(
+      generated.filter((request) => request.audioConnectionId === id).every((request) => request.kind === supported),
+    ).toBe(true);
+    expect(generated.some((request) => request.audioConnectionId === id && request.kind === unsupported)).toBe(false);
+    await expect(forge.locator("[data-forge-audio-status]")).toHaveCount(0);
+  }
+  configured = false;
+  await select.selectOption("");
+  const played = await forge.evaluate(async (node) => {
+    const audio = (node as any)._forgeAudio;
+    const tags: string[] = [];
+    const player = audio.player;
+    // The host player is frozen; observe calls through a delegating test wrapper.
+    audio.player = {
+      ...player,
+      playSfx: (tag: string, ...args: unknown[]) => {
+        tags.push(tag);
+        return player.playSfx(tag, ...args);
+      },
+    };
+    try {
+      await audio.effect("click");
+      return tags;
+    } finally {
+      audio.player = player;
+    }
+  });
+  expect(played).toEqual(["sfx:ui:click"]);
+  await expect(forge.locator("[data-forge-audio-status]")).toHaveCount(0);
+  await select.selectOption("sfx-only");
+  await page.screenshot({ path: testInfo.outputPath("audio-single-channel-readiness.png") });
+});
+
+test("Audio selectors accept real stored flags and preserve unavailable choices through setup saves", async ({
+  page,
+}, testInfo) => {
+  const ids: string[] = [];
+  try {
+    for (const data of [
+      { name: "Text selection fixture", provider: "custom", model: "fixture" },
+      {
+        name: "Stored audio fixture",
+        provider: "audio_generation",
+        audioGenerationSource: "custom",
+        model: "fixture",
+        audioMusic: true,
+        audioSoundEffects: true,
+      },
+    ]) {
+      const response = await page.request.post("/api/connections", { data });
+      expect(response.ok(), await response.text()).toBe(true);
+      ids.push((await response.json()).id);
+    }
+    const storedRows = await (await page.request.get("/api/connections")).json();
+    const stored = storedRows.find((row: any) => row.id === ids[1]);
+    expect(stored.audioMusic).toBe("true");
+    expect(stored.profileImportReviewRequired).toBe("false");
+    // This first list is the actual, unintercepted Engine HTTP response.
+    const { forge, saved, writes, generated } = await openForge(page, testInfo, {
+      realConnections: true,
+      selectedAudio: ids[1],
+    });
+    await forge.getByRole("button", { name: "Game settings", exact: true }).click();
+    await forge.locator('[role="tab"][data-view="sources"]').click();
+    const picker = forge.locator('[data-input="audio.audioConnectionId"]');
+    await expect(picker.locator(`option[value="${ids[1]}"]`)).toHaveText("Stored audio fixture");
+    await expect(picker).toHaveValue(ids[1]);
+    await forge.getByRole("checkbox", { name: "Read character dialogue", exact: true }).click();
+    await expect.poll(() => saved.audio.audioConnectionId).toBe(ids[1]);
+
+    const drafts: any[] = [];
+    const presets: any[] = [];
+    const creations: any[] = [];
+    await page.route("**/api/characters/personas/list", (route) =>
+      route.fulfill({ json: [{ id: "fixture-persona", name: "Mari" }] }),
+    );
+    await page.route("**/api/characters/personas/active", (route) =>
+      route.fulfill({ json: { id: "fixture-persona", name: "Mari" } }),
+    );
+    await page.route("**/api/gacha-forge/setup/draft", (route) => {
+      if (route.request().method() === "POST") drafts.push(route.request().postDataJSON());
+      return route.fulfill({ json: { ok: true } });
+    });
+    await page.route("**/api/gacha-forge/setup/presets", (route) => route.fulfill({ json: { ok: true, presets: [] } }));
+    await page.route("**/api/gacha-forge/setup/preset/save", (route) => {
+      presets.push(route.request().postDataJSON());
+      return route.fulfill({ json: { ok: true, presets: [] } });
+    });
+    await page.route("**/api/gacha-forge/run", (route) => {
+      creations.push(route.request().postDataJSON());
+      return route.fulfill({ json: { ok: false, error: "Captured without generating a world." } });
+    });
+    // Quarantine is a response fixture over the real stored row; no user profile is modified.
+    let quarantined = false;
+    await page.route("**/api/connections", async (route) => {
+      const response = await route.fetch();
+      const rows = await response.json();
+      await route.fulfill({
+        response,
+        json: rows.map((row: any) =>
+          quarantined && row.id === ids[1] ? { ...row, profileImportReviewRequired: "true" } : row,
+        ),
+      });
+    });
+    for (const selected of ["missing-audio-fixture", ids[1]]) {
+      quarantined = selected === ids[1];
+      await forge.evaluate((node, id) => {
+        const game = node as any;
+        game._run.audio = { ...game._run.audio, generate: true, audioConnectionId: id };
+        game._settingsRev += 1;
+        game._renderKey = null;
+        game._openSettings("sources");
+      }, selected);
+      await expect(picker).toHaveValue(selected);
+      await expect(picker.locator(`option[value="${selected}"]`)).toBeDisabled();
+      await forge.getByRole("checkbox", { name: "Read character dialogue", exact: true }).click();
+      await expect.poll(() => writes.at(-1)?.audio.audioConnectionId).toBe(selected);
+      await forge.evaluate(
+        (node, fixture) => {
+          const game = node as any;
+          game._clearBeat();
+          game._run = null;
+          game._activeRunId = null;
+          game._boot = "ready";
+          game._creatingNew = false;
+          game._setupDraftAsked = true;
+          game._setupDraftSettled = true;
+          game._setupDraft = {
+            step: 4,
+            furthest: 7,
+            personaId: "fixture-persona",
+            values: {
+              scenario: "A synthetic world.",
+              connectionId: fixture.textId,
+              "audio.generate": true,
+              "audio.audioConnectionId": fixture.selected,
+            },
+          };
+          game._renderKey = null;
+          game._renderBrowser();
+        },
+        { textId: ids[0], selected },
+      );
+      await expect(picker).toHaveValue(selected);
+      await expect(picker.locator(`option[value="${selected}"]`)).toBeDisabled();
+      // A real eligible row also remains available in the setup list.
+      await expect(forge.locator(".gf-mute")).toHaveCount(0);
+      if (!quarantined) await expect(picker.locator(`option[value="${ids[1]}"]`)).toHaveText("Stored audio fixture");
+      await forge.locator("[data-next]").click();
+      await expect.poll(() => drafts.at(-1)?.snapshot.values["audio.audioConnectionId"]).toBe(selected);
+      await forge.locator("button[data-presets]").click();
+      await forge.locator("[data-preset-name]").fill("Selection proof");
+      await forge.locator("[data-preset-save]").click();
+      await expect.poll(() => presets.at(-1)?.snapshot.values["audio.audioConnectionId"]).toBe(selected);
+      await forge.locator("[data-preset-close]").click();
+      await forge.locator('[data-goto="7"]').click();
+      await forge.locator("[data-forge]").click();
+      await forge.locator("[data-forge-ask-yes]").click();
+      await forge.locator("[data-forge-ask-later]").click();
+      await expect.poll(() => creations.at(-1)?.audio.audioConnectionId).toBe(selected);
+      await expect.poll(() => generated.every((request) => !!request.audioConnectionId)).toBe(true);
+      // Restore the edited-world fixture before testing the second unavailable state.
+      await page.reload();
+      await page.getByRole("tab", { name: "Open Gacha Forge" }).click();
+      await showHome(forge);
+    }
+    await testInfo.attach("connection-selection-proof.json", {
+      body: JSON.stringify({ stored, drafts, presets, creations, generated }, null, 2),
+      contentType: "application/json",
+    });
+  } finally {
+    await page
+      .getByRole("tab", { name: "Home", exact: true })
+      .click()
+      .catch(() => {});
+    for (const id of ids) await page.request.delete(`/api/connections/${id}`).catch(() => {});
+  }
+});
+
+test("Shipped audio requests pass the real Engine route and reuse a local provider's cached MP3", async ({
+  page,
+}, testInfo) => {
+  const providerCalls: { path: string; body: Record<string, any> }[] = [];
+  const provider = createServer(async (request, response) => {
+    let body = "";
+    for await (const chunk of request) body += chunk;
+    providerCalls.push({ path: request.url!, body: JSON.parse(body) });
+    response.setHeader("content-type", "audio/mpeg");
+    response.end(Buffer.from([0xff, 0xfb, 0x90, 0, 1]));
+  });
+  await new Promise<void>((resolve) => provider.listen(0, "127.0.0.1", resolve));
+  const address = provider.address();
+  if (!address || typeof address === "string") throw new Error("Missing local provider port");
+  let connectionId = "";
+  const outbound: { request: Record<string, any>; status: number; result: Record<string, any> }[] = [];
+  const responses: Promise<void>[] = [];
+  page.on("response", (response) => {
+    if (response.url().endsWith("/api/audio/generate"))
+      responses.push(
+        response.json().then((result) => {
+          outbound.push({ request: response.request().postDataJSON(), status: response.status(), result });
+        }),
+      );
+  });
+  try {
+    const created = await page.request.post("/api/connections", {
+      data: {
+        name: "Local Gacha MP3 fixture",
+        provider: "audio_generation",
+        audioGenerationSource: "custom",
+        baseUrl: `http://127.0.0.1:${address.port}/v1`,
+        model: "local-mp3",
+        audioMusic: true,
+        audioSoundEffects: true,
+        audioMusicEndpoint: "music",
+        audioSoundEffectsEndpoint: "sfx",
+      },
+    });
+    expect(created.ok(), await created.text()).toBe(true);
+    connectionId = (await created.json()).id;
+    expect(connectionId).toBeTruthy();
+    const rejected = await page.request.post("/api/audio/generate", {
+      data: {
+        kind: "sfx",
+        prompt: "old package shape",
+        audioConnectionId: connectionId,
+        context: { scope: "gacha-forge", key: "negative-control" },
+      },
+    });
+    expect(rejected.status(), "the actual route rejects the old sound-effects request shape").toBe(400);
+    const { forge } = await openForge(page, testInfo, { realGeneration: connectionId });
+    await expect.poll(() => providerCalls.filter((call) => call.path === "/v1/music").length).toBe(1);
+    await forge.getByRole("button", { name: "Game settings", exact: true }).click();
+    await expect.poll(() => providerCalls.filter((call) => call.path === "/v1/sfx").length).toBe(1);
+    await expect.poll(() => outbound.length).toBe(2);
+    expect(outbound.every((response) => response.status === 200)).toBe(true);
+    expect(outbound.find((response) => response.request.kind === "sfx")!.request).not.toHaveProperty("context");
+    for (const { path, body } of providerCalls)
+      expect(body.prompt.length).toBeLessThanOrEqual(path.endsWith("music") ? 1000 : 500);
+    const music = outbound.find((response) => response.request.kind === "music")!;
+    const replay = await page.request.post("/api/audio/generate", { data: music.request });
+    expect(replay.status(), await replay.text()).toBe(200);
+    expect((await replay.json()).cached).toBe(true);
+    expect(providerCalls).toHaveLength(2);
+    expect(music.result.path).toMatch(/^music\/contexts\/gacha-forge\/world-/);
+    await Promise.all(responses);
+    await testInfo.attach("real-route-audio-proof.json", {
+      body: JSON.stringify({ outbound, providerCalls }, null, 2),
+      contentType: "application/json",
+    });
+  } finally {
+    await page
+      .getByRole("tab", { name: "Home", exact: true })
+      .click()
+      .catch(() => {});
+    if (connectionId) await page.request.delete(`/api/connections/${connectionId}`);
+    await new Promise<void>((resolve, reject) => provider.close((error) => (error ? reject(error) : resolve())));
+  }
+});
+
+test("Autoplay waits three seconds after revealed text and voice end, and Skip cancels speech", async ({
+  page,
+}, testInfo) => {
+  const now = new Date();
+  await page.clock.install({ time: now });
+  const { forge, speech } = await openForge(page, testInfo, { voice: true });
+  // Pause in the future: install starts a running clock, so its initial instant may already be past.
+  await page.clock.pauseAt(new Date(now.getTime() + 60_000));
+  await seedScene(forge);
+  await expect.poll(() => speech.length).toBe(1);
+  expect(speech[0].voice).toBe("voice-arden");
+  expect(speech[0].audioConnectionId).toBe("speech-fixture");
+  const state = () => page.evaluate(() => (globalThis as any).__MARINARA_HOST__.services.tts.ttsService.getState());
+  await expect.poll(state).toBe("playing");
+  await forge.locator("[data-auto]").click();
+  await page.clock.runFor(3100);
+  await expect(forge.locator("[data-text]")).toHaveText("ASSIGNED_FIRST");
+  await page.evaluate(() => {
+    const playback = (globalThis as any).__MARINARA_HOST__.services.tts.ttsService.getPlayback();
+    (globalThis as any).__gachaOldPlayback = playback.element;
+    playback.element.dispatchEvent(new Event("ended"));
+  });
+  await expect.poll(state).toBe("idle");
+  await page.clock.runFor(2999);
+  await expect(forge.locator("[data-text]")).toHaveText("ASSIGNED_FIRST");
+  await page.clock.runFor(1);
+  await expect(forge.locator("[data-count]")).toHaveText("02 / 05");
+  await forge.locator("[data-auto]").click();
+  await page.clock.runFor(1000);
+  expect(speech).toHaveLength(1);
+  await forge.locator("[data-box]").click();
+  await page.clock.runFor(1000);
+  await expect(forge.locator("[data-text]")).toHaveText("THOUGHT_THIRD");
+  expect(speech).toHaveLength(1);
+  await forge.locator("[data-box]").click();
+  await page.clock.runFor(1000);
+  await expect(forge.locator("[data-text]")).toHaveText("NARRATION_FOURTH");
+  expect(speech).toHaveLength(1);
+  await forge.locator("[data-box]").click();
+  await expect.poll(() => speech.length).toBe(2);
+  await expect.poll(state).toBe("playing");
+  await forge.locator("[data-skip]").click();
+  await expect.poll(state).toBe("idle");
+  await page.clock.runFor(10000);
+  expect(speech).toHaveLength(2);
+  await forge.locator("[data-exit]").click();
+  await page.evaluate(() => (globalThis as any).__gachaOldPlayback.dispatchEvent(new Event("ended")));
+  await expect(forge.locator("[data-vn]")).toHaveCount(0);
+
+  await page.route("**/api/gacha-forge/beat", (route) =>
+    route.fulfill({
+      json: {
+        ...scene,
+        segments: [
+          { speaker: "", text: "BEFORE_CHOICE" },
+          { speaker: "", text: "CHOOSE_A_PATH" },
+          { speaker: "", text: "AFTER_CHOICE" },
+        ],
+        choices: [
+          {
+            id: "pause-choice",
+            kind: "small",
+            at: 1,
+            options: [
+              { id: "a", text: "I follow the path." },
+              { id: "b", text: "I wait here." },
+            ],
+          },
+        ],
+      },
+    }),
+  );
+  await seedScene(forge);
+  await forge.locator("[data-auto]").click();
+  await page.clock.runFor(4000);
+  await expect(forge.locator("[data-forge-choices]")).toBeVisible();
+  await expect(forge.locator("[data-auto]")).toBeDisabled();
+  await page.clock.runFor(30_000);
+  await expect(forge.locator("[data-forge-choices]")).toBeVisible();
+  await expect(forge.locator("[data-count]")).toHaveText("02 / 03");
+  await expect(forge.locator("[data-skip]")).toBeDisabled();
+  expect(speech).toHaveLength(2);
+});

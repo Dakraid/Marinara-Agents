@@ -1,5 +1,9 @@
 # Changelog
 
+## 10.1.0 — 2026-10-24
+
+- Includes upstream 0.7.2. Korean, Japanese and Chinese names now count when followed directly by a particle or written without spaces, so Update from History, automatic updates and Scene-only recognise them. A longer card name no longer counts as a shorter one, and a rejected persona perception names the name it expected.
+
 ## 10.0.2 — 2026-10-24
 
 - On phones, the Relationship Tracker icon in the chat's tracker strip no longer shows as a button that does nothing. The relationship web now opens from its own tracker window, which you can move like the other phone trackers (needs a matching Marinara Engine update).
@@ -7,6 +11,12 @@
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 0.7.2 — 2026-10-23 [highlight]
+
+- Korean, Japanese and Chinese now work. A name followed directly by a Korean particle (김민수는) or written without spaces in Japanese (アリスは) or Chinese (张三很信任李四) now counts as naming that character. Before, Update from History and automatic updates rejected these sentences, and Scene-only couldn't tell who was present.
+- A longer card name doesn't count as a shorter one: 김민수 isn't 김민, and アリス isn't リス. Single characters and syllables appear inside ordinary words, so a one-character Chinese or Japanese name still needs a space or punctuation next to it, and a one-syllable Korean name counts only before a particle (준은, but not 준비).
+- When a persona perception is rejected, the message now says which name it expected.
 
 ## 0.7.1 — 2026-10-14 [highlight]
 

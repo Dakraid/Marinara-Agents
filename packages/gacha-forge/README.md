@@ -1,5 +1,31 @@
 # Gacha Forge
 
+## Story bosses and combat dialogue (1.13.0)
+
+Enemies now have a Soldier, Elite or Boss tier, separate from their combat role and affinity. Enemy cards and details identify that tier. Newly planned chapters reserve their final fight for a boss confrontation before the closing story scene. Story bosses use the existing boss health bar and mechanics, including warned strikes and phase changes.
+
+The encounter writer prepares contextual enemy dialogue alongside a significant fight. Lines can play at its introduction, during attacks or health transitions, and when the player wins or loses. Each line plays once per battle. Combat uses the saved lines without another model request on each turn. Continue advances a line manually; Auto waits for the line and its assigned voice, then resumes with the same combat preference. The pause follows Settings → Look → Visual's autoplay setting.
+
+Enemies matching a known world character can use that character's assigned Engine voice when world TTS is enabled. Muting silences combat dialogue alongside the existing music and effects. Enemies without an assigned voice still display their lines.
+
+Existing generated chapters and encounters keep their saved content and progress. An older ordinary enemy without a tier is shown as a Soldier; existing Tower boss mechanics still identify bosses. New tiers and dialogue appear as encounters are newly generated, without rewriting earlier fights.
+
+In 1.12.2, combat keeps one mute control, Auto resumes after you select a small choice, and character communication keeps its composer available when a mobile keyboard reduces the game height. Home adds a compact affinity matchup diagram below the communication button and frames selected background artwork from its top.
+
+In 1.12.1, Home, story moods and Character Stories use their own music cues. Tracks are generated as those contexts are visited and reused within that world. Loading a scene keeps the current track until its music cue is ready. Short audio notices let taps reach the game stage; long provider reasons can be scrolled and stay visible while focused with a keyboard.
+
+## Soundtrack briefs and achievement repairs (1.12.0)
+
+With generated audio enabled, the world's narration connection writes an original musical brief for each soundtrack context: Home, combat, bosses, happy/tense/sad story scenes and Character Stories. It translates world references into instrumentation and mood rather than requesting existing songs. Briefs are saved per world and reused; writing a new brief uses the configured model connection. Generated music still uses the selected audio connection and its provider credits. A provider can reject a prompt; newer Engine versions show its reason, while older compatible hosts show the HTTP status and keep playing stock audio.
+
+Level and relic achievements now count the levels actually gained, and facet achievements count only successful gains, including Tower-shop duplicates. Existing worlds recover a conservative lifetime minimum from their current units and relics when loaded. Higher saved totals, claimed rewards and pass progress are preserved.
+
+## Audio and pacing (1.11.0)
+
+Gacha Forge 1.11.0 adds optional dialogue using voices assigned in the Engine, stock Game music and sound effects, and optional generated audio through a dedicated audio connection. In world creation, open Lore to opt in. For an existing world, use Settings → World → Sources; Settings → Look → Visual has independent music, dialogue and effects levels and an autoplay pause (three seconds by default). The compact mute button silences all three channels. Autoplay waits for the revealed text and spoken line, and choices still wait for the player. Home and story portraits include their bottom frame edge. This version requires Engine Capability API 1.381 or newer.
+
+Welcome Gift in 1.10.1 keeps its rewards above Claim on short mobile screens. Scroll the event when needed; the Claim button has a full touch target.
+
 ## In-app fullscreen and fluid screens (1.9.0)
 
 The fullscreen button beside Settings expands Gacha Forge inside the Engine. Outward arrows enter;
@@ -13,11 +39,13 @@ Chapter scenes in 1.9.1 use a small fullscreen icon in the top-right header fade
 
 ### Player choices (1.10.0)
 
-Settings → Story → Continuity includes **Allow choices**, enabled by default. Newly written chapters and Character Stories can offer two to four dialogue lines or actions for your protagonist above the dialogue box, using the current game theme.
+In 1.10.2, newly generated dialogue options paraphrase intent, such as “Apologize” or “Say that you trust them”. The selected spoken line then appears as protagonist dialogue; a selected physical action appears as narration. Existing saved choices keep their labels and decisions, with untyped selections displayed as narration rather than guessing that they were spoken.
 
-Small choices include every alternative branch in the same narration response. The selected branch plays for a few lines and rejoins the shared story. First-play selections are saved as canon; replay can show the other small branches without changing that history. Reloading or resuming restores the canonical selections.
+Settings → Story → Continuity includes **Allow choices**, enabled by default. Newly written chapters and Character Stories can offer two to four dialogue or action intents for your protagonist above the dialogue box, using the current game theme.
 
-A chapter or Character Story may end with one optional big choice. It is always the final beat, and the model stops before its outcome. Selecting it permanently records your fate; replay cannot change it. Later chapters use the chosen outcome, even after story compression or summary folding, and generation remains locked until it is selected. Pre-forging pauses at unresolved decisions and lets you enter the chapter to choose.
+Narration is written in sections. Small choices include every alternative branch in the same response, followed by shared narration. Playback pauses for your selection, then plays the stored branch without another model call. In 1.12.1, later shared sections and optional pre-forging can continue before you select a small choice. First-play selections are saved as canon; replay can show the other small branches without changing that history. Reloading or resuming restores the canonical selections. Completion and compression still wait for pending selections so their records and summaries include the chosen branches.
+
+A chapter or Character Story may end with one optional big choice. It is always the final beat, and the model stops before its outcome. Selecting it permanently records your fate; replay cannot change it. Later chapters use the chosen outcome, even after story compression or summary folding, and generation remains locked until it is selected. Pre-forging pauses at unresolved big decisions and lets you enter the chapter to choose.
 
 Turning choices off affects newly written scenes. Existing choice points and saved decisions remain intact. Previously written linear scenes stay playable.
 

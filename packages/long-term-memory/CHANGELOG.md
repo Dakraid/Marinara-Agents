@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 10.4.0 — 2026-10-24
+
+- Includes upstream 1.4.87 to 1.4.90. The setup guide stays on the Memory Vault and shrinks to a bar elsewhere; the lexical-recall warning has a keyboard Reindex button and a failed status load offers Retry. Switching Long-Term Memory, recall settings and Reindex keep keyboard focus. The Memory Vault shows memories sooner, with rarer filters under Refine and one Edit selected sheet. Save confirms beside the button, the open memory is marked beyond colour, and the archive Undo banner keeps its count.
+
 ## 10.3.0 — 2026-10-23
 
 - Includes upstream 1.4.86. Keyboard focus moves somewhere sensible after each action, and field errors sit under their fields. Results show beside the action that made them. The layout follows the width of its own panel, batch bars stay in view, and small controls are easier to tap. Long lists stay responsive. Warning notices show an icon and a stronger border.
@@ -17,6 +21,28 @@
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 1.4.90 — 2026-10-24
+
+- The Undo banner after archiving keeps saying how many memories it will restore, even when you save another memory while it is showing.
+
+## 1.4.89 — 2026-10-24
+
+- The Memory Vault shows your memories sooner: rarer filters sit under Refine and open by themselves while in use, and changing several memories happens in one Edit selected sheet, with Archive and Delete kept apart.
+- Changing availability for several memories now says how many will change, stay the same or be blocked, explains why Apply is off, and repeats Apply under the list.
+- Saving a memory now confirms beside the Save button, and a save that waits on a recall rebuild says so as a warning instead of an error.
+- The memory you have open is now marked with an edge bar and announced to screen readers, not only by a tint.
+- The memory info panel now has one name everywhere you open it.
+
+## 1.4.88 — 2026-10-24
+
+- Switching Long-Term Memory on or off, changing a chat's recall settings and running Reindex no longer drop keyboard focus while they work.
+- The unsaved-changes prompt now says where you are going, and the Chat Settings panel is shorter, names the right button and no longer shows made-up defaults while loading.
+
+## 1.4.87 — 2026-10-23
+
+- The setup guide now stays on the Memory Vault and shrinks to a one-line bar elsewhere, steps out of the way when one of its buttons takes you to another screen, and lets you choose Not now, Don't show again or Done. Later steps follow the source type you picked.
+- The lexical-recall warning now has its own Reindex button you can reach by keyboard, and a failed status load offers Retry instead of a dead end.
 
 ## 1.4.86 — 2026-10-23
 

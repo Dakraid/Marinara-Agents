@@ -1,7 +1,7 @@
 import { SLURP2_LEGACY_RELEASES } from "./slp-release-archive";
 
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "10.1.0";
+export const SLURP2_VERSION = "10.2.0";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -14,6 +14,15 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "10.2.0",
+    date: "2026-10-24",
+    notes: [
+      "Spicy packs: Lingerie, Cosplay, Feet, Dom/sub, Exhibition and a Family pack, each off until you switch it on, and every fan you grow closer to opens more in your chats.",
+      "Sexting sessions: buy 20 minutes in a Creator's chat; it heats up from warm-up to a finish, with a picture of the moment, and ends with a tip ask.",
+      "Storylines run on one engine and Story Packs import the new format, Stir slides up over the page you are on, and a long list of fixes.",
+    ],
+  },
   {
     version: "10.1.0",
     date: "2026-10-22",
@@ -29,6 +38,15 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     notes: [
       "Slurp now runs on Marinara's own settings, dialogs and notifications, so it no longer resets your other settings.",
       "Its notifications show where you put Marinara's, and the download is smaller.",
+    ],
+  },
+  {
+    version: "0.3.50",
+    date: "2026-10-19",
+    notes: [
+      "Tap an ad and its own page opens: the picture, the brand, the product and the price feel.",
+      "Collect has a switch for its daily limit. Off, it moves all your Creator earnings at once.",
+      "You write what fans ask for in commission requests, next to their first words.",
     ],
   },
   {
