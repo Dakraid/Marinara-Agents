@@ -1,3 +1,7 @@
+## 10.2.0 — 2026-10-24
+
+- Includes upstream 1.7.0 and 1.7.1. World Maps can use the reference lorebook selected for it in Chat Settings: matching entries help chat-specific map creation, replacement, expansion and prompt previews. Needs a Marinara Engine with agent reference lorebooks (2.5.1, Capability API 1.380); update the Engine and World Maps together.
+
 ## 10.1.0 — 2026-10-23
 
 - Includes upstream 1.6.0. When the Game Master moves the party to a place more than one step away on the map, such as a boat to the next town, the map now follows by the shortest route instead of staying put.
@@ -5,6 +9,12 @@
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 1.7.1 — 2026-10-23
+- Require the Engine version that supplies agent reference lorebooks, so an older Engine with a different capability update cannot accept an incompatible World Maps package. Update both the Engine and World Maps together.
+
+## 1.7.0 — 2026-10-23
+- World Maps can use the reference lorebook selected for it in Chat Settings. Matching entries help chat-specific map creation, replacement, expansion and prompt previews without changing the map builder's other lore sources or global templates. Update both the Engine and World Maps to use this setting.
 
 ## 1.6.0 — 2026-10-20
 

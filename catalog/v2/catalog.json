@@ -843,15 +843,15 @@
         "schemaVersion": 2,
         "capabilityApi": {
           "major": 1,
-          "minor": 376
+          "minor": 381
         },
         "builtAgainst": {
           "engineVersion": "2.5.1",
-          "engineCommit": "1c8d6575af6d7c55a9c4ead54e5f1df6c2cc61cc"
+          "engineCommit": "b9cc386e868d8ab9cdb4826939323a67d464e7bf"
         },
         "id": "gacha-forge",
         "name": "Gacha Forge",
-        "version": "10.2.0",
+        "version": "10.3.0",
         "description": "A complete gacha game mode. Describe a world and Gacha Forge builds the rest: banners to pull on, a cast the model writes and paints for you, story chapters told by a visual-novel narrator, and the battles, gear and events that grow around them. Install it, restart Marinara Engine when prompted, then open Home → Gacha Forge.",
         "engine": {
           "min": "2.5.1",
@@ -1140,8 +1140,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "265bbde3c71703cab0f15bffbc14e1f0ef36e53556123aabb9c83dac983b5301",
-            "bytes": 1464016
+            "sha256": "58bac4738cb9245e65637c51110791a011245871508fa097c1f5df8e378ea7ad",
+            "bytes": 1513816
           },
           {
             "path": "farm-asc.webp",
@@ -1615,8 +1615,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "f147406a0cae2401e3f380852fce3256e874a609208aad0f0cbb85267482aa47",
-            "bytes": 524534
+            "sha256": "54e0df324942e53cd16b72135f53690c56dc56ceecc2abceb38e4f4d4a6f1c9b",
+            "bytes": 543182
           },
           {
             "path": "skill-aoe_damage-dark.webp",
@@ -2373,9 +2373,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/gacha-forge-10.2.0.zip",
-        "sha256": "7539dd67da28888a83e9f95d7afa3775c6e2ff211140f4e2ad01611de0084583",
-        "bytes": 7888709
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/gacha-forge-10.3.0.zip",
+        "sha256": "76c1f1dcf98ff6472003a29333cf1c27ea165f82b6806887ba0d7d678802e7ed",
+        "bytes": 7957157
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
     },
@@ -2644,7 +2644,7 @@
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
-        "version": "10.3.0",
+        "version": "10.4.0",
         "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
         "engine": {
           "min": "2.4.1",
@@ -2681,8 +2681,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "beffc7b76f9c59d9a9708c5bac7b6cd0a8199f6f4c0b15c5664cc981a769f96f",
-            "bytes": 671734
+            "sha256": "1f9c8a8318cd46b0867d229e72424d194474116cf6b35890e0317dcfe1478efe",
+            "bytes": 678542
           }
         ],
         "permissions": [
@@ -2698,9 +2698,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-10.3.0.zip",
-        "sha256": "b3748397ae3a9dbdce5e376dca0900e357769dcac7e73c309483258249c2150a",
-        "bytes": 1163165
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-10.4.0.zip",
+        "sha256": "7e78b29d3fe56c806bd7eb0382e6eeba54574654d41a8180bf362c7ede81c889",
+        "bytes": 1169973
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#long-term-memory"
     },
@@ -3533,7 +3533,7 @@
         },
         "id": "relationship-tracker",
         "name": "Relationship Tracker",
-        "version": "10.0.2",
+        "version": "10.1.0",
         "description": "Tracks how the characters and your persona feel about each other. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.4.4",
@@ -3566,18 +3566,18 @@
           },
           {
             "path": "state.mjs",
-            "sha256": "1e9dd277e7f6a2028f787023ff15fa571a2eee83270e76b5614a5829440f6965",
-            "bytes": 27619
+            "sha256": "93f1ce48d4da35c94dc3050e89a7b4a03cda830c48a6496cbc52a5c6707fa019",
+            "bytes": 30791
           },
           {
             "path": "prompt.mjs",
-            "sha256": "41650a28aa09310fd423811d2052c99a34a5ed0d72a4ba170b9bbd863433dab1",
-            "bytes": 6984
+            "sha256": "de37a1f17d45eff3dc6fd7e141ef0bba625c6818edc48713faf86b4ee1826334",
+            "bytes": 6890
           },
           {
             "path": "tracking.mjs",
-            "sha256": "0e551eaa2a3586f026eda414fc410ed14077fdfda72b6f5c0b6285e2d15454d4",
-            "bytes": 38520
+            "sha256": "b1dff8fce82558d8c539d24e441c72d269533826fba2e509cc71b0a3cf6f7feb",
+            "bytes": 38527
           },
           {
             "path": "activity.mjs",
@@ -3586,8 +3586,8 @@
           },
           {
             "path": "history.mjs",
-            "sha256": "703668068763f9be3a6405f8829957ab98e6ffb3e32d8f9496f64868a4273c3e",
-            "bytes": 37720
+            "sha256": "2cac8e5d3111b2f5970ec1e4a86b33b41e31c8ca5ee28205b27602f52a4afb02",
+            "bytes": 37777
           },
           {
             "path": "persona-state.mjs",
@@ -3596,8 +3596,8 @@
           },
           {
             "path": "persona-tracking.mjs",
-            "sha256": "24e682ad16bfa400760912728964308ab12e62b32622c5c159727f7e4bbe44b1",
-            "bytes": 7022
+            "sha256": "72f35a31a065d8b772f83a9d1aafeb6a4c180e9d03430a36b54ae377ec90a4d9",
+            "bytes": 7045
           },
           {
             "path": "client.js",
@@ -3633,9 +3633,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/relationship-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/relationship-tracker-10.0.2.zip",
-        "sha256": "70d8800e1956f2a3a3a6f591a5fe3e3ecf7e90dd209e226d657ad0fd8fe5e8bc",
-        "bytes": 248547
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/relationship-tracker-10.1.0.zip",
+        "sha256": "30bd33cd426c82257bed652c4a35fd8d004afd2340a72f3e4cf8bef67176f775",
+        "bytes": 251712
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/relationship-tracker/README.md"
     },
@@ -3729,7 +3729,7 @@
         },
         "id": "slurp2",
         "name": "Slurp",
-        "version": "10.1.0",
+        "version": "10.2.0",
         "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
         "localizations": {
           "de": {
@@ -3782,6 +3782,8 @@
           },
           "assets": {
             "paths": [
+              "assets/mari/Mari_noodler_teaser_locked.webp",
+              "assets/mari/Mari_noodler_teaser_unlocked.webp",
               "src/engine/packages/client/src/slp/locales/de.json",
               "src/engine/packages/client/src/slp/locales/ko.json",
               "src/engine/packages/client/src/slp/locales/pl.json"
@@ -3796,13 +3798,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "1be23db0bd8c09a8b30e35e2da7988b16eaf934aeece9ec79b41046baa55dec8",
-            "bytes": 1936776
+            "sha256": "a42ab86347f3f5593f662e17493ace4eac5c804b06a21195897f1747c4d78101",
+            "bytes": 2023074
           },
           {
             "path": "client.js",
-            "sha256": "3178c29590cb7e1a48e41273cd30cae1771220ce49cd9f1ede9014409ac0c977",
-            "bytes": 2761302
+            "sha256": "7eeee0d9c5fb49a8c6fe1730615e3ec3907fc39a42b9fee2e3930c55a272a6b2",
+            "bytes": 2852970
           },
           {
             "path": "slurp2-logo.png",
@@ -3815,19 +3817,29 @@
             "bytes": 120424
           },
           {
+            "path": "assets/mari/Mari_noodler_teaser_locked.webp",
+            "sha256": "e587f1fd0e9a8ba842af1f2ce8d1a1f84c0960a7737313d6081819a4a89a69da",
+            "bytes": 13598
+          },
+          {
+            "path": "assets/mari/Mari_noodler_teaser_unlocked.webp",
+            "sha256": "6349a29529b7597f16bba9ac3c83480c9b0e6c1b286c8dcdcdc7653e05e29eaf",
+            "bytes": 59402
+          },
+          {
             "path": "src/engine/packages/client/src/slp/locales/de.json",
-            "sha256": "6493af3a378ba85540485413538e620801ff0d2e269044ac34e7f3fec4c25480",
-            "bytes": 218687
+            "sha256": "1f6bf145d2f707bcf4600bfe9b32a330cfa2314d9772eb14e7d29d928252b65a",
+            "bytes": 231893
           },
           {
             "path": "src/engine/packages/client/src/slp/locales/ko.json",
-            "sha256": "1fb42f733d588a8995e121fe78b91e8249b464efd9bab90a95e9a8fc5c1453cc",
-            "bytes": 315128
+            "sha256": "af21ea5829363ccbe6999893eb62ef838ef9c02347cd4f2b80c8d0b4a208c8de",
+            "bytes": 328893
           },
           {
             "path": "src/engine/packages/client/src/slp/locales/pl.json",
-            "sha256": "7414b8c8bd5ebbed04695dca19ecfa4d562d3d77dde485ec8995742366904077",
-            "bytes": 220418
+            "sha256": "2a7eba40377498e64f1ba4ca534e74c1143a6378a309fe517e1ebdb6d5dc8377",
+            "bytes": 233528
           }
         ],
         "permissions": [
@@ -3845,9 +3857,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-10.1.0.zip",
-        "sha256": "a0a34c2290290fd7cfc0b5776c4c6091afda5f256fe8fffbfb1a3a70ba546baa",
-        "bytes": 5610523
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-10.2.0.zip",
+        "sha256": "d35b8c8ceffe27c3df592976b348323ebe7a470775412eac967b88d99f7ed2ad",
+        "bytes": 5902370
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },
@@ -4051,18 +4063,18 @@
         "schemaVersion": 2,
         "capabilityApi": {
           "major": 1,
-          "minor": 341
+          "minor": 380
         },
         "builtAgainst": {
-          "engineVersion": "2.5.0",
-          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
+          "engineVersion": "2.5.1",
+          "engineCommit": "3f9868540ed9264ddd228cf1b559cf1b7f2ce4de"
         },
         "id": "hierarchical-maps",
         "name": "World Maps",
-        "version": "10.1.0",
+        "version": "10.2.0",
         "description": "Adds world maps to Roleplay and Game, from whole regions down to single rooms, with art and travel between places. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay and Game modes.",
         "engine": {
-          "min": "2.4.2",
+          "min": "2.5.1",
           "maxExclusive": "4.0.0"
         },
         "kind": [
@@ -4095,8 +4107,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "5cddb72d52c208f7e2c36602ad693c0c872a63cefa937d19c5427af5bf86fd71",
-            "bytes": 143473
+            "sha256": "dd9f36f8d8c36b3b9fb9fe52d42fc46f2b7c255f06c038a860b1aab7a9a7ee75",
+            "bytes": 145179
           },
           {
             "path": "client.js",
@@ -4119,9 +4131,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/hierarchical-maps.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/hierarchical-maps-10.1.0.zip",
-        "sha256": "d9e42dc83bf6a5e002df930d396e10fa86539268402f552448fe71fc7ff43bbd",
-        "bytes": 595777
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/hierarchical-maps-10.2.0.zip",
+        "sha256": "2c8019cd4de1903a1b3bdb2267a73b996956c220602c4a716c5cf4bc10fbd74e",
+        "bytes": 597483
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
     },

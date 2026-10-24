@@ -1,3 +1,7 @@
+## 10.3.0 — 2026-10-24
+
+- Includes upstream 1.11.0 to 1.13.0. Soldier, Elite and Boss enemy tiers; new chapters build toward a boss fight with contextual enemy dialogue. World-specific soundtrack briefs, stock and opt-in generated music and effects, and optional dialogue in assigned Engine character voices, with one mute control and channel volume sliders. Chapters and Character Stories play their own music cues. Fixes for legacy audio connections, achievement progress, small-choice autoplay, mobile playback, the Home layout and audio notices. Needs Capability API 1.381.
+
 ## 10.2.0 — 2026-10-23
 
 - Includes upstream 1.9.0 to 1.10.0. Choose your protagonist's dialogue or actions from two to four themed options; first-play choices become canon, and a chapter can end with one permanent big choice. Choices survive reloads and are on by default in Settings > Story > Continuity.
@@ -11,6 +15,63 @@
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 1.13.0 — 2026-10-24
+
+- Added Soldier, Elite and Boss enemy tiers in combat and enemy details.
+- New story chapters build toward a boss confrontation using existing boss mechanics.
+- Significant fights prepare contextual enemy dialogue, with local one-shot triggers and manual or Auto progression.
+- Combat dialogue respects assigned character voices, mute and dialogue volume. Existing saved chapters and Tower encounters remain playable.
+
+## 1.12.2 — 2026-10-24
+
+- Home shows a compact affinity matchup diagram beneath the communication button.
+- Home backgrounds retain the top of the selected artwork below the game header.
+- Combat shows one mute control without overlapping the other toolbar buttons.
+- Autoplay resumes after a small story choice when it was enabled before the choice.
+- Character communication keeps the composer visible when a mobile keyboard reduces the available height.
+
+## 1.12.1 — 2026-10-24
+
+- Chapters and Character Stories generate and play their own music cues instead of reusing the Home track. Loading scenes keep the current track until their cue is ready.
+- Small choices no longer block later shared narration or background pre-forging. Their alternatives remain generated together; playback, canon, replay and big-choice locks are preserved.
+- Completion and compression still wait for pending selections to preserve canonical story history.
+- Short audio notices no longer intercept taps on the game stage. Long reasons remain scrollable and stay visible while focused with a keyboard.
+- Notice scrolling adapts when the panel becomes visible or changes size; replacing a long reason with short text restores dismissal.
+- Recorded the actual merged Engine music-test baseline.
+
+## 1.12.0 — 2026-10-24
+
+### New
+- World-specific soundtrack briefs generated through the narration connection, cached for each music context and translated into original musical qualities.
+
+### Fixed
+- Audio failures show their HTTP status and, on newer Engine hosts, the provider's safe rejection reason while stock audio continues.
+- Unit and relic achievements count every gained level; capped duplicates do not count as gained facets, and Tower-shop facet gains count.
+- Existing worlds recover proven achievement progress without changing claimed rewards or pass progress.
+
+## 1.11.1 — 2026-10-23
+- Fixed generated music and effects for worlds using migrated legacy audio connections.
+- Recorded the merged Engine audio connection baseline.
+
+## 1.11.0 — 2026-10-23
+
+### New
+- Optional dialogue using explicitly assigned Engine character voices, with the current speech connection.
+- Stock Game music and effects, plus opt-in generated audio reused per world and cue.
+- A shared mute control, three precise channel volume sliders and configurable autoplay pacing.
+
+### Fixed
+- Home and story portrait frames include their bottom edge.
+
+## 1.10.2 — 2026-10-23
+
+- New dialogue choices show intent labels instead of revealing the exact spoken line. Selected actions appear as narration; explicitly spoken choices remain protagonist dialogue.
+- Existing untyped saved choices remain playable as narration. First-play canon, replay alternatives and permanent big decisions are preserved.
+
+## 1.10.1 — 2026-10-23
+
+- Fixed: the Welcome Gift rewards no longer overlap Claim on short mobile screens. The event scrolls when needed, and Claim has a larger touch target.
 
 ## 1.10.0 — 2026-10-23
 

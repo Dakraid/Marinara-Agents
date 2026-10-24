@@ -13,6 +13,13 @@ import type {
 import type { SlurpArcType } from "../projects/slp-projects-contract.js";
 
 export type SlurpSettings = {
+  /** Extension switches (shared slp-extensions.ts); read them through `slpExtensionOn`. */
+  extAds: boolean;
+  extStorylines: boolean;
+  extWorld: boolean;
+  extStir: boolean;
+  extSupportDesk: boolean;
+  extEngineLink: boolean;
   inlineAdsEnabled: boolean;
   inlineAdsFrequency: "light" | "standard" | "frequent";
   brandDealsPace: "off" | "rare" | "normal" | "often";
@@ -33,6 +40,8 @@ export type SlurpSettings = {
   pricingMaxWeeklyChangePercent: number;
   walletStipendFloor: number;
   walletDayStartHour: number;
+  /** Collect moves at most a daily allowance; false moves all earnings. */
+  walletPayoutDailyLimit: boolean;
   walletAdReward: number;
   walletAdDailyCap: number;
   walletEngagementReward: number;
@@ -86,6 +95,7 @@ export type SlurpSettings = {
   imagePromptInterpretation: string;
   enableImageInterpretation: boolean;
   imageGenerationUseAvatarReferences: boolean;
+  imageKeepOriginalFiles: boolean;
   imageGenerationIncludeDescriptions: boolean;
   /** How the look reaches the picture prompt: the prompt writer words it, Slurp inserts it, or both. */
   imageAppearanceMode: "writer" | "insert" | "both";
@@ -141,6 +151,7 @@ export type SlurpSettings = {
   /** Editable audience personas and their numeric behavior. */
   fanTypes: SlurpFanType[];
   platformEvents: SlurpPlatformEvent[];
+  trendsEnabled: boolean;
   creatorCollabs: { creatorIds: [string, string]; content: string }[];
   /** Creators answer while you are away. Off leaves the background reply loop asleep. */
   messagesAwayRepliesEnabled: boolean;
@@ -172,6 +183,8 @@ export type SlurpSettings = {
   messagesFanOpeners: string[];
   /** The player's own first words for commission requests; empty = the built-in ones. */
   messagesCommissionOpeners: string[];
+  /** The player's own "what the fan wants" for commission requests; empty = the built-in ones. */
+  messagesCommissionAsks: string[];
   /** Creator replies to comments in any 24 hours (1–200). */
   creatorRepliesPerDay: number;
   autopurgeEnabled: boolean;

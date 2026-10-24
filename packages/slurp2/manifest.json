@@ -10,7 +10,7 @@
   },
   "id": "slurp2",
   "name": "Slurp",
-  "version": "10.1.0",
+  "version": "10.2.0",
   "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
   "localizations": {
     "de": {
@@ -63,6 +63,8 @@
     },
     "assets": {
       "paths": [
+        "assets/mari/Mari_noodler_teaser_locked.webp",
+        "assets/mari/Mari_noodler_teaser_unlocked.webp",
         "src/engine/packages/client/src/slp/locales/de.json",
         "src/engine/packages/client/src/slp/locales/ko.json",
         "src/engine/packages/client/src/slp/locales/pl.json"
@@ -77,13 +79,13 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "1be23db0bd8c09a8b30e35e2da7988b16eaf934aeece9ec79b41046baa55dec8",
-      "bytes": 1936776
+      "sha256": "a42ab86347f3f5593f662e17493ace4eac5c804b06a21195897f1747c4d78101",
+      "bytes": 2023074
     },
     {
       "path": "client.js",
-      "sha256": "3178c29590cb7e1a48e41273cd30cae1771220ce49cd9f1ede9014409ac0c977",
-      "bytes": 2761302
+      "sha256": "7eeee0d9c5fb49a8c6fe1730615e3ec3907fc39a42b9fee2e3930c55a272a6b2",
+      "bytes": 2852970
     },
     {
       "path": "slurp2-logo.png",
@@ -96,19 +98,29 @@
       "bytes": 120424
     },
     {
+      "path": "assets/mari/Mari_noodler_teaser_locked.webp",
+      "sha256": "e587f1fd0e9a8ba842af1f2ce8d1a1f84c0960a7737313d6081819a4a89a69da",
+      "bytes": 13598
+    },
+    {
+      "path": "assets/mari/Mari_noodler_teaser_unlocked.webp",
+      "sha256": "6349a29529b7597f16bba9ac3c83480c9b0e6c1b286c8dcdcdc7653e05e29eaf",
+      "bytes": 59402
+    },
+    {
       "path": "src/engine/packages/client/src/slp/locales/de.json",
-      "sha256": "6493af3a378ba85540485413538e620801ff0d2e269044ac34e7f3fec4c25480",
-      "bytes": 218687
+      "sha256": "1f6bf145d2f707bcf4600bfe9b32a330cfa2314d9772eb14e7d29d928252b65a",
+      "bytes": 231893
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/ko.json",
-      "sha256": "1fb42f733d588a8995e121fe78b91e8249b464efd9bab90a95e9a8fc5c1453cc",
-      "bytes": 315128
+      "sha256": "af21ea5829363ccbe6999893eb62ef838ef9c02347cd4f2b80c8d0b4a208c8de",
+      "bytes": 328893
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/pl.json",
-      "sha256": "7414b8c8bd5ebbed04695dca19ecfa4d562d3d77dde485ec8995742366904077",
-      "bytes": 220418
+      "sha256": "2a7eba40377498e64f1ba4ca534e74c1143a6378a309fe517e1ebdb6d5dc8377",
+      "bytes": 233528
     }
   ],
   "permissions": [

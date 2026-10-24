@@ -5,7 +5,7 @@ This file lists every intentional difference between the fork branch `customized
 Keep it current: a branch that adds or changes a fork deviation updates its entry in the same change.
 
 - Upstream remote: `upstream` = Pasta-Devs/Marinara-Agents; `origin` = Dakraid. The fork merges `upstream/staging`.
-- Last merged upstream commit: `5bef5fa20` (#1598, 2026-10-23). That merge folded gacha-forge 1.9.0–1.10.0 into fork `10.2.0`, long-term-memory 1.4.86 into `10.3.0`, hierarchical-maps 1.6.0 into `10.1.0`, and added blackjack 1.0.0 as `10.0.1`. The merge before it (`e79842733`, #1590) folded gacha-forge 1.8.15 into `10.1.0` and long-term-memory 1.4.85 into `10.2.0`. Earlier (`64bab6768`, #1581) folded conversation-calls 1.1.7, long-term-memory 1.4.84, noodle 1.5.9 and slurp2 0.3.53 into `10.1.0`.
+- Last merged upstream commit: `65ab592de` (#1647, 2026-10-24). That merge folded gacha-forge 1.11.0–1.13.0 into fork `10.3.0`, hierarchical-maps 1.7.0–1.7.1 into `10.2.0`, long-term-memory 1.4.87–1.4.90 into `10.4.0`, relationship-tracker 0.7.2 into `10.1.0` and slurp2 0.4.0 into `10.2.0`. The merge before it (`5bef5fa20`, #1598) folded gacha-forge 1.9.0–1.10.0 into fork `10.2.0`, long-term-memory 1.4.86 into `10.3.0`, hierarchical-maps 1.6.0 into `10.1.0`, and added blackjack 1.0.0 as `10.0.1`. The merge before it (`e79842733`, #1590) folded gacha-forge 1.8.15 into `10.1.0` and long-term-memory 1.4.85 into `10.2.0`. Earlier (`64bab6768`, #1581) folded conversation-calls 1.1.7, long-term-memory 1.4.84, noodle 1.5.9 and slurp2 0.3.53 into `10.1.0`.
 
 To tell who owns a failing test: equal `git hash-object tests/<f>` and `git ls-tree upstream/staging -- tests/<f>` mean upstream owns it.
 
@@ -38,25 +38,26 @@ Marked _(inferred)_: read from code or history rather than stated in a commit or
 - **Version sources (must agree):** `packages/<id>/manifest.json` (agent-only packages, gacha-forge, relationship-tracker, modern-life-sim, ruleset-5e-2014); `version:` in `scripts/build-feature-packages.mjs` (noodle, slurp2, long-term-memory, memory-nag, card-editor, pokedex, hierarchical-maps, conversation-calls, the 6 turn games); `VERSION` in `scripts/build-{beholder,pixelforge,quartermaster}-package.mjs`; `SLURP2_VERSION` plus the top `SLURP2_RELEASES` entry in `packages/slurp2/.../onboarding/slp-release.ts`; the top `## <version>` of `packages/<id>/CHANGELOG.md` (builder-enforced, max 20 entries, 1,000 chars each).
 - **Keep on conflict:** always the 10.x value. Never take upstream `1.x`/`0.x` lines in manifests, builder maps, `VERSION`, `SLURP2_VERSION` or the CHANGELOG top.
 - **Fork-created CHANGELOGs** (add/add conflicts if upstream adds its own; union with the fork entry on top): background, card-evolution-auditor, chess, combat, continuity, cyoa, director, echo-chamber, eightball, expression, haptic, html, illustrator, knowledge-retrieval, knowledge-router, lorebook-keeper, persona-stats, poker, prose-guardian, quest, rock-paper-scissors, spotify, storyboard, tic-tac-toe, uno.
-- **Current versions:** card-editor `10.0.8`; modern-life-sim `10.0.3`; long-term-memory `10.3.0`; gacha-forge `10.2.0`; conversation-calls, hierarchical-maps, noodle and slurp2 `10.1.0`; all other packages (including the new blackjack) `10.0.1`.
+- **Current versions:** card-editor `10.0.8`; long-term-memory `10.4.0`; gacha-forge `10.3.0`; modern-life-sim `10.0.3`; hierarchical-maps and slurp2 `10.2.0`; conversation-calls, noodle and relationship-tracker `10.1.0`; all other packages (including blackjack) `10.0.1`.
 - **New upstream packages** start at `10.0.1` with a fork CHANGELOG entry on top ("Includes upstream X"); set the version in the manifest and the builder entry.
 - **Multi-package bumps:** each builder validates every catalog entry's CHANGELOG lead, so bumping several packages fails on the first builder. Bypass the version check in `scripts/catalog-release-notes.mjs` for the builds, restore it byte-for-byte, then rerun one builder to prove the check passes.
 
 ### Packages with fork changes beyond the version
 
-| Package           | Fork version | Kind                                               |
-| ----------------- | ------------ | -------------------------------------------------- |
-| card-editor       | 10.0.8       | fork-only feature package                          |
-| lorebook-editor   | 10.0.1       | fork-only agent-only package                       |
-| pokedex           | 10.0.1       | fork-only feature package                          |
-| modern-life-sim   | 10.0.3       | source recovered into `src/`; features 0.4.0–0.8.0 |
-| hierarchical-maps | 10.1.0       | Movement Assessment, ko locale, parallel artwork   |
-| character-tracker | 10.0.1       | prompt: scene scan                                 |
-| lorebook-keeper   | 10.0.1       | prompt: description backfill                       |
-| long-term-memory  | 10.3.0       | compact control sizing                             |
-| noodle            | 10.1.0       | connection sampling in image-prompt rewrite        |
-| slurp2            | 10.1.0       | connection sampling in image rewrite and schedules |
-| memory-nag        | 10.0.1       | comment only                                       |
+| Package              | Fork version | Kind                                               |
+| -------------------- | ------------ | -------------------------------------------------- |
+| card-editor          | 10.0.8       | fork-only feature package                          |
+| lorebook-editor      | 10.0.1       | fork-only agent-only package                       |
+| pokedex              | 10.0.1       | fork-only feature package                          |
+| modern-life-sim      | 10.0.3       | source recovered into `src/`; features 0.4.0–0.8.0 |
+| hierarchical-maps    | 10.2.0       | Movement Assessment, ko locale, parallel artwork   |
+| character-tracker    | 10.0.1       | prompt: scene scan                                 |
+| lorebook-keeper      | 10.0.1       | prompt: description backfill                       |
+| long-term-memory     | 10.4.0       | compact control sizing                             |
+| noodle               | 10.1.0       | connection sampling in image-prompt rewrite        |
+| slurp2               | 10.2.0       | connection sampling in image rewrite and schedules |
+| memory-nag           | 10.0.1       | comment only                                       |
+| relationship-tracker | 10.1.0       | phone strip tile hidden; phone window header       |
 
 All other packages differ only by version, CHANGELOG and Dakraid links in builders.
 
@@ -131,7 +132,7 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 - **Pinned by:** `tests/modern-life-sim-{adult,cast-reading,family-romance,jobs-money,repeat-social,sampling,sex,world-lore}.regression.mjs` (import from `src/`).
 - **Commits:** ff8c77da9, 05b453962, c725a557f, e0b54df81, 02e8aa778, 34ca6a091, e132a9d76, 9bc6cfd23, d81ea0a6f, cf56f66fa, a9878e55e, 62cc21e86, 98bcde5e8, 63c5a27d4.
 
-## 5. hierarchical-maps / World Maps (10.1.0; upstream 1.6.0)
+## 5. hierarchical-maps / World Maps (10.2.0; upstream 1.7.1)
 
 - **What/why:** Movement Assessment (detects implied moves, moves the pin, stores the route as `<prior_arrival>`; settings `assessImpliedMovement`, `assessmentDiscovery`, `assessmentPersistTravel`, all on); Korean locale; parallel artwork fill sized by `connection.maxParallelJobs`. Depends on the Engine fork's `travel` column and `SpatialAssessedTravel` schema.
 - **Files:** `.../spatial-context/movement-assessment.ts`, `state-resolution.ts` (`exposePriorArrival`), `.../storage/spatial-context.storage.ts`, `.../routes/spatial-context.routes.ts`, `maps-shared/src/runtime-prompt.ts`, `SpatialContextSettingsSection.tsx`, `SpatialMapWorkspace.tsx`, `use-spatial-resources.ts`, `package-utils.ts`, `localization.tsx`, `locales/{en,ko}.json`, `agents.json`; builder `agent.defaultSettings` and the `hierarchical-maps:movement-assessment` service registration; `sources/engine/.../spatial-context.ts`.
@@ -154,11 +155,11 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 - **Pinned by:** `tests/lorebook-keeper-routing.regression.mjs`.
 - **Commit:** 45c276dba.
 
-## 8. long-term-memory (10.3.0)
+## 8. long-term-memory (10.4.0)
 
 - **What/why:** compact select uses fixed `h-9` (upstream: `min-h-9`); non-compact buttons get `minWidth: 2.75rem` (tap target). Upstream's `position: relative` in `compactInputStyle` and `revealFocusUnderStickyBar` are taken as-is.
 - **Files:** `.../features/long-term-memory/shared-controls.tsx`.
-- **Pinned by:** `tests/long-term-memory-lifecycle.regression.ts` (fork runner: browser and installation lanes in separate tsx processes; keep it).
+- **Pinned by:** `tests/long-term-memory-lifecycle.regression.ts` (fork runner: browser and installation lanes in separate tsx processes; keep it). Upstream deleted this file in #1618 (its CI runs the lanes as separate jobs); the fork keeps it, so a modify/delete conflict resolves to ours.
 - **Commit:** b1773ef3e (also deleted `tests/noodler-content-formats.regression.ts`; keep it deleted unless upstream revives it with new expectations).
 
 ## 9. noodle (10.1.0)
@@ -168,11 +169,11 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 - **Pinned by:** `tests/noodle-image-prompt-instructions.regression.ts`, `tests/noodle-public-only.regression.ts`.
 - **Commits:** 7b167f6fa, c698ff2e2, efcd75ee7, 49da93f0c.
 
-## 10. slurp2 (10.1.0)
+## 10. slurp2 (10.2.0)
 
 - **What/why:** image-prompt rewrite and conversation-schedule generation honor stored connection sampling (`slpSamplingOptions(resolveStoredChatOptions(...))`); Dakraid bug-report URL; `SLURP2_VERSION` 10.1.0.
 - **Files:** `.../slp/base/media/slp-image-prompt-rewrite.ts`, `.../slp/features/messages/slp-conversation-schedule-generation.ts`, `.../slp/modules/chrome/SlpStateKit.tsx`, `.../onboarding/slp-release.ts`.
-- **Keep on conflict:** the sampling hunks; fold upstream release notes into a new fork top entry (next: `10.2.0`), never `0.3.x` at the top. In `SLURP2_RELEASES` the fork entry replaces upstream's entries (at most 3 bullets).
+- **Keep on conflict:** the sampling hunks; fold upstream release notes into a new fork top entry (next: `10.3.0`), never `0.3.x` at the top. In `SLURP2_RELEASES` the fork entry replaces upstream's entries (at most 3 bullets).
 - **Known failure (pre-existing):** `slurp-phase1-durability`, `slurp2-reset-activity`, `slurp2-anchor-edits` and `slurp2-message-deep-details` copy Slurp source into the Engine fork, whose zod 4 does not apply nested `.default({})` values (`slp-tuning.ts` throws reading `curve`). They failed before the 2026-10-22 merge too.
 - **Pinned by:** `tests/noodler-disclosure-contract.regression.ts`, `tests/noodler-fictional-prices.regression.ts`, `tests/noodler-generation-guidance-default.regression.ts` (fork-adapted copies; re-check against upstream's).
 - **Commits:** 7b167f6fa, c698ff2e2, 7e59d1666, a3dc8fcdf.
@@ -185,12 +186,19 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 
 - No source delta. `tests/conversation-calls-summary.regression.mjs` pins `10.1.0` and raises `unzip` `maxBuffer` to 64 MiB. Commit 339662d36.
 
-## 13. gacha-forge (10.2.0)
+## 13. gacha-forge (10.3.0)
 
 - **What/why:** upstream ships pre-built bundles plus `bundle-patches.json` (hand edits since the last drop). The bundle's own version readout (`ds="1.8.15"`) and the newest client.js patch stay on the upstream release; only the manifest and CHANGELOG top move to 10.x.
 - **Files:** `packages/gacha-forge/{manifest.json,CHANGELOG.md}`; bundles and `bundle-patches.json` are upstream's, take theirs.
 - **Keep on conflict:** the 10.x manifest version and fork CHANGELOG entry on top, upstream entries below.
 - **Pinned by:** `tests/gacha-forge-location-ids.regression.mjs` (fork-adapted: the readout and newest patch must equal the newest non-10.x CHANGELOG entry; the manifest must be 10.x and lead the CHANGELOG).
+
+## 14. relationship-tracker (10.1.0; upstream 0.7.2)
+
+- **What/why:** on phones the tracker-strip tile was a dead button (the strip has no drawer). `renderToolbar()` renders nothing when `mobileCompact` is true, and `hostProvidesHeader()` also matches `[data-mobile-tracker-window]`, the Engine fork's movable phone tracker window.
+- **Files:** `packages/relationship-tracker/client.js` (hand-written source, not a bundle), `manifest.json`, `CHANGELOG.md`.
+- **Keep on conflict:** the two hunks above; take upstream's other `client.js` and `*.mjs` changes.
+- **Pinned by:** nothing dedicated. Commit 8c191d9cc.
 
 ---
 

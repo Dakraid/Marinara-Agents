@@ -16,20 +16,43 @@ try {
   const originalServer = await readFile(new URL("server.mjs", root), "utf8");
   await rebuildGachaBundles(root);
   assert.equal(await readFile(new URL("client.js", root), "utf8"), originalClient, "clean replay is byte-identical");
-  for (const name of ["browser-presentation", "player-choices-en", "player-choices-client", "player-choices-server"]) {
+  const sources = [
+    ["browser-presentation", ["client.js"]],
+    ["home-presentation", ["client.js"]],
+    ["enemy-encounters-client", ["client.js"]],
+    ["enemy-encounters-server", ["server.mjs"]],
+    ["player-choices-en", ["client.js"]],
+    ["player-choices-client", ["client.js"]],
+    ["player-choices-server", ["server.mjs"]],
+    ["audio-settings", ["client.js", "server.mjs"]],
+    ["audio-en", ["client.js"]],
+    ["audio-client", ["client.js"]],
+    ["audio-story", ["client.js"]],
+  ];
+  for (const [name, bundles] of sources) {
     const source = new URL(`src/${name}.mjs`, root);
-    const bundle = name.endsWith("server") ? "server.mjs" : "client.js";
-    const original = bundle === "server.mjs" ? originalServer : originalClient;
     const before = await readFile(source, "utf8");
     await writeFile(source, before + "\n// source rebuild proof\n");
     await rebuildGachaBundles(root);
-    const regenerated = await readFile(new URL(bundle, root), "utf8");
-    assert.ok(regenerated.includes("// source rebuild proof"), `${name} changes regenerate their own source marker`);
+    const regenerated = new Map();
+    for (const bundle of bundles) {
+      const value = await readFile(new URL(bundle, root), "utf8");
+      assert.ok(value.includes("// source rebuild proof"), `${name} changes regenerate ${bundle}`);
+      regenerated.set(bundle, value);
+    }
     await rebuildGachaBundles(root);
-    assert.equal(await readFile(new URL(bundle, root), "utf8"), regenerated, `${name} replay is deterministic`);
+    for (const [bundle, value] of regenerated) {
+      assert.equal(await readFile(new URL(bundle, root), "utf8"), value, `${name} ${bundle} replay is deterministic`);
+    }
     await writeFile(source, before);
     await rebuildGachaBundles(root);
-    assert.equal(await readFile(new URL(bundle, root), "utf8"), original, `${name} restoring source restores bytes`);
+    for (const bundle of bundles) {
+      assert.equal(
+        await readFile(new URL(bundle, root), "utf8"),
+        bundle === "server.mjs" ? originalServer : originalClient,
+        `${name} restoring source restores ${bundle}`,
+      );
+    }
   }
   assert.equal(await readFile(new URL("client.js", root), "utf8"), originalClient, "client sources stay independent");
   assert.equal(await readFile(new URL("server.mjs", root), "utf8"), originalServer, "server sources stay independent");

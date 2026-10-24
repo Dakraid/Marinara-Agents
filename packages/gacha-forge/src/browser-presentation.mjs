@@ -4,6 +4,37 @@ const forgeBrowserLayout = `
 .gf-arena { padding: 0; align-items: stretch; }
 .gf-stage { width: 100%; height: 100%; aspect-ratio: auto; justify-self: stretch; }
 .ob-intake, .node-list, .sel-list, .vn-dock { width: 100%; max-width: none; }
+/* Keep reward cards out of the Claim footer when the welcome artwork leaves little height. */
+.ev-pane.nw { overflow-y: auto; }
+.ev-pane.nw .nw-track { flex-shrink: 0; min-height: min-content; }
+.ev-pane.nw .ev-week { flex-shrink: 0; grid-auto-rows: minmax(min-content, 1fr); }
+@media (any-pointer: coarse), (pointer: coarse) {
+  .ev-pane.nw .ev-claim { min-height: 44px; }
+}
+/* Portrait artwork leaves the same accent stroke at the foot as at its top. */
+/* Home and chapter sheets are loaded lazily, so keep this ahead of their inset shorthand. */
+.gf-stage .hm-plate, .gf-stage .vn-plate[data-side] { padding-bottom: var(--edge-w); }
+.gf-stage .hm-art, .gf-stage .vn-plate[data-side] .vn-art { bottom: var(--edge-w); }
+.gf-mute { display: inline-grid; place-items: center; padding: 0; cursor: pointer; }
+.gf-mute svg { display: block; width: 1em; height: 1em; }
+.gf-mute:focus-visible { outline: 2px solid var(--coral); outline-offset: -3px; }
+.gf-mute.gf-mute-chapter {
+  position: absolute; top: 50%; right: 44px; transform: translateY(-50%);
+  width: 44px; height: 44px; border: 0; background: transparent; color: var(--text);
+  font-size: 0.9rem; box-shadow: none; clip-path: none;
+}
+.vn-top:has(.gf-mute-chapter) { padding-right: 88px; }
+.gf-stage > .gf-mute, .gf-rot > .gf-mute {
+  position: absolute; z-index: 9; top: 0.55rem; right: 3rem;
+  width: 1.9rem; height: 1.9rem; background: var(--ink); color: var(--text);
+  border: 1px solid var(--steel-dark); clip-path: none;
+}
+.gf-audio-status {
+  position: absolute; z-index: 8; inset: 3.5rem 0.75rem auto auto; max-width: min(36ch, calc(100% - 1.5rem)); padding: 0.5rem 0.75rem;
+  background: var(--ink); color: var(--text); border: 1px solid var(--steel-dark);
+  font: max(12px, var(--t-xs))/1.4 var(--body); overflow-wrap: anywhere;
+  max-height: calc(100% - 4.25rem); overflow: auto; pointer-events: none;
+}
 /* Chapter artwork keeps a small icon in its header fade, with a full touch target. */
 .vn-top:has(> .gf-fs-chapter) { min-height: 44px; }
 .gf-fs-exit.gf-fs-chapter {
@@ -31,6 +62,27 @@ const forgeBrowserLayout = `
   display: inline-flex; padding: 0; width: 1.9rem; height: 1.9rem;
   background: var(--ink); color: var(--text); border: 1px solid var(--steel-dark);
   clip-path: none; border-radius: 0;
+}
+/* A phone keyboard can leave less room than the picker header and composer.
+   Query the package's actual height, which already follows the Engine viewport.
+   Keep this stable when Send takes focus; Safari may blur the textarea before its tap. */
+@container gfarena (max-height: 280px) {
+  .gf-stage:has(.hm-pk.chat .ch-box) > .gf-bar,
+  .gf-arena:has(.hm-pk.chat .ch-box) > .gf-rot { display: none; }
+  .hm-pk.chat:has(.ch-box) { width: 100%; height: 100%; clip-path: none; border-radius: 0; }
+  .hm-pk.chat:has(.ch-box) .hm-pk-head { padding: 4px 8px; gap: 8px; }
+  .hm-pk.chat:has(.ch-box) .hm-pk-head .ttl { font-size: var(--t-sm); }
+  .hm-pk.chat:has(.ch-box) :is(.hm-pk-head .cur, .ch-list, .ch-who) { display: none; }
+  .hm-pk.chat:has(.ch-box) .hm-pk-body { grid-template-columns: minmax(0, 1fr); }
+  .hm-pk.chat:has(.ch-box) .ch-col { grid-template-rows: minmax(0, 1fr) auto auto; overflow-y: auto; }
+  .hm-pk.chat:has(.ch-box) .ch-log { padding: 4px 8px; }
+  .hm-pk.chat:has(.ch-box) .ch-foot {
+    grid-template-columns: minmax(0, 1fr) auto; align-items: start; padding: 4px 8px; gap: 8px;
+  }
+  .hm-pk.chat:has(.ch-box) .ch-box { height: 44px; min-height: 44px; font-size: max(16px, var(--t-sm)); }
+  .hm-pk.chat:has(.ch-box) .ch-acts { align-items: stretch; }
+  .hm-pk.chat:has(.ch-box) .ch-btn:not(.go) { display: none; }
+  .hm-pk.chat:has(.ch-box) .ch-btn.go { min-height: 44px; margin: 0; white-space: nowrap; }
 }
 `;
 const forgeFullscreenIcons = {
