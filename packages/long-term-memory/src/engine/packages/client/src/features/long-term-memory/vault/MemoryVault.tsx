@@ -1681,6 +1681,8 @@ export default function MemoryVault({
     setBusy("save");
     setSaveState("saving");
     setError("");
+    // Clear the standing notice so this save's "Memory saved" is a change the banner announces; the same text twice is not.
+    setNotice("");
     let succeeded = false;
     try {
       const response = isNew

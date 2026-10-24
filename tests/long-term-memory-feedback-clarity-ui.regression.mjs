@@ -930,6 +930,9 @@ assert.doesNotMatch(vault, /savePendingRef/u);
 // One save speaks once: the inline status announces Saving, and its Saved text is hidden from assistive technology
 // because the banner's "Memory saved" notice announces it.
 assert.match(vault, /saveState === "saved" \? <span aria-hidden="true">\{saveStatus\}<\/span> : saveStatus/u);
+// A save clears the standing notice first: a second save writes the identical "Memory saved" text, which a polite
+// region does not announce twice, so without this the later save would start aloud and finish silently.
+assert.match(vault, /setSaveState\("saving"\);\s+setError\(""\);\s+(?:\/\/[^\n]*\n\s*)*setNotice\(""\);/u);
 // A memory that is already global is blocked under its own reason, not under a last place it never had.
 assert.match(vaultScreen, /alreadyEverywhere: removesLastPlace && !removesLastMode && places\.length === 0/u);
 assert.match(locale["ui.longTermMemory.memoryvault.applyReasonNothingToChange"], /would be skipped/u);
