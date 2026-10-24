@@ -1,5 +1,7 @@
 # Gacha Forge
 
+Enemy tiers and contextual boss dialogue are being developed for story encounters. The implementation is tracked in the linked draft PR; the published package behavior below remains the current release.
+
 In 1.12.2, combat keeps one mute control, Auto resumes after you select a small choice, and character communication keeps its composer available when a mobile keyboard reduces the game height. Home adds a compact affinity matchup diagram below the communication button and frames selected background artwork from its top.
 
 In 1.12.1, Home, story moods and Character Stories use their own music cues. Tracks are generated as those contexts are visited and reused within that world. Loading a scene keeps the current track until its music cue is ready. Short audio notices let taps reach the game stage; long provider reasons can be scrolled and stay visible while focused with a keyboard.
