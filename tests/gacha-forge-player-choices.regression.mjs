@@ -720,7 +720,13 @@ try {
     const nextPlan = plan(2, 10);
     nextPlan.nodes = nextPlan.nodes.map((node, index) =>
       [1, 3, 5].includes(index)
-        ? { index: index + 1, type: "combat", title: `Battle ${index}`, setup: "A test battle" }
+        ? {
+            index: index + 1,
+            type: "combat",
+            tier: index === 5 ? "boss" : index === 3 ? "elite" : "soldier",
+            title: `Battle ${index}`,
+            setup: "A test battle",
+          }
         : node,
     );
     host.responses[0] = nextPlan;
@@ -763,7 +769,13 @@ try {
     const nextPlan = plan(3, 10);
     nextPlan.nodes = nextPlan.nodes.map((node, index) =>
       [1, 3, 5].includes(index)
-        ? { index: index + 1, type: "combat", title: `Battle ${index}`, setup: "A test battle" }
+        ? {
+            index: index + 1,
+            type: "combat",
+            tier: index === 5 ? "boss" : index === 3 ? "elite" : "soldier",
+            title: `Battle ${index}`,
+            setup: "A test battle",
+          }
         : node,
     );
     host.responses[0] = nextPlan;
