@@ -406,7 +406,13 @@ assert.match(vault, /place-items-center bg-black\/50/u);
 assert.match(vault, /mari-editor-panel w-full max-w-md space-y-3 p-3 shadow-xl/u);
 assert.doesNotMatch(vault, /max-w-72/u);
 assert.match(vault, /details\[open\] > summary/u);
-assert.match(vault, /localizeUi\("ui\.longTermMemory\.memoryvault\.memoryOptions"\)/u);
+assert.match(vault, /localizeUi\("ui\.longTermMemory\.memoryvault\.keywordsAndLinks"\)/u);
+assert.doesNotMatch(vault, /memoryvault\.(memoryOptions|memoryInfo|showMemoryInfo|hideMemoryInfo)/u);
+assert.match(
+  vault,
+  /<Button\s+onClick=\{\(\) => \{\s+const next = !detailsOpen;[\s\S]*?aria-pressed=\{detailsOpen\}[\s\S]*?data-ltm-details-toggle[\s\S]*?memoryvault\.memoryDetails"\)\}\s+<\/Button>/u,
+);
+assert.match(vault, /label: localizeUi\("ui\.longTermMemory\.memoryvault\.memoryDetails"\)/u);
 assert.doesNotMatch(vault, /<Braces aria-hidden="true" size="1rem" className="shrink-0" \/>/u);
 assert.doesNotMatch(vault, /<Check aria-hidden="true" size="1rem" className="shrink-0" \/>\n\s*\{saveState/u);
 assert.match(vault, /beginRename/u);
@@ -461,8 +467,11 @@ assert.match(detail, /health !== "healthy" && !needsHealthAttention/u);
 assert.match(detail, /howToRepairVaultHealth[\s\S]*compact/u);
 assert.match(detail, /tone=\{healthNeedsDangerTone \? "danger" : "warning"\}/u);
 assert.match(vault, /data-ltm-detail-conflict/u);
-assert.equal(locale["ui.longTermMemory.memoryvault.memoryInfo"], "Memory info");
-assert.equal(locale["ui.longTermMemory.memoryvault.memoryOptions"], "Memory options");
+assert.equal(locale["ui.longTermMemory.memoryvault.memoryDetails"], "Memory info");
+assert.equal(locale["ui.longTermMemory.memoryvault.keywordsAndLinks"], "Keywords and links");
+for (const key of ["memoryInfo", "memoryOptions", "showMemoryInfo", "hideMemoryInfo"]) {
+  assert.equal(`ui.longTermMemory.memoryvault.${key}` in locale, false, `${key} is replaced by one pane name`);
+}
 assert.equal(locale["ui.longTermMemory.memoryvault.renameDetails"], "Rename details");
 assert.equal(locale["ui.longTermMemory.memoryvault.previewRename"], "Preview rename");
 assert.equal(locale["ui.longTermMemory.memoryvault.openDebugLog"], "Open debug log");

@@ -2928,11 +2928,6 @@ export default function MemoryVault({
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Button
-                          aria-label={
-                            detailsOpen
-                              ? localizeUi("ui.longTermMemory.memoryvault.hideMemoryInfo")
-                              : localizeUi("ui.longTermMemory.memoryvault.showMemoryInfo")
-                          }
                           onClick={() => {
                             const next = !detailsOpen;
                             setDetailsOpen(next);
@@ -2942,7 +2937,7 @@ export default function MemoryVault({
                           data-ltm-details-toggle
                           className={`inline-flex min-h-11 items-center gap-2 ${detailsOpen ? "bg-[var(--accent)]" : ""}`}
                         >
-                          {localizeUi("ui.longTermMemory.memoryvault.memoryOptions")}
+                          {localizeUi("ui.longTermMemory.memoryvault.memoryDetails")}
                         </Button>
                         {/* Save keeps its label and primary tone and stays focusable while off (UI.md: `aria-disabled`,
                             guarded handler); the polite status beside it carries Saving and Saved. The region is always
@@ -3269,7 +3264,7 @@ export default function MemoryVault({
                                     size="0.875rem"
                                     className="shrink-0 transition-transform group-open:rotate-90"
                                   />
-                                  {localizeUi("ui.longTermMemory.memoryvault.memoryOptions")}
+                                  {localizeUi("ui.longTermMemory.memoryvault.keywordsAndLinks")}
                                 </summary>
                                 <section
                                   data-ltm-keyword-editor

@@ -107,6 +107,10 @@ deferred is a warning ("Saved. Recall will catch up…"), not a danger error,
 because the memory is saved.
 The open memory's row carries the primary wash, a left-edge bar and
 `aria-current="true"` on its button, so it is marked beyond colour.
+The memory's side panel is called Memory info wherever it opens: the toggle in the
+memory header (`aria-pressed`, no `aria-label`, so its accessible name is its visible
+label) and the narrow-layout pane tab. Its first section is named for what it holds,
+Keywords and links.
 The workbench distinguishes read-only
 source notes from editable memories and keeps validation, evidence, freshness,
 confidence, subjects, links, keywords, and availability visible as applicable.

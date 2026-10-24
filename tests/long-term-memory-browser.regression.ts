@@ -5864,6 +5864,8 @@ async function main() {
         return document.activeElement === tab && tab?.getAttribute("aria-selected") === "true";
       });
       await page.locator("[data-ltm-note-inspector]").waitFor({ state: "visible" });
+      const inspectorPaneName = (await page.locator('[data-ltm-workspace-pane-tab="inspector"]').textContent())?.trim();
+      assert.equal(inspectorPaneName, "Memory info");
       await page.locator('[data-ltm-workspace-pane-tab="inspector"]').press("Home");
       await page.waitForFunction(
         () => document.activeElement?.getAttribute("data-ltm-workspace-pane-tab") === "workbench",
@@ -5896,6 +5898,17 @@ async function main() {
         document.documentElement.style.fontSize = "";
       });
       await page.setViewportSize({ width: 1280, height: 900 });
+      // One name for the pane: the toggle and the <48rem tab both say "Memory info" with no aria-label to
+      // override it, and the inspector's first section is named for what it holds.
+      const detailsToggle = page.locator("[data-ltm-details-toggle]");
+      assert.equal(await detailsToggle.getAttribute("aria-label"), null);
+      assert.equal((await detailsToggle.textContent())?.trim(), inspectorPaneName);
+      assert.equal(await detailsToggle.getAttribute("aria-pressed"), "true");
+      await page.getByRole("button", { name: "Memory info", exact: true, pressed: true }).waitFor();
+      assert.equal(
+        (await page.locator("[data-ltm-memory-options] > summary").textContent())?.trim(),
+        "Keywords and links",
+      );
       await page.locator("[data-ltm-details-toggle]").click();
       assert.equal(await page.locator("[data-ltm-details-toggle]").getAttribute("aria-pressed"), "false");
       assert.equal(await page.locator('[data-ltm-workspace-pane="inspector"]').count(), 0);
