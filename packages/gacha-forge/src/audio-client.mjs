@@ -441,8 +441,9 @@ export function syncForgeAudio(host) {
 export function wireForgeAudio(host) {
   const audio = syncForgeAudio(host);
   const root = host._root;
+  // Combat's toolbar replaces the floating fullscreen control and its paired mute.
   for (const fullscreen of root.querySelectorAll(
-    ".gf-fs-bar, .gf-fs-chapter, .gf-fs-portrait, .gf-stage > .gf-fs-exit",
+    ".gf-fs-bar, .gf-fs-chapter, .gf-fs-portrait, .gf-stage:not(:has(.gf-view .gf-fs-bar)) > .gf-fs-exit",
   )) {
     if (host._run?.runId && !fullscreen.previousElementSibling?.classList.contains("gf-mute")) {
       const button = document.createElement("button");

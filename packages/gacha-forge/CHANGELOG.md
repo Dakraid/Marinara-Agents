@@ -1,5 +1,7 @@
 ## 1.12.2 — 2026-10-24
 
+- Home shows a compact affinity matchup diagram beneath the communication button.
+- Home backgrounds retain the top of the selected artwork below the game header.
 - Combat shows one mute control without overlapping the other toolbar buttons.
 - Autoplay resumes after a small story choice when it was enabled before the choice.
 - Character communication keeps the composer visible when a mobile keyboard reduces the available height.
