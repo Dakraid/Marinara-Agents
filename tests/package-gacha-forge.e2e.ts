@@ -159,6 +159,7 @@ test("Forge fills every screen, toggles inside the Engine and keeps world drafts
       expect(Math.abs(gap), "world form fills its frame instead of stopping at 900px").toBeLessThanOrEqual(1);
     }
     expect(await forge.evaluate((node) => (node as any)._state()), `${view} actually rendered`).toBe(view);
+    await expect(forge.locator(".gf-mute:visible"), `${view} has one visible audio control`).toHaveCount(1);
     const button = toggle();
     await expect(button, `${view} fullscreen control`).toBeVisible();
     await button.click();

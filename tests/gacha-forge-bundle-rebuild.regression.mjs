@@ -18,6 +18,7 @@ try {
   assert.equal(await readFile(new URL("client.js", root), "utf8"), originalClient, "clean replay is byte-identical");
   const sources = [
     ["browser-presentation", ["client.js"]],
+    ["home-presentation", ["client.js"]],
     ["player-choices-en", ["client.js"]],
     ["player-choices-client", ["client.js"]],
     ["player-choices-server", ["server.mjs"]],
