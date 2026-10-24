@@ -1,6 +1,6 @@
 # Long-Term Memory changelog
 
-## Unreleased
+## 1.4.90 — 2026-10-24
 
 - The Undo banner after archiving keeps saying how many memories it will restore, even when you save another memory while it is showing.
 
