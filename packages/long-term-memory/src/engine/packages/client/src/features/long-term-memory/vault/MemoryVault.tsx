@@ -1682,7 +1682,8 @@ export default function MemoryVault({
     setSaveState("saving");
     setError("");
     // Clear the standing notice so this save's "Memory saved" is a change the banner announces; the same text twice is not.
-    setNotice("");
+    // While an archive Undo holds the banner open the notice is its caption, so it stays and the save's text replaces it.
+    if (!archiveUndo) setNotice("");
     let succeeded = false;
     try {
       const response = isNew

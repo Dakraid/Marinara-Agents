@@ -932,7 +932,11 @@ assert.doesNotMatch(vault, /savePendingRef/u);
 assert.match(vault, /saveState === "saved" \? <span aria-hidden="true">\{saveStatus\}<\/span> : saveStatus/u);
 // A save clears the standing notice first: a second save writes the identical "Memory saved" text, which a polite
 // region does not announce twice, so without this the later save would start aloud and finish silently.
-assert.match(vault, /setSaveState\("saving"\);\s+setError\(""\);\s+(?:\/\/[^\n]*\n\s*)*setNotice\(""\);/u);
+// While an archive Undo keeps the banner open the notice is its caption, so it is kept then.
+assert.match(
+  vault,
+  /setSaveState\("saving"\);\s+setError\(""\);\s+(?:\/\/[^\n]*\n\s*)*if \(!archiveUndo\) setNotice\(""\);/u,
+);
 // A memory that is already global is blocked under its own reason, not under a last place it never had.
 assert.match(vaultScreen, /alreadyEverywhere: removesLastPlace && !removesLastMode && places\.length === 0/u);
 assert.match(locale["ui.longTermMemory.memoryvault.applyReasonNothingToChange"], /would be skipped/u);
