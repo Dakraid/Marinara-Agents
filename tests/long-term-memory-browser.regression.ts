@@ -2371,8 +2371,17 @@ async function main() {
         releaseBranchSave = resolve;
       });
       const branchNoteRoute = `**/api/long-term-memory/notes/${outsideChatNote.id}`;
+      let deferRecallRebuild = false;
       await page.route(branchNoteRoute, async (route) => {
         if (route.request().method() === "PATCH") await branchSaveHeld;
+        if (route.request().method() === "PATCH" && deferRecallRebuild) {
+          const response = await route.fetch();
+          await route.fulfill({
+            response,
+            json: { ...(await response.json()), rebuild: { status: "deferred", error: "index busy" } },
+          });
+          return;
+        }
         await route.continue();
       });
       await branchTitle.fill("Memory outside current chat, saved");
@@ -2394,8 +2403,51 @@ async function main() {
       );
       await page.getByRole("button", { name: "Save", exact: true }).waitFor();
       await branchTitle.fill("Memory outside current chat, edited again");
-      await page.locator("button:enabled", { hasText: /^Save$/u }).waitFor();
+      await page.locator("[data-ltm-save]:not([aria-disabled])").waitFor();
       assert.ok(noteQueries.length > noteQueriesBeforeSave, "the memory list reloads after the save");
+      // #1636: Save keeps its label and focus (aria-disabled, never disabled) and a polite status beside it says Saved.
+      const saveButton = page.locator("[data-ltm-save]");
+      const saveStatus = page.locator("[data-ltm-save-status]");
+      assert.equal(await saveStatus.getAttribute("role"), "status");
+      await saveButton.focus();
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(() => document.querySelector("[data-ltm-save-status]")?.textContent === "Saved");
+      assert.equal(await saveButton.getAttribute("aria-disabled"), "true");
+      assert.equal(await saveButton.getAttribute("disabled"), null);
+      assert.equal(await saveButton.innerText(), "Save");
+      await page.locator("[data-ltm-save]:focus").waitFor();
+      await branchTitle.fill("Memory outside current chat, edited a third time");
+      assert.equal(await saveStatus.innerText(), "", "an edit clears the Saved status");
+      // A save whose recall rebuild is deferred is a warning with the strong border, not a danger error.
+      deferRecallRebuild = true;
+      await saveButton.click();
+      const staleWarning = page.locator('[data-ltm-vault-feedback] [data-ltm-status="warning"]');
+      await staleWarning.waitFor();
+      assert.equal(
+        (await staleWarning.innerText()).trim(),
+        "Saved. Recall will catch up once the index rebuild succeeds: index busy",
+      );
+      assert.equal(await staleWarning.locator("[data-ltm-status-icon]").count(), 1);
+      assert.equal(await page.locator('[data-ltm-vault-feedback] [data-ltm-status="danger"]').count(), 0);
+      // The next message resets the tone: a plain save shows the success notice again.
+      deferRecallRebuild = false;
+      await branchTitle.fill("Memory outside current chat, saved");
+      await saveButton.click();
+      await page.waitForFunction(() => document.querySelector("[data-ltm-save-status]")?.textContent === "Saved");
+      assert.equal(await staleWarning.count(), 0);
+      assert.equal(
+        await page.locator('[data-ltm-vault-feedback] [data-ltm-status="success"]').innerText(),
+        "Memory saved.",
+      );
+      // Opening another memory without editing must not carry the Saved status over to it.
+      const otherRow = page
+        .locator(`[data-ltm-note-id]:not([data-ltm-note-id="${outsideChatNote.id}"]) button`)
+        .first();
+      assert.ok(await otherRow.count(), "a second memory row exists to open");
+      await page.waitForFunction(() => document.querySelector("[data-ltm-save-status]")?.textContent === "Saved");
+      await otherRow.click();
+      await page.waitForFunction(() => document.querySelector("[data-ltm-save-status]")?.textContent === "");
+      await page.locator(`[data-ltm-note-id="${outsideChatNote.id}"] button`).first().click();
       await branchTitle.fill("Memory outside current chat, saved");
       await page.unroute(branchNoteRoute);
       // Escape keeps the Rename detail dialog open while the rename runs, as its disabled Cancel button does.

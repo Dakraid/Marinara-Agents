@@ -909,6 +909,20 @@ assert.match(vault, /localCharacters\.isLoading && !localCharacters\.data/u);
 assert.match(vault, /localCharacters\.isError && !localCharacters\.data/u);
 assert.match(vault, /localCharacters\.refetch\(\)/u);
 assert.equal((maintenance.match(/queryKeys\.localCharactersRoot/g) ?? []).length, 2);
+// #1636: Save keeps its label and tone, stays focusable while off and reports Saving and Saved in a polite region
+// beside it; a save that waits on a recall rebuild is a warning, not an error.
+assert.match(vault, /aria-disabled=\{!dirty \|\| busy === "save" \? true : undefined\}/u);
+assert.doesNotMatch(vault, /primary\s+disabled=/u);
+assert.match(vault, /role="status"\s+data-ltm-save-status/u);
+assert.match(vault, /if \(!draft \|\| savePendingRef\.current\) return false;/u);
+assert.match(vault, /savePendingRef\.current = false;\s*setBusy\(\(current\) => \(current === "save"/u);
+assert.match(vault, /const setWarning = useCallback/u);
+assert.match(vault, /tone=\{noticeState\.warning \? "warning" : "success"\}/u);
+assert.doesNotMatch(vault, /setError\(\s*localizeUi\("ui\.longTermMemory\.memoryvault\.savedButRecallIsStale"/u);
+assert.equal(
+  locale["ui.longTermMemory.memoryvault.savedButRecallIsStale"],
+  "Saved. Recall will catch up once the index rebuild succeeds: {{error}}",
+);
 
 process.stdout.write(
   "Long-Term Memory feedback clarity UI regression: labels, outcomes, usage, warnings, defaults, and scope loading ok\n",

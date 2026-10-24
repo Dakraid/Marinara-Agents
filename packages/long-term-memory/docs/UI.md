@@ -100,6 +100,11 @@ Under "What Apply will do" a polite summary counts ready, unchanged and blocked
 memories; Apply changes the ready ones and skips the rest, which stay selected.
 Apply appears in the header and under the list, stays focusable when off
 (`aria-disabled`, guarded handler) and names the reason beside it.
+Save in the memory header works the same way: it keeps its label and primary
+tone, stays focusable while off or running, and a polite status beside it says
+Saving or Saved until the next edit. A save whose recall index rebuild is
+deferred is a warning ("Saved. Recall will catch up…"), not a danger error,
+because the memory is saved.
 The workbench distinguishes read-only
 source notes from editable memories and keeps validation, evidence, freshness,
 confidence, subjects, links, keywords, and availability visible as applicable.

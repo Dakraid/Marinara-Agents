@@ -483,12 +483,19 @@ export default function MemoryVault({
   const [isNew, setIsNew] = useState(false);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  // One feedback slot: a success notice, or a warning when a change was kept but something behind it is still pending.
+  // `setNotice` always resets the tone, so a later message never inherits a warning.
+  const [noticeState, setNoticeState] = useState({ message: "", warning: false });
+  const notice = noticeState.message;
+  const setNotice = useCallback((message: string) => setNoticeState({ message, warning: false }), []);
+  const setWarning = useCallback((message: string) => setNoticeState({ message, warning: true }), []);
   const [archiveUndo, setArchiveUndo] = useState<ArchiveUndoState | null>(null);
   // Batch, row and Undo actions use `aria-disabled` so the control keeps focus while it runs, and
   // `batchPendingRef` blocks a second run before React re-renders. When one finishes, focus moves to
   // the result banner, which holds Undo, unless the user moved it elsewhere meanwhile.
   const batchPendingRef = useRef(false);
+  // Save keeps focus while it runs (`aria-disabled`); this blocks a second save, from the button or the shortcut.
+  const savePendingRef = useRef(false);
   const feedbackTriggerRef = useRef<Element | null>(null);
   const [feedbackFocusRequest, setFeedbackFocusRequest] = useState(0);
   const focusFeedback = () => setFeedbackFocusRequest((count) => count + 1);
@@ -659,6 +666,7 @@ export default function MemoryVault({
     setDraft(null);
     setAvailabilityOpen(null);
     setSaved("");
+    setSaveState("idle");
     setIsNew(false);
     setBusy("");
     setError("");
@@ -855,6 +863,13 @@ export default function MemoryVault({
         : new Set([...current].filter((id) => !visibleIds.includes(id)));
     });
   const dirty = Boolean(draft) && fingerprint(draft) !== saved;
+  // "Saved" only while nothing changed since; an edit hides it even where `saveState` was not reset.
+  const saveStatus =
+    saveState === "saving"
+      ? localizeUi("ui.longTermMemory.memoryvault.saving")
+      : saveState === "saved" && !dirty
+        ? localizeUi("ui.longTermMemory.memoryvault.saved")
+        : "";
   const sourceDerivedQuery = useQuery({
     ...derivedNotesQueryOptions(draft?.id ?? ""),
     enabled: draft?.type === "source" && !isNew,
@@ -1396,6 +1411,7 @@ export default function MemoryVault({
     setDraft(next);
     setAvailabilityOpen(null);
     setSaved(fingerprint(next));
+    setSaveState("idle");
     setIsNew(false);
     setRecoverySuggestionId(null);
     setLinkTarget("");
@@ -1608,7 +1624,7 @@ export default function MemoryVault({
     await invalidate();
   }
   async function save(): Promise<boolean> {
-    if (!draft) return false;
+    if (!draft || savePendingRef.current) return false;
     const errors: Array<{ message: string; focus: "title" | "details" | "subjects" | "links" | "availability" }> = [];
     if (!draft.title?.trim())
       errors.push({ message: localizeUi("ui.longTermMemory.memoryvault.memoryTitleRequired"), focus: "title" });
@@ -1653,6 +1669,7 @@ export default function MemoryVault({
     }
     const session = editorSession.current;
     const submittedFingerprint = fingerprint(draft);
+    savePendingRef.current = true;
     setBusy("save");
     setSaveState("saving");
     setError("");
@@ -1702,7 +1719,7 @@ export default function MemoryVault({
         setIsNew(false);
         setDraft((current) => (fingerprint(current) === submittedFingerprint ? next : current));
         setSaveState("idle");
-        setError(
+        setWarning(
           localizeUi("ui.longTermMemory.memoryvault.savedButRecallIsStale", { error: response.rebuild.error ?? "" }),
         );
         await invalidateLtmQueries(client, [
@@ -1769,6 +1786,7 @@ export default function MemoryVault({
       if (session === editorSession.current)
         setError(errorMessage(cause, localizeUi("ui.longTermMemory.memoryvault.couldNotSaveMemory")));
     } finally {
+      savePendingRef.current = false;
       setBusy((current) => (current === "save" ? "" : current));
     }
     return succeeded;
@@ -1879,7 +1897,7 @@ export default function MemoryVault({
         setDraft((current) => (fingerprint(current) === submittedFingerprint ? result.note : current));
         setRenamingSectionKey(null);
         setRenamedSectionKey("");
-        setError(
+        setWarning(
           localizeUi("ui.longTermMemory.memoryvault.savedButRecallIsStale", { error: result.rebuild.error ?? "" }),
         );
         await invalidate();
@@ -2336,7 +2354,7 @@ export default function MemoryVault({
             </StatusSurface>
           ) : null}
           {notice || archiveUndo ? (
-            <StatusSurface tone="success" tabIndex={-1}>
+            <StatusSurface tone={noticeState.warning ? "warning" : "success"} tabIndex={-1}>
               <span className="min-w-0 flex-1">{notice}</span>
               {archiveUndo ? (
                 <Button
@@ -2908,7 +2926,7 @@ export default function MemoryVault({
                           ) : null}
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Button
                           aria-label={
                             detailsOpen
@@ -2926,13 +2944,29 @@ export default function MemoryVault({
                         >
                           {localizeUi("ui.longTermMemory.memoryvault.memoryOptions")}
                         </Button>
-                        <Button primary disabled={!dirty || busy === "save"} onClick={() => void save()}>
-                          {saveState === "saving"
-                            ? localizeUi("ui.longTermMemory.memoryvault.saving")
-                            : saveState === "saved"
-                              ? localizeUi("ui.longTermMemory.memoryvault.saved")
-                              : localizeUi("ui.longTermMemory.memoryvault.save")}
-                        </Button>
+                        {/* Save keeps its label and primary tone and stays focusable while off (UI.md: `aria-disabled`,
+                            guarded handler); the polite status beside it carries Saving and Saved. The region is always
+                            mounted so the change is announced, and only takes room (`ml-2`) while it has text. */}
+                        <span className="inline-flex items-center">
+                          <Button
+                            primary
+                            data-ltm-save
+                            aria-disabled={!dirty || busy === "save" ? true : undefined}
+                            className={!dirty || busy === "save" ? "opacity-50" : ""}
+                            onClick={() => {
+                              if (dirty) void save();
+                            }}
+                          >
+                            {localizeUi("ui.longTermMemory.memoryvault.save")}
+                          </Button>
+                          <span
+                            role="status"
+                            data-ltm-save-status
+                            className={`text-xs text-[var(--muted-foreground)] ${saveStatus ? "ml-2" : ""}`}
+                          >
+                            {saveStatus}
+                          </span>
+                        </span>
                         <Button onClick={() => void closeDraft()}>
                           {localizeUi("ui.longTermMemory.memoryvault.close")}
                         </Button>
