@@ -87,7 +87,6 @@ process.stdout.write(process.env.MOCK_PR_JSON);
       const result = spawnSync("bash", ["-e", "-o", "pipefail", "-c", shell], {
         encoding: "utf8",
         env: {
-          ...process.env,
           PATH: `${directory}${delimiter}${process.env.PATH}`,
           GH_REPO: "Pasta-Devs/Marinara-Agents",
           PR_NUM: test.number ?? "1644",
