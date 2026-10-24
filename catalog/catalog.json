@@ -2601,8 +2601,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "166a92242f6c3c5718836b768574b189e2ab9cc7c43bcb6d459f5edd69b351c3",
-            "bytes": 675888
+            "sha256": "28c72d0acfb7862c24889719bb539414511c54ecd0179652df26dba5720fe769",
+            "bytes": 676250
           }
         ],
         "permissions": [
@@ -2619,8 +2619,8 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/long-term-memory-1.4.89.zip",
-        "sha256": "691259d3d0b2af5c7277cdefdee5f1e10a48c5393e69a21fab94d9bf6a98a45b",
-        "bytes": 1167319
+        "sha256": "af54a7ab5a69846e0e0e3aff10a2b7e68dd54da41a4a48c3ffe829029e4f164e",
+        "bytes": 1167681
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#long-term-memory"
     },
